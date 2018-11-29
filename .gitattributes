@@ -1,0 +1,3 @@
+raw/superresSecond_3072x2048_UYVY.yuv filter=lfs diff=lfs merge=lfs 
+sample/cnn/resources/alexnet_weights_q8_d442mw2 filter=lfs diff=lfs merge=lfs 
+raw/superresFirst_3072x2048_UYVY.yuv filter=lfs diff=lfs merge=lfs 
