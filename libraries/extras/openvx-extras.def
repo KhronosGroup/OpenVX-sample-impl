@@ -1,0 +1,7 @@
+LIBRARY "openvx-extras.dll"
+VERSION 1.0
+EXPORTS
+    vxPublishKernels
+    vxUnpublishKernels
+
+

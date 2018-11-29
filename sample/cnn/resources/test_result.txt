@@ -1,0 +1,5 @@
+collie: 0.542969
+Shetland sheepdog, Shetland sheep dog, Shetland: 0.449219
+borzoi, Russian wolfhound: 0.003906
+kit fox, Vulpes macrotis: 0.000000
+kit fox, Vulpes macrotis: 0.000000

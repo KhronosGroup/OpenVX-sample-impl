@@ -1,0 +1,9 @@
+LIBRARY "cnn_network.dll"
+VERSION 1.0
+EXPORTS
+	short2float
+	Overfeat
+	Alexnet
+	Googlenet2
+;	BDS
+;	Test

@@ -1,0 +1,26 @@
+Build OpenVX Sample Implementation:
+  stage: build
+
+  before_script:
+   - uname -a
+   - apt-get update -qq && apt-get install -y -qq cmake
+   - 'which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )'
+   - eval $(ssh-agent -s)
+   - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add - > /dev/null
+   - mkdir -p ~/.ssh
+   - chmod 700 ~/.ssh
+   - '[[ -f /.dockerenv ]] && echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config'
+   - chmod 644 ~/.ssh/config
+   - git submodule sync --recursive
+   - git submodule update --init --recursive --remote
+
+  script:
+    - python Build.py --os=Linux --arch=64 --conf=Release --ix --nn
+    - python Build.py --os=Linux --arch=64 --conf=Debug --ix --nn
+    - export OPENVX_DIR=/builds/openvx/sample-impl/install/Linux/x64/Debug/
+    - mkdir build-cts
+    - cd build-cts
+    - cmake -DOPENVX_INCLUDES=$OPENVX_DIR/include -DOPENVX_LIBRARIES=$OPENVX_DIR/bin/libopenvx.so\;$OPENVX_DIR/bin/libvxu.so\;pthread\;dl\;m\;rt -DOPENVX_USE_NN=ON -DOPENVX_USE_IX=ON ../cts/
+    - cmake --build .
+    - export VX_TEST_DATA_PATH=/builds/openvx/sample-impl/cts/test_data/
+    - LD_LIBRARY_PATH=./lib ./bin/vx_test_conformance

@@ -1,0 +1,38 @@
+How to Add a New Kernel To the Sample Implementation:
+======================================+++++++========
+
+1.) Add kernel \defgroup in vx_nodes.h. Describe kernel in detail. 
+
+\defgroup group_kernel_xxxxxxx Kernel: XXXXXXX
+\brief A brief description of one sentence. 
+\details A much longer description. Math equations are ok, see MathJax.org. 
+
+2.) Add vx Node prototype in include/VX/vx_nodes.h
+    a.) add all doxygen tags
+    b.) \ingroup group_kernel_xxxxxx
+    c.) Add to sample/framework/openvx.def symbol export
+3.) Add vxu function prototype in include/VX/vxu.h
+    a.) add all doxygen tags
+    b.) \ingroup group_kernel_xxxxxx
+    c.) Add to sample/vxu/vx_utility.def symbol export
+4.) Add kernel enum in include/VX/vx_kernels.h
+    a.) The kernel enums can't be in the \ingroup as the whole enum are in their own group. 
+        Use \see or \ref.
+5.) Add any external types needed (enums, etc) in include/VX/vx_types.h
+    a.) These can also be in \ingroup group_kernel_xxxxxx
+6.) Create file in sample/targets/c_model/ 
+    a.) vx_<verb>.c or vx_<object><verb>.c or vx_<verb><object>.c 
+    b.) write kernel
+    c.) write input validator
+    d.) write output validator
+    e.) declare vx_param_description_t array
+    f.) declare vx_kernel_description_t structure
+        1.) references Kernel, enum, stringname, input/output validators, parameter array.
+    g.) extern the kernel table entry in sample/targets/c_model/vx_interface.h
+    h.) reference kernel table in table list in sample/targets/c_model/vx_interface.c
+    i.) Add filename to Android.mk (concerto.mak will automatically compile all the C files).
+7.) Add Node declaration in sample/framework/vx_node_api.c
+8.) Add vxu function (must use Single node Graph) in sample/vxu/vx_utility.c
+9.) Either modify or add new unit test in sample/tests/vx_test.c
+    a.) Use either Graph or Immediate mode
+10.) Test until working. :)

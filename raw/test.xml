@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="utf-8"?>
+<openvx xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="https://www.khronos.org/registry/vx/schema" xsi:schemaLocation="https://www.khronos.org/registry/vx/schema openvx-1-0.xsd"
+	references="46">
+	<library>openvx-debug</library>
+	<struct size="32">USER_STRUCT_0</struct>
+	<image reference="0" width="320" height="240" format="U008" />
+	<image reference="1" width="320" height="240" format="U008" />
+	<scalar reference="2" elemType="VX_TYPE_ENUM">
+		<enum>40960</enum>
+	</scalar>
+	<image reference="4" width="320" height="240" format="U008" />
+	<image reference="5" width="320" height="240" format="U008" />
+	<array reference="6" capacity="16" elemType="VX_TYPE_CHAR">
+		<char>lena_512x512.pgm</char>
+	</array>
+	<scalar reference="7" elemType="VX_TYPE_BOOL">
+		<bool>false</bool>
+	</scalar>
+	<scalar reference="8" elemType="VX_TYPE_UINT8">
+		<uint8>250</uint8>
+	</scalar>
+	<scalar reference="9" elemType="VX_TYPE_UINT16">
+		<uint16>45000</uint16>
+	</scalar>
+	<scalar reference="10" elemType="VX_TYPE_INT16">
+		<int16>-360</int16>
+	</scalar>
+	<convolution reference="11" rows="3" columns="3" scale="1">
+		<int16 row="0" column="0">-3</int16>
+		<int16 row="0" column="1">-17</int16>
+		<int16 row="0" column="2">-3</int16>
+		<int16 row="1" column="0">0</int16>
+		<int16 row="1" column="1">0</int16>
+		<int16 row="1" column="2">0</int16>
+		<int16 row="2" column="0">3</int16>
+		<int16 row="2" column="1">17</int16>
+		<int16 row="2" column="2">3</int16>
+	</convolution>
+	<distribution reference="12" bins="8" range="256">
+		<frequency bin="0">4</frequency>
+		<frequency bin="1">8</frequency>
+	</distribution>
+	<scalar reference="13" elemType="VX_TYPE_FLOAT32">
+		<float32>6.28</float32>
+	</scalar>
+	<matrix reference="14" rows="3" columns="1" elemType="VX_TYPE_INT32">
+		<int32 row="0" column="0">4</int32>
+		<int32 row="1" column="0">-4</int32>
+		<int32 row="2" column="0">3</int32>
+	</matrix>
+	<matrix reference="15" rows="3" columns="1" elemType="VX_TYPE_FLOAT32">
+		<float32 row="0" column="0">3.141528</float32>
+		<float32 row="1" column="0">6.28</float32>
+		<float32 row="2" column="0">0.9999999</float32> <!-- technically this is == 1.0f -->
+	</matrix>
+	<array reference="16" capacity="1" elemType="VX_TYPE_RECTANGLE">
+		<rectangle>
+			<start_x>0</start_x>
+			<start_y>0</start_y>
+			<end_x>640</end_x>
+			<end_y>480</end_y>
+		</rectangle>
+	</array>
+	<array reference="17" capacity="1" elemType="VX_TYPE_COORDINATES3D">
+		<coordinates3d>
+			<x>0</x>
+			<y>10</y>
+			<z>40</z>
+		</coordinates3d>
+	</array>
+	<remap reference="18" src_width="320" src_height="240" dst_width="320" dst_height="240">
+		<point src_x="0.4" src_y="0.7" dst_x="0" dst_y="0" />
+	</remap>
+	<array reference="19" capacity="1" elemType="VX_TYPE_COORDINATES2D">
+		<coordinates2d>
+			<x>10</x>
+			<y>600</y>
+		</coordinates2d>
+	</array>
+	<pyramid reference="20" width="640" height="480" format="U008" scale="0.8408964" levels="3" />
+	<threshold reference="21">
+		<binary>127</binary>
+	</threshold>
+	<threshold reference="22">
+		<range lower="10" upper="241" />
+	</threshold>
+	<array reference="23" capacity="1" elemType="VX_TYPE_KEYPOINT">
+		<keypoint>
+			<x>23</x>
+			<y>14</y>
+			<strength>129078123</strength>
+		</keypoint>
+	</array>
+	<image reference="3" width="320" height="240" format="U008" />
+	<graph reference="24" name="GRAPH1">
+		<node reference="25">
+			<kernel>org.khronos.openvx.add</kernel>
+			<parameter index="0" reference="0" />
+			<parameter index="1" reference="1" />
+			<parameter index="2" reference="2" />
+			<parameter index="3" reference="3" />
+		</node>
+		<node reference="26" bordermode="REPLICATE">
+			<kernel>org.khronos.openvx.add</kernel>
+			<parameter index="0" reference="3" />
+			<parameter index="1" reference="4" />
+			<parameter index="2" reference="2" />
+			<parameter index="3" reference="5" />
+		</node>
+		<parameter node="25" parameter="0" index="0" />
+		<parameter node="25" parameter="1" index="1" />
+		<parameter node="26" parameter="1" index="2" />
+		<array reference="38" capacity="1000" elemType="VX_TYPE_RECTANGLE" />
+		<pyramid reference="39" width="0" height="0" format="VIRT" levels="4" scale="0.5" />
+	</graph>
+	<image reference="27" width="640" height="480" format="IYUV" colorspace="BT601_625" colorrange="RESTRICTED">
+		<rectangle plane="0">
+			<start_x>0</start_x>
+			<start_y>0</start_y>
+			<end_x>640</end_x>
+			<end_y>480</end_y>
+			<pixels>
+				<uint8 x="0" y="0">10</uint8>
+				<uint8 x="1" y="0">9</uint8>
+			</pixels>
+		</rectangle>
+	</image>
+	<graph reference="28" name="GRAPH2">
+		<node reference="29">
+			<kernel>org.khronos.openvx.or</kernel>
+			<parameter index="0" reference="3" />
+			<parameter index="1" reference="4" />
+			<parameter index="2" reference="5" />
+		</node>
+	</graph>
+	<scalar reference="30" elemType="VX_TYPE_INT32">
+		<int32>7</int32>
+	</scalar>
+	<delay reference="31" count="2">
+		<image reference="32" width="160" height="120" format="U008" />
+		<image reference="33" width="160" height="120" format="U008" />
+	</delay>
+	<image reference="34" width="640" height="480" format="RGB2">
+		<rectangle plane="0">
+			<start_x>0</start_x>
+			<start_y>0</start_y>
+			<end_x>640</end_x>
+			<end_y>480</end_y>
+			<pixels>
+				<rgb x="0" y="0">#FF00FF</rgb>
+				<rgb x="1" y="0">255 128 0</rgb>
+			</pixels>
+		</rectangle>
+	</image>
+	<image reference="35" width="640" height="480" format="UYVY">
+		<rectangle plane="0">
+			<start_x>0</start_x>
+			<start_y>0</start_y>
+			<end_x>640</end_x>
+			<end_y>480</end_y>
+			<pixels>
+				<yuv x="0" y="0">128 0</yuv>
+				<yuv x="1" y="0">128 0</yuv>
+			</pixels>
+		</rectangle>
+	</image>
+	<image reference="36" width="640" height="480" format="YUYV">
+		<rectangle plane="0">
+			<start_x>0</start_x>
+			<start_y>0</start_y>
+			<end_x>640</end_x>
+			<end_y>480</end_y>
+			<pixels>
+				<yuv x="0" y="0">0 128</yuv>
+				<yuv x="1" y="0">0 128</yuv>
+			</pixels>
+		</rectangle>
+	</image>
+	<image reference="37" width="640" height="480" format="RGBA">
+		<rectangle plane="0">
+			<start_x>0</start_x>
+			<start_y>0</start_y>
+			<end_x>640</end_x>
+			<end_y>480</end_y>
+			<pixels>
+				<rgba x="0" y="0">#FF00FF20</rgba>
+				<rgba x="1" y="0">255 128 0 255</rgba>
+			</pixels>
+		</rectangle>
+	</image>
+	<lut reference="40" count="256" elemType="VX_TYPE_UINT8">
+		<uint8 index="0">47</uint8>
+	</lut>
+	<pyramid reference="41" width="640" height="480" scale="0.5" levels="4" format="U008">
+	   <image reference="42" level="0" width="640" height="480" format="U008"/>
+	   <image reference="43" level="1" width="320" height="240" format="U008"/>
+	   <image reference="44" level="2" width="160" height="120" format="U008"/>
+	   <image reference="45" level="3" width="80" height="60" format="U008"/>
+	</pyramid>
+</openvx>

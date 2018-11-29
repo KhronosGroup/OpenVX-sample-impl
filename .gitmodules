@@ -1,0 +1,8 @@
+[submodule "api-docs"]
+	path = api-docs
+	url = ../api-docs.git
+	branch = master
+[submodule "cts"]
+	path = cts
+	url = ../cts.git
+	branch = master

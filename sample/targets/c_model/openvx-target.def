@@ -1,0 +1,9 @@
+LIBRARY "openvx-c_model.dll"
+VERSION 1.0
+EXPORTS
+    vxTargetInit
+    vxTargetDeinit
+    vxTargetVerify
+    vxTargetProcess
+    vxTargetSupports
+    vxTargetAddKernel

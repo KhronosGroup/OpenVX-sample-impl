@@ -1,0 +1,104 @@
+============================
+BUILD Defines/Defaults
+============================
+
+This file lists several of the preprocessor definitions used to
+conditionally compile functionality in the code.  It also lists
+their defaults, and identifies how/when they are set.
+
+
+Contents
+1. MANUALLY configured in build (MAKEFILE DEF switches)
+   a. IMPLEMENTATION SPECIFIC OPTIONS
+   b. EXPERIMENTAL EXTENSION OPTIONS
+2. AUTO configured either in the code or based on environment in build
+
+
+===================================================================
+1. MANUALLY configured in build (MAKEFILE DEF switches)
+===================================================================
+The preprocessor definitions listed in this section can be manually
+enabled or commented out in the concerto/target.mak file before
+performing a clean build.
+
+
+OFFICIAL KHR EXTENSION OPTIONS:
+--------------------------------
+Definitions in this section include Khronos-approved extensions.
+
+OPENVX_USE_IX (ENABLED)
+- Enables the import/export extension
+
+OPENVX_USE_NN (ENABLED)
+- Enables the neural network extension
+
+
+IMPLEMENTATION SPECIFIC OPTIONS:
+--------------------------------
+Definitions in this section include user preference options and
+Khronos-approved extensions (in at least the provisional state).
+
+OPENVX_BUILDING (ENABLED)
+- Defines the VX_API_ENTRY macro to be a dllexport attribute.
+- If disabled, the VX_API_ENTRY macro is defined to be a dllimport attribute.
+
+OPENVX_USE_SMP (ENABLED)
+- Enables use of threadpool, so that threads can execute parallel work
+  on different cores.
+
+OPENVX_USE_TILING (DISABLED)
+- Enables tiling extension (Provisional spec released)
+
+
+EXPERIMENTAL EXTENSION OPTIONS:
+-------------------------------
+Definitions in this section are for features which have had little to
+no discussion or debate by the Khronos OpenVX working group.  As such,
+they are not verified and are subject to change considerably or potentially
+be removed.  When discussion on a proposed extension becomes mature,
+then it may be moved to the "IMPLEMENTATION SPECIFIC" category above or
+added to a new revision of the specification.
+
+EXPERIMENTAL_USE_DOT (ENABLED in Android, LINUX, and DARWIN only)
+- Enables DOT extension proposal
+
+OPENVX_USE_S16 (DISABLED)
+- Enables s16 extension proposal
+- Currently only used in extension list
+- Needs to be added to code that is allowing S16 in the sample
+  implementation (eg. absdiff).
+
+EXPERIMENTAL_PLATFORM_SUPPORTS_16_FLOAT (DISABLED)
+- defines a scalar type vx_float16, if platform supports it (otherwise,
+  no type is defined)
+  
+
+===================================================================
+2. AUTO configured either in the code or based on environment in build
+===================================================================
+The preprocessor definitions listed in this section are automatically
+enabled or disabled based on other options or environment settings.
+
+OPENVX_TILING_1_0 (ENABLED in code when OPENVX_USE_TILING is defined)
+- Sets the version of tiling spec
+
+OPENVX_USE_XML (AUTO-build)
+- Automatically enabled if $XML_PKG is defined in LINUX build
+  environment (usually export XML2_PKG=libxml-2.0 in Ubuntu after dev
+  version is installed), or libxml2 is installed on DARWIN.
+- If defined, (if $XML2_PKG is in env), the xml import/export
+  functions are compiled and the associated tests in the vx_tests exe
+  are compiled.
+
+OPENVX_USE_SDL (AUTO-build)
+- Automatically enabled if $SDL_PKG is defined in build environment
+- If defined, (if $SDL_PKG is in env), vx_cam_test is added to build,
+  otherwise, vx_cam_test is not built.
+
+
+OPENVX_USE_C99 (AUTO-code)
+- AUTO ENABLE on PLATFORM:
+  #if __STDC_VERSION__ >= 199901L
+  #define OPENVX_USE_C99
+  #endif
+- Only relevant in vx_matrix_access.c, for 2D f32 matrices.

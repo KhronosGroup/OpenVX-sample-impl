@@ -1,0 +1,7 @@
+Version: 0.4
+Maintainer: Erik Rainey<erik.rainey@gmail.com>
+Section: Libraries - Development (non-free)
+Priority: optional
+Tag: utils
+Pre-Depends: libc6
+Description: Khronos OpenVX Sample Implementation
