@@ -1,0 +1,31 @@
+language: c
+sudo: false
+dist: trusty
+
+os:
+  - linux
+
+compiler:
+  - gcc
+
+addons:
+    apt:
+        sources:
+            - ubuntu-toolchain-r-test
+        packages:
+            - lcov
+  
+branches:
+  - openvx_1.2
+
+before_script:
+
+script:
+  - python Build.py --os=Linux --arch=64 --conf=Release --ix --nn
+  - python Build.py --os=Linux --arch=64 --conf=Debug --ix --nn
+
+after_success:
+
+notifications:
+  email:
+    - kiritigowda@gmail.com
