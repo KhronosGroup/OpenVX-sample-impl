@@ -20,6 +20,8 @@ branches:
   - openvx_1.2
 
 before_script:
+  - git clone https://github.com/KhronosGroup/OpenVX-api-docs.git
+  - mv OpenVX-api-docs api-docs
 
 script:
   - python Build.py --os=Linux --arch=64 --conf=Release --ix --nn
