@@ -16,7 +16,7 @@ addons:
             - lcov
   
 branches:
-  - kg/build-verification
+  - kg/travis-build-verification
   - openvx_1.2
 
 before_script:
