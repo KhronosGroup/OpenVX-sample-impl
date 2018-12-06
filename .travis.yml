@@ -1,0 +1,34 @@
+language: c
+sudo: false
+dist: trusty
+
+os:
+  - linux
+
+compiler:
+  - gcc
+
+addons:
+    apt:
+        sources:
+            - ubuntu-toolchain-r-test
+        packages:
+            - lcov
+  
+branches:
+  - kg/travis-build-verification
+  - openvx_1.2
+
+before_script:
+  - git clone https://github.com/KhronosGroup/OpenVX-api-docs.git
+  - mv OpenVX-api-docs api-docs
+
+script:
+  - python Build.py --os=Linux --arch=64 --conf=Release --ix --nn
+  - python Build.py --os=Linux --arch=64 --conf=Debug --ix --nn
+
+after_success:
+
+notifications:
+  email:
+    - kiritigowda@gmail.com
