@@ -16,16 +16,22 @@ addons:
             - lcov
   
 branches:
-  - kg/travis-build-verification
   - openvx_1.2
 
 before_script:
-  - git clone https://github.com/KhronosGroup/OpenVX-api-docs.git
-  - mv OpenVX-api-docs api-docs
-
+  - git submodule sync --recursive
+  - git submodule update --init --recursive --remote
+   
 script:
   - python Build.py --os=Linux --arch=64 --conf=Release --ix --nn
   - python Build.py --os=Linux --arch=64 --conf=Debug --ix --nn
+  - export OPENVX_DIR=$(pwd)/install/Linux/x64/Debug
+  - export VX_TEST_DATA_PATH=$(pwd)/cts/test_data/
+  - mkdir build-cts
+  - cd build-cts
+  - cmake -DOPENVX_INCLUDES=$OPENVX_DIR/include -DOPENVX_LIBRARIES=$OPENVX_DIR/bin/libopenvx.so\;$OPENVX_DIR/bin/libvxu.so\;pthread\;dl\;m\;rt -DOPENVX_USE_NN=ON -DOPENVX_USE_IX=ON ../cts/
+  - cmake --build .  
+  - LD_LIBRARY_PATH=./lib ./bin/vx_test_conformance
 
 after_success:
 

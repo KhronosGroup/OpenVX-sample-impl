@@ -1,8 +1,8 @@
 [submodule "api-docs"]
 	path = api-docs
-	url = ../api-docs.git
-	branch = master
+	url = https://github.com/KhronosGroup/OpenVX-api-docs.git
+	branch = openvx_1.2 
 [submodule "cts"]
 	path = cts
-	url = ../cts.git
-	branch = master
+	url = https://github.com/KhronosGroup/OpenVX-cts.git
+	branch = openvx_1.2 
