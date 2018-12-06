@@ -17,7 +17,6 @@ addons:
   
 branches:
   - openvx_1.2
-  - kg/submodule-include
 
 before_script:
   - git submodule sync --recursive
