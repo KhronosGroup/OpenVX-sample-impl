@@ -1,4 +1,4 @@
-/* 
+/*
 
  * Copyright (c) 2012-2017 The Khronos Group Inc.
  *
@@ -158,6 +158,10 @@ static vx_status VX_CALLBACK vxRemapKernel(vx_node node, const vx_reference para
                         if (defined)
                         {
                             *dst = (vx_uint8)(a[0]*tl + a[2]*tr + a[1]*bl + a[3]*br);
+                        }
+                        else
+                        {
+                            *dst = 0;
                         }
                      }
                 }
