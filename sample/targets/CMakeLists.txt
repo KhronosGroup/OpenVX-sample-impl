@@ -16,4 +16,6 @@
 
 
 add_subdirectory( c_model )
-add_subdirectory( venum )
+if (EXPERIMENTAL_USE_VENUM)
+    add_subdirectory( venum )
+endif (EXPERIMENTAL_USE_VENUM)
