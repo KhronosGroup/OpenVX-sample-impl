@@ -818,6 +818,10 @@ enum vx_ext_target_type_e {
  * \ingroup group_int_target
  */
 enum vx_target_priority_e {
+    /*! \brief Defines the priority of the VENUM targets */
+#if defined(EXPERIMENTAL_USE_VENUM)
+    VX_TARGET_PRIORITY_VENUM,
+#endif
     /*! \brief Defines the priority of the C model target */
     VX_TARGET_PRIORITY_C_MODEL,
     /*! \brief Defines the maximum priority */

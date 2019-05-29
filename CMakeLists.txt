@@ -59,6 +59,7 @@ option( OPENVX_USE_TILING OFF )
 option( OPENVX_USE_XML OFF )
 option( EXPERIMENTAL_USE_DOT OFF )
 option( EXPERIMENTAL_PLATFORM_SUPPORTS_16_FLOAT OFF )
+option( EXPERIMENTAL_USE_VENUM OFF)
 
 if (UNIX OR ANDROID)
     add_definitions( -D_XOPEN_SOURCE=700 -D_GNU_SOURCE=1 )
@@ -104,6 +105,10 @@ if (EXPERIMENTAL_PLATFORM_SUPPORTS_16_FLOAT)
     add_definitions( -DEXPERIMENTAL_PLATFORM_SUPPORTS_16_FLOAT )
     message( "-- Experimental F16 extension")
 endif (EXPERIMENTAL_PLATFORM_SUPPORTS_16_FLOAT)
+if (EXPERIMENTAL_USE_VENUM)
+    add_definitions( -DEXPERIMENTAL_USE_VENUM )
+    message( "-- Experimental raspberrypi 3B+ neon extension")
+endif (EXPERIMENTAL_USE_VENUM)
 message( "" )
 
 

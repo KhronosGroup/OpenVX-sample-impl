@@ -33,7 +33,9 @@ else()
   if (TARGET_CPU STREQUAL "Atom")
     # architecture will be according to ATOM
     set(ARCH_BIT -m32 )
-  else ()
+  elseif (EXPERIMENTAL_USE_VENUM)
+    set(ARCH_BIT "-mfpu=neon")
+  elseif ()
     # need to force a more modern architecture than the degault m32 (i386).
     set(ARCH_BIT "-m32 -march=core2" )
   endif (TARGET_CPU STREQUAL "Atom")

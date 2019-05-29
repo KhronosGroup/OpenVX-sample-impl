@@ -23,6 +23,9 @@ const vx_char implementation[VX_MAX_IMPLEMENTATION_NAME] = "khronos.sample";
 
 vx_char targetModules[][VX_MAX_TARGET_NAME] = {
     "openvx-c_model",
+#if defined(EXPERIMENTAL_USE_VENUM)
+    "openvx-venum"
+#endif
 };
 
 const vx_char extensions[] =

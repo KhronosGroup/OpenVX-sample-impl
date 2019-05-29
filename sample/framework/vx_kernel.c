@@ -433,6 +433,10 @@ VX_API_ENTRY vx_kernel VX_API_CALL vxGetKernelByEnum(vx_context context, vx_enum
                     break;
                 }
             }
+            /* Acquire the highest priority target */
+            if (kernel != NULL) {
+                break;
+            }
         }
         if (kernel == NULL) {
             VX_PRINT(VX_ZONE_KERNEL, "Kernel enum %x not found.\n", kernelenum);
