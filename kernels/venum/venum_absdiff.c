@@ -29,14 +29,18 @@ vx_status vxAbsDiff(vx_image in1, vx_image in2, vx_image output)
     vx_df_image format, dst_format;
     vx_status status = VX_SUCCESS;
 
+    vx_map_id in1_map_id    = 0;
+    vx_map_id in2_map_id = 0;
+    vx_map_id output_map_id = 0;
+
     vxQueryImage(in1, VX_IMAGE_FORMAT, &format, sizeof(format));
     vxQueryImage(output, VX_IMAGE_FORMAT, &dst_format, sizeof(dst_format));
     status  = vxGetValidRegionImage(in1, &r_in1);
     status |= vxGetValidRegionImage(in2, &r_in2);
     vxFindOverlapRectangle(&r_in1, &r_in2, &rect);
-    status |= vxAccessImagePatch(in1, &rect, 0, &src_addr[0], (void **)&src_base[0],VX_READ_AND_WRITE);
-    status |= vxAccessImagePatch(in2, &rect, 0, &src_addr[1], (void **)&src_base[1],VX_READ_AND_WRITE);
-    status |= vxAccessImagePatch(output, &rect, 0, &dst_addr, (void **)&dst_base,VX_READ_AND_WRITE);
+    status |= vxMapImagePatch(in1, &rect, 0, &in1_map_id, &src_addr[0], (void**)&src_base[0], VX_READ_ONLY, VX_MEMORY_TYPE_HOST, VX_NOGAP_X);
+    status |= vxMapImagePatch(in2, &rect, 0, &in2_map_id, &src_addr[1], (void**)&src_base[1], VX_READ_ONLY, VX_MEMORY_TYPE_HOST, VX_NOGAP_X);
+    status |= vxMapImagePatch(output, &rect, 0, &output_map_id, &dst_addr, (void**)&dst_base, VX_READ_AND_WRITE, VX_MEMORY_TYPE_HOST, VX_NOGAP_X);
     height = src_addr[0].dim_y;
     width = src_addr[0].dim_x;
 
@@ -162,9 +166,9 @@ vx_status vxAbsDiff(vx_image in1, vx_image in2, vx_image output)
             break;
     }
 
-    status |= vxCommitImagePatch(in1, NULL, 0, &src_addr[0], src_base[0]);
-    status |= vxCommitImagePatch(in2, NULL, 0, &src_addr[1], src_base[1]);
-    status |= vxCommitImagePatch(output, &rect, 0, &dst_addr, dst_base);
+    status |= vxUnmapImagePatch(in1, in1_map_id);
+    status |= vxUnmapImagePatch(in2, in2_map_id);
+    status |= vxUnmapImagePatch(output, output_map_id);
 
     return status;
 }
