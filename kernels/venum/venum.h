@@ -54,6 +54,11 @@ extern "C" {
 #endif
 
 vx_status vxAbsDiff(vx_image in1, vx_image in2, vx_image output);
+vx_status vxThreshold(vx_image src_image, vx_threshold threshold, vx_image dst_image);
+vx_status vxPhase(vx_image grad_x, vx_image grad_y, vx_image output);
+vx_status vxNonLinearFilter(vx_scalar function, vx_image src, vx_matrix mask, vx_image dst, vx_border_t *border);
+vx_status vxConvertColor(vx_image src, vx_image dst);
+
 
 #ifdef __cplusplus
 }

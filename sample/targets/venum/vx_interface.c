@@ -33,6 +33,10 @@ static const vx_char name[VX_MAX_TARGET_NAME] = "khronos.venum";
 static vx_kernel_description_t *target_kernels[] =
 {
     &absdiff_kernel,
+    &threshold_kernel,
+    &phase_kernel,
+    &nonlinearfilter_kernel,
+    &colorconvert_kernel,
 };
 
 /*! \brief Declares the number of base supported kernels.

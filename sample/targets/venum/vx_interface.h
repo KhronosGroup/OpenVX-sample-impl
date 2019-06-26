@@ -22,6 +22,10 @@
 #include <VX/vx_helper.h>
 
 extern vx_kernel_description_t absdiff_kernel;
+extern vx_kernel_description_t threshold_kernel;
+extern vx_kernel_description_t phase_kernel;
+extern vx_kernel_description_t nonlinearfilter_kernel;
+extern vx_kernel_description_t colorconvert_kernel;
 
 #endif
 
