@@ -76,7 +76,6 @@ extern vx_kernel_description_t tensor_lut_kernel;
 extern vx_kernel_description_t tensor_multiply_kernel;
 extern vx_kernel_description_t tensor_add_kernel;
 extern vx_kernel_description_t tensor_subtract_kernel;
-extern vx_kernel_description_t not_kernel;
 extern vx_kernel_description_t accumulate_kernel;
 extern vx_kernel_description_t accumulate_weighted_kernel;
 extern vx_kernel_description_t accumulate_square_kernel;

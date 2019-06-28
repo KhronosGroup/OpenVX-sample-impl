@@ -49,9 +49,9 @@ vx_status vxMin(vx_image in0, vx_image in1, vx_image output)
     case VX_DF_IMAGE_U8:
         for (y = 0; y < height; y++)
         {
-            vx_uint8* src0p = (uint8_t *)src_base[0] + y * width;
-            vx_uint8* src1p = (uint8_t *)src_base[1] + y * width;
-            vx_uint8* dstp = (uint8_t *)dst_base + y * width;
+            vx_uint8* src0p = (vx_uint8 *)src_base[0] + y * width;
+            vx_uint8* src1p = (vx_uint8 *)src_base[1] + y * width;
+            vx_uint8* dstp = (vx_uint8 *)dst_base + y * width;
             for (x = 0; x < width; x+=16,src0p+=16,src1p+=16,dstp+=16)
             {
 
@@ -120,9 +120,9 @@ vx_status vxMax(vx_image in0, vx_image in1, vx_image output)
         wWidth = (width >> 4) << 4;
         for (y = 0; y < height; y++)
         {
-            vx_uint8* src0p = (uint8_t *)src_base[0] + y * src_addr[0].stride_y;
-            vx_uint8* src1p = (uint8_t *)src_base[1] + y * src_addr[1].stride_y;
-            vx_uint8* dstp = (uint8_t *)dst_base + y * dst_addr.stride_y;
+            vx_uint8* src0p = (vx_uint8 *)src_base[0] + y * src_addr[0].stride_y;
+            vx_uint8* src1p = (vx_uint8 *)src_base[1] + y * src_addr[1].stride_y;
+            vx_uint8* dstp = (vx_uint8 *)dst_base + y * dst_addr.stride_y;
             for (x = 0; x < wWidth; x += 16)
             {
                 uint8x16_t vsrc0 = vld1q_u8( src0p + x);
@@ -132,8 +132,8 @@ vx_status vxMax(vx_image in0, vx_image in1, vx_image output)
             }
             for (x = wWidth; x < width; x++)
             {
-                uint8_t val0 = *(src0p + x);
-                uint8_t val1 = *(src1p + x);
+                vx_uint8 val0 = *(src0p + x);
+                vx_uint8 val1 = *(src1p + x);
                 *(dstp + x) = val0 > val1 ? val0 : val1;
             }
         }

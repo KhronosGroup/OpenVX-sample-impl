@@ -139,6 +139,8 @@ void ElementwiseTensorOpImpl(enum ElementwiseTensorMathOp op, enum TensorCFmt fm
                              bool to_ne,  // true for to_ne, to_zero, otherwise (only usef for MUL)
                              void * output_ptr, tensor_desc_t output);
 
+vx_status TransposeTensorKernelImpl(vx_tensor in1, vx_scalar sc_dim1, vx_scalar sc_dim2, vx_tensor out, vx_size el_size);
+
 
 #ifdef __cplusplus
 }

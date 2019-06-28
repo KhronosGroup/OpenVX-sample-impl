@@ -383,8 +383,8 @@ static void calcMinMaxLocu8(vx_uint8 *src_base, vx_imagepatch_addressing_t *src_
     vx_uint8 sMaxVal = 0;
     vx_uint8 sMinVal = UINT8_MAX;
     vx_uint32 w16 = (src_addr->dim_x >> 4) << 4;
-    int64_t iMinVal = 0;
-    int64_t iMaxVal = 0;
+    vx_int64 iMinVal = 0;
+    vx_int64 iMaxVal = 0;
     vx_uint32 iMinCount = 0;
     vx_uint32 iMaxCount = 0;
     for (y = 0; y < src_addr->dim_y; y++)
@@ -482,7 +482,7 @@ static void calcMinMaxLocu8(vx_uint8 *src_base, vx_imagepatch_addressing_t *src_
     *pMaxCount = iMaxCount;
 }
 
-static void calcMinMaxLocs16(int16_t *src_base, vx_imagepatch_addressing_t *src_addr,
+static void calcMinMaxLocs16(vx_int16 *src_base, vx_imagepatch_addressing_t *src_addr,
                              vx_int64 *pMinVal, vx_int64 *pMaxVal,
                              vx_uint32 *pMinCount, vx_uint32 *pMaxCount,
                              vx_array minLoc, vx_array maxLoc)
@@ -490,11 +490,11 @@ static void calcMinMaxLocs16(int16_t *src_base, vx_imagepatch_addressing_t *src_
     vx_uint32 y, x;
     int16x8_t vMaxVal = vdupq_n_s16(INT16_MIN);
     int16x8_t vMinVal = vdupq_n_s16(INT16_MAX);
-    int16_t sMaxVal = INT16_MIN;
-    int16_t sMinVal = INT16_MAX;
+    vx_int16 sMaxVal = INT16_MIN;
+    vx_int16 sMinVal = INT16_MAX;
     vx_uint32 w16 = (src_addr->dim_x >> 4) << 4;
-    int64_t iMinVal = 0;
-    int64_t iMaxVal = 0;
+    vx_int64 iMinVal = 0;
+    vx_int64 iMaxVal = 0;
     vx_uint32 iMinCount = 0;
     vx_uint32 iMaxCount = 0;
     for (y = 0; y < src_addr->dim_y; y++)
@@ -502,7 +502,7 @@ static void calcMinMaxLocs16(int16_t *src_base, vx_imagepatch_addressing_t *src_
         vx_uint8 *ptr_src = (vx_uint8 *)src_base + y * src_addr->stride_y;
         for (x = 0; x < w16; x += 16)
         {
-            int16x8x2_t vSrc = vld2q_s16((int16_t *)(ptr_src + x * src_addr->stride_x));
+            int16x8x2_t vSrc = vld2q_s16((vx_int16 *)(ptr_src + x * src_addr->stride_x));
             int16x8_t vMinTmp = vminq_s16(vSrc.val[0], vSrc.val[1]);
             int16x8_t vMaxTmp = vmaxq_s16(vSrc.val[0], vSrc.val[1]);
 
@@ -512,8 +512,8 @@ static void calcMinMaxLocs16(int16_t *src_base, vx_imagepatch_addressing_t *src_
         for (x = w16; x < src_addr->dim_x; x++)
         {
             void *src = vxFormatImagePatchAddress2d(src_base, x, y, src_addr);
-            sMinVal = MIN(sMinVal, *(int16_t *)src);
-            sMaxVal = MAX(sMaxVal, *(int16_t *)src);
+            sMinVal = MIN(sMinVal, *(vx_int16 *)src);
+            sMaxVal = MAX(sMaxVal, *(vx_int16 *)src);
         }
     }
 
@@ -527,8 +527,8 @@ static void calcMinMaxLocs16(int16_t *src_base, vx_imagepatch_addressing_t *src_
     iMaxVal = MAX(vget_lane_s16(vMaxTmp, 0), sMaxVal);
 
     //calculate count and position
-    int16x8_t vMins16 = vdupq_n_s16((int16_t)iMinVal);
-    int16x8_t vMaxs16 = vdupq_n_s16((int16_t)iMaxVal);
+    int16x8_t vMins16 = vdupq_n_s16((vx_int16)iMinVal);
+    int16x8_t vMaxs16 = vdupq_n_s16((vx_int16)iMaxVal);
     uint32x4_t vMinCnt = vdupq_n_u32(0);
     uint32x4_t vMaxCnt = vdupq_n_u32(0);
     int16x8_t vZero = vdupq_n_s16(0);
@@ -539,7 +539,7 @@ static void calcMinMaxLocs16(int16_t *src_base, vx_imagepatch_addressing_t *src_
         vx_uint8 *ptr_src = (vx_uint8 *)src_base + y * src_addr->stride_y;
         for (x = 0; x < w8; x += 8)
         {
-            int16x8_t vSrc = vld1q_s16((int16_t *)(ptr_src + x * src_addr->stride_x));
+            int16x8_t vSrc = vld1q_s16((vx_int16 *)(ptr_src + x * src_addr->stride_x));
             uint16x8_t vMinPred = vceqq_s16(vSrc, vMins16);
             uint16x8_t vMaxPred = vceqq_s16(vSrc, vMaxs16);
 
@@ -561,13 +561,13 @@ static void calcMinMaxLocs16(int16_t *src_base, vx_imagepatch_addressing_t *src_
             vx_coordinates2d_t loc;
             loc.y = y;
             loc.x = x;
-            if (*(int16_t *)src == iMinVal)
+            if (*(vx_int16 *)src == iMinVal)
             {
                 iMinCount += 1;
                 vxAddArrayItems(minLoc, 1, &loc, sizeof(loc));
             }
 
-            if (*(int16_t *)src == iMaxVal)
+            if (*(vx_int16 *)src == iMaxVal)
             {
                 iMaxCount += 1;
                 vxAddArrayItems(maxLoc, 1, &loc, sizeof(loc));
@@ -617,7 +617,7 @@ vx_status vxMinMaxLoc(vx_image input, vx_scalar minVal, vx_scalar maxVal, vx_arr
     }
     else if (format == VX_DF_IMAGE_S16)
     {
-        calcMinMaxLocs16((int16_t *)src_base, &src_addr, &iMinVal, &iMaxVal,
+        calcMinMaxLocs16((vx_int16 *)src_base, &src_addr, &iMinVal, &iMaxVal,
                          &iMinCount, &iMaxCount, minLoc, maxLoc);
     }
 
