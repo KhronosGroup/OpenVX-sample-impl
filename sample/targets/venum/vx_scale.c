@@ -223,12 +223,10 @@ static vx_status VX_CALLBACK vxScaleImageInitializer(vx_node node, const vx_refe
 #if AREA_SCALE_ENABLE
         gcd_w = math_gcd(w1, w2);
         gcd_h = math_gcd(h1, h2);
-        /* printf("%ux%u => %ux%u :: GCD_w %u GCD_h %u\n", w1,h1, w2,h2, gcd_w, gcd_h); */
         if (gcd_w != 0 && gcd_h != 0)
         {
             size = (w1 / gcd_w) * (w2 / gcd_w) * (h1 / gcd_h) * (h2 / gcd_h) * sizeof(vx_float64);
         }
-        /* printf("Requesting "VX_FMT_SIZE" bytes for resizer\n", size); */
 #else
         size = 1;
 #endif
@@ -260,15 +258,10 @@ vx_kernel_description_t scale_image_kernel =
 static vx_status VX_CALLBACK vxHalfscaleGaussianKernel(vx_node node, const vx_reference parameters[], vx_uint32 num)
 {
     vx_status status = VX_FAILURE;
-
     if (num == dimof(scale_kernel_params))
     {
-        /*vx_graph subgraph = ownGetChildGraphOfNode(node);
-        status = vxProcessGraph(subgraph);*/
-        //status = vxVerifyGraph(node->graph);
         status = VX_SUCCESS;
     }
-
     return status;
 }
 
@@ -368,35 +361,6 @@ static vx_status VX_CALLBACK vxHalfscaleGaussianOutputValidator(vx_node node, vx
     return status;
 }
 
-static const vx_uint32 gaussian5x5scale = 256;
-static const vx_int16 gaussian5x5[5][5] =
-{
-    {1,  4,  6,  4, 1},
-    {4, 16, 24, 16, 4},
-    {6, 24, 36, 24, 6},
-    {4, 16, 24, 16, 4},
-    {1,  4,  6,  4, 1}
-};
-
-static vx_convolution vxCreateGaussian5x5Convolution(vx_context context)
-{
-    vx_convolution conv = vxCreateConvolution(context, 5, 5);
-    vx_status status = vxCopyConvolutionCoefficients(conv, (vx_int16 *)gaussian5x5, VX_WRITE_ONLY, VX_MEMORY_TYPE_HOST);
-    if (status != VX_SUCCESS)
-    {
-        vxReleaseConvolution(&conv);
-        return NULL;
-    }
-
-    status = vxSetConvolutionAttribute(conv, VX_CONVOLUTION_SCALE, (void *)&gaussian5x5scale, sizeof(vx_uint32));
-    if (status != VX_SUCCESS)
-    {
-        vxReleaseConvolution(&conv);
-        return NULL;
-    }
-    return conv;
-}
-
 static vx_status VX_CALLBACK vxHalfscaleGaussianInitializer(vx_node node, const vx_reference parameters[], vx_uint32 num)
 {
     vx_status status = VX_ERROR_INVALID_PARAMETERS;
@@ -436,10 +400,6 @@ static vx_status VX_CALLBACK vxHalfscaleGaussianInitializer(vx_node node, const 
             else if (kernel_size == 5)
             {
                 vxGaussian5x5((vx_image)parameters[0], midImg, &borders);
-                /*vx_convolution convolution = 0;
-                convolution = vxCreateGaussian5x5Convolution(context);
-                vxConvolve((vx_image)parameters[0], convolution, midImg, &borders);
-                vxReleaseConvolution(&convolution);*/
             }
 
             vxScaleImage(midImg, (vx_image)parameters[1], stype, &borders, interm, sizek);

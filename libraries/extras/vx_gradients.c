@@ -1,4 +1,4 @@
-/* 
+/*
 
  * Copyright (c) 2012-2017 The Khronos Group Inc.
  *
@@ -15,17 +15,14 @@
  * limitations under the License.
  */
 
-/*!
- * \file
- * \brief The Gradient Kernels (Extras)
- * \author Erik Rainey <erik.rainey@gmail.com>
- */
-
 #include <stdio.h>
 #include <VX/vx.h>
 #include <VX/vx_lib_extras.h>
 #include <VX/vx_helper.h>
 
+#ifdef EXPERIMENTAL_USE_VENUM
+#include <arm_neon.h>
+#endif
 
 /* scharr 3x3 kernel implementation */
 static
@@ -36,6 +33,7 @@ vx_param_description_t scharr3x3_kernel_params[] =
     { VX_OUTPUT, VX_TYPE_IMAGE, VX_PARAMETER_STATE_OPTIONAL },
 };
 
+#ifndef EXPERIMENTAL_USE_VENUM
 static
 vx_status VX_CALLBACK ownScharr3x3Kernel(vx_node node, const vx_reference parameters[], vx_uint32 num)
 {
@@ -152,6 +150,180 @@ vx_status VX_CALLBACK ownScharr3x3Kernel(vx_node node, const vx_reference parame
 
     return status;
 } /* ownScharr3x3Kernel() */
+#else
+static
+vx_status VX_CALLBACK ownScharr3x3Kernel(vx_node node, const vx_reference parameters[], vx_uint32 num)
+{
+    vx_status status = VX_FAILURE;
+
+    if (NULL != node && NULL != parameters && num == dimof(scharr3x3_kernel_params))
+    {
+        vx_uint32 i;
+        vx_uint32 x;
+        vx_uint32 y;
+
+        vx_image src    = (vx_image)parameters[0];
+        vx_image grad_x = (vx_image)parameters[1];
+        vx_image grad_y = (vx_image)parameters[2];
+
+        vx_uint8* src_base   = NULL;
+        vx_int16* dst_base_x = NULL;
+        vx_int16* dst_base_y = NULL;
+
+        vx_imagepatch_addressing_t src_addr   = VX_IMAGEPATCH_ADDR_INIT;
+        vx_imagepatch_addressing_t dst_addr_x = VX_IMAGEPATCH_ADDR_INIT;
+        vx_imagepatch_addressing_t dst_addr_y = VX_IMAGEPATCH_ADDR_INIT;
+
+        vx_map_id src_map_id    = 0;
+        vx_map_id grad_x_map_id = 0;
+        vx_map_id grad_y_map_id = 0;
+
+        vx_int16 ops[] = { 3, 10, 3, -3, -10, -3 };
+        vx_rectangle_t rect;
+        vx_border_t borders = { VX_BORDER_UNDEFINED, {{ 0 }} };
+
+        if (NULL == src || (NULL == grad_x && NULL == grad_y))
+        {
+            return VX_ERROR_INVALID_PARAMETERS;
+        }
+
+        status = vxGetValidRegionImage(src, &rect);
+
+        status |= vxMapImagePatch(src, &rect, 0, &src_map_id, &src_addr, (void**)&src_base, VX_READ_ONLY, VX_MEMORY_TYPE_HOST, VX_NOGAP_X);
+
+        if (NULL != grad_x)
+            status |= vxMapImagePatch(grad_x, &rect, 0, &grad_x_map_id, &dst_addr_x, (void**)&dst_base_x, VX_WRITE_ONLY, VX_MEMORY_TYPE_HOST, VX_NOGAP_X);
+
+        if (NULL != grad_y)
+            status |= vxMapImagePatch(grad_y, &rect, 0, &grad_y_map_id, &dst_addr_y, (void**)&dst_base_y, VX_WRITE_ONLY, VX_MEMORY_TYPE_HOST, VX_NOGAP_X);
+
+        status |= vxQueryNode(node, VX_NODE_BORDER, &borders, sizeof(borders));
+
+        if (VX_SUCCESS == status)
+        {
+            /*! \todo Implement other border modes */
+            if (borders.mode == VX_BORDER_UNDEFINED)
+            {
+                /* shrink the image by 1 */
+                vxAlterRectangle(&rect, 1, 1, -1, -1);
+                vx_uint32 w8 = src_addr.dim_x & 0xFFFFFFF8;
+                int16x8_t vPrv[3], vCur[3], vNxt[3];
+
+                for (y = 1; y < (src_addr.dim_y - 1); y++)
+                {
+                    for (vx_uint8 idx = 0; idx < 3; idx++)
+                    {
+                        vPrv[idx] = vdupq_n_s16(0);
+                        uint16x8_t vTmp = vmovl_u8(vld1_u8(src_base + (y - 1 + idx) * src_addr.stride_y));
+                        vCur[idx] = vcombine_s16(vreinterpret_s16_u16(vget_low_u16(vTmp)),
+                                                 vreinterpret_s16_u16(vget_high_u16(vTmp)));
+                        vTmp = vmovl_u8(vld1_u8(src_base + (y - 1 + idx) * src_addr.stride_y + 8));
+                        vNxt[idx] = vcombine_s16(vreinterpret_s16_u16(vget_low_u16(vTmp)),
+                                                 vreinterpret_s16_u16(vget_high_u16(vTmp)));
+                    }
+                    vx_uint8 *ptr_dstx = (vx_uint8 *)dst_base_x + y * dst_addr_x.stride_y;
+                    vx_uint8 *ptr_dsty = (vx_uint8 *)dst_base_y + y * dst_addr_y.stride_y;
+                    for (x = 0; x < w8; x += 8)
+                    {
+                        int16x8_t vGdx0 = vextq_s16(vCur[0], vNxt[0], 1);
+                        int16x8_t vGdx1 = vextq_s16(vCur[1], vNxt[1], 1);
+                        int16x8_t vGdx2 = vextq_s16(vCur[2], vNxt[2], 1);
+                        int16x8_t vGdx3 = vextq_s16(vPrv[0], vCur[0], 7);
+                        int16x8_t vGdx4 = vextq_s16(vPrv[1], vCur[1], 7);
+                        int16x8_t vGdx5 = vextq_s16(vPrv[2], vCur[2], 7);
+
+                        int16x8_t vGdy0 = vGdx5;
+                        int16x8_t vGdy1 = vCur[2];
+                        int16x8_t vGdy2 = vGdx2;
+                        int16x8_t vGdy3 = vGdx3;
+                        int16x8_t vGdy4 = vCur[0];
+                        int16x8_t vGdy5 = vGdx0;
+
+                        int16x8_t vSum = vsubq_s16(vGdx1, vGdx4);
+                        vSum = vmulq_n_s16(vSum, 10);
+                        int16x8_t vTmpSum = vaddq_s16(vGdx0, vGdx2);
+                        vTmpSum = vsubq_s16(vTmpSum, vGdx3);
+                        vTmpSum = vsubq_s16(vTmpSum, vGdx5);
+                        vSum = vmlaq_n_s16(vSum, vTmpSum, 3);
+                        vst1q_s16((vx_int16 *)(ptr_dstx + x * dst_addr_x.stride_x), vSum);
+
+                        vSum = vsubq_s16(vGdy1, vGdy4);
+                        vSum = vmulq_n_s16(vSum, 10);
+                        vTmpSum = vaddq_s16(vGdy0, vGdy2);
+                        vTmpSum = vsubq_s16(vTmpSum, vGdy3);
+                        vTmpSum = vsubq_s16(vTmpSum, vGdy5);
+                        vSum = vmlaq_n_s16(vSum, vTmpSum, 3);
+                        vst1q_s16((vx_int16 *)(ptr_dsty + x * dst_addr_y.stride_x), vSum);
+
+                        for (vx_uint8 idx = 0; idx < 3; idx++)
+                        {
+                            vPrv[idx] = vCur[idx];
+                            vCur[idx] = vNxt[idx];
+                            uint16x8_t vTmp = vmovl_u8(vld1_u8(src_base + (y - 1 + idx) * src_addr.stride_y + (x + 16)));
+                            vNxt[idx] = vcombine_s16(vreinterpret_s16_u16(vget_low_u16(vTmp)),
+                                                     vreinterpret_s16_u16(vget_high_u16(vTmp)));
+                        }
+
+                    } // for x
+                    for (; x < (src_addr.dim_x - 1); x++)
+                    {
+                        vx_uint8* gdx[] =
+                        {
+                            vxFormatImagePatchAddress2d(src_base, x + 1, y - 1, &src_addr),
+                            vxFormatImagePatchAddress2d(src_base, x + 1, y,     &src_addr),
+                            vxFormatImagePatchAddress2d(src_base, x + 1, y + 1, &src_addr),
+                            vxFormatImagePatchAddress2d(src_base, x - 1, y - 1, &src_addr),
+                            vxFormatImagePatchAddress2d(src_base, x - 1, y,     &src_addr),
+                            vxFormatImagePatchAddress2d(src_base, x - 1, y + 1, &src_addr)
+                        };
+
+                        vx_uint8* gdy[] =
+                        {
+                            vxFormatImagePatchAddress2d(src_base, x - 1, y + 1, &src_addr),
+                            vxFormatImagePatchAddress2d(src_base, x,     y + 1, &src_addr),
+                            vxFormatImagePatchAddress2d(src_base, x + 1, y + 1, &src_addr),
+                            vxFormatImagePatchAddress2d(src_base, x - 1, y - 1, &src_addr),
+                            vxFormatImagePatchAddress2d(src_base, x,     y - 1, &src_addr),
+                            vxFormatImagePatchAddress2d(src_base, x + 1, y - 1, &src_addr)
+                        };
+
+                        vx_int16* out_x = vxFormatImagePatchAddress2d(dst_base_x, x, y, &dst_addr_x);
+                        vx_int16* out_y = vxFormatImagePatchAddress2d(dst_base_y, x, y, &dst_addr_y);
+
+                        if (out_x)
+                        {
+                            *out_x = 0;
+                            for (i = 0; i < dimof(gdx); i++)
+                                *out_x += (ops[i] * gdx[i][0]);
+                        }
+
+                        if (out_y)
+                        {
+                            *out_y = 0;
+                            for (i = 0; i < dimof(gdy); i++)
+                                *out_y += (ops[i] * gdy[i][0]);
+                        }
+                    }
+                } // for y
+            } // VX_BORDER_UNDEFINED
+            else
+            {
+                status = VX_ERROR_NOT_IMPLEMENTED;
+            }
+        }
+
+        status |= vxUnmapImagePatch(src, src_map_id);
+
+        if (NULL != grad_x)
+            status |= vxUnmapImagePatch(grad_x, grad_x_map_id);
+
+        if (NULL != grad_y)
+            status |= vxUnmapImagePatch(grad_y, grad_y_map_id);
+    } /* if ptrs non NULL */
+
+    return status;
+} /* ownScharr3x3Kernel() */
+#endif
 
 static
 vx_status VX_CALLBACK set_scharr3x3_valid_rectangle(
@@ -191,7 +363,6 @@ vx_status VX_CALLBACK own_scharr3x3_validator(
     const vx_reference parameters[], vx_uint32 num, vx_meta_format metas[])
 {
     vx_status status = VX_ERROR_INVALID_PARAMETERS;
-    (void)parameters;
 
     if (NULL != node &&
         num == dimof(scharr3x3_kernel_params) &&
@@ -566,7 +737,6 @@ vx_status VX_CALLBACK own_sobelMxN_validator(
     const vx_reference parameters[], vx_uint32 num, vx_meta_format metas[])
 {
     vx_status status = VX_ERROR_INVALID_PARAMETERS;
-    (void)parameters;
 
     if (NULL != node &&
         num == dimof(sobelMxN_kernel_params) &&

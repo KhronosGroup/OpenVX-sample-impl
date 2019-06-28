@@ -61,6 +61,26 @@ extern vx_kernel_description_t hogfeatures_kernel;
 extern vx_kernel_description_t nonmaxsuppression_kernel;
 extern vx_kernel_description_t houghlinesp_kernel;
 extern vx_kernel_description_t max_kernel;
+extern vx_kernel_description_t harris_kernel;
+extern vx_kernel_description_t channelcombine_kernel;
+extern vx_kernel_description_t convolution_kernel;
+extern vx_kernel_description_t remap_kernel;
+extern vx_kernel_description_t fast9_kernel;
+extern vx_kernel_description_t minmaxloc_kernel;
+extern vx_kernel_description_t optpyrlk_kernel;
+extern vx_kernel_description_t bilateral_filter_kernel;
+extern vx_kernel_description_t lbp_kernel;
+extern vx_kernel_description_t lut_kernel;
+extern vx_kernel_description_t halfscale_gaussian_kernel;
+extern vx_kernel_description_t tensor_lut_kernel;
+extern vx_kernel_description_t tensor_multiply_kernel;
+extern vx_kernel_description_t tensor_add_kernel;
+extern vx_kernel_description_t tensor_subtract_kernel;
+extern vx_kernel_description_t not_kernel;
+extern vx_kernel_description_t accumulate_kernel;
+extern vx_kernel_description_t accumulate_weighted_kernel;
+extern vx_kernel_description_t accumulate_square_kernel;
+extern vx_kernel_description_t laplacian_reconstruct_kernel;
 
 #endif
 

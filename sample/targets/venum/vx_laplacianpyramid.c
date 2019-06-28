@@ -143,7 +143,7 @@ static vx_status xLaplacianPyramidupsampleImage(vx_context context, vx_uint32 wi
     status = vxGetValidRegionImage(filling, &filling_rect);
     status |= vxMapImagePatch(filling, &filling_rect, 0, &filling_map_id, &filling_addr, (void **)&filling_base, VX_READ_AND_WRITE, VX_MEMORY_TYPE_HOST, 0);
     
-    for (int iy = 0; iy < height; iy++)
+    for (vx_int32 iy = 0; iy < height; iy++)
     {
         vx_uint8 *tmp_datap =  (vx_uint8 *)tmp_base + iy * width;
         vx_uint8  *ptr_src = (vx_uint8 *)filling_base + (iy >> 1) * (width >> 1);
@@ -154,7 +154,7 @@ static vx_status xLaplacianPyramidupsampleImage(vx_context context, vx_uint32 wi
         }
         else
         {
-            for (int ix = 0; ix < width; ix++)
+            for (vx_int32 ix = 0; ix < width; ix++)
             {
                 if (ix % 2 != 0 || iy % 2 !=0)
                 {
@@ -186,10 +186,10 @@ static vx_status xLaplacianPyramidupsampleImage(vx_context context, vx_uint32 wi
      vx_uint32 w8 = width >= 7 ? width - 7 : 0;
      int16x8_t sh = vdupq_n_s16(2);
 
-     for (int iy = 0; iy < height; iy++)
+     for (vx_int32 iy = 0; iy < height; iy++)
      {
         vx_int16* upsample_p = (vx_int16 *)upsample_base + iy * width;
-        int ix=0;
+        vx_int32 ix=0;
 
         for (ix =0; ix < w8; ix+=8, upsample_p+=8)
         {

@@ -90,13 +90,54 @@ vx_status vxMeanStdDev(vx_image input, vx_scalar mean, vx_scalar stddev);
 vx_status vxMin(vx_image in0, vx_image in1, vx_image output);
 vx_status vxMax(vx_image in0, vx_image in1, vx_image output);
 vx_status vxMatchTemplate(vx_image src, vx_image template_image, vx_scalar matchingMethod, vx_image output);
+vx_status vxChannelCombine(vx_image inputs[4], vx_image output);
+vx_status vxConvolve(vx_image src, vx_convolution conv, vx_image dst, vx_border_t *bordermode);
+vx_status vxFast9Corners(vx_image src, vx_scalar sens, vx_scalar nonm, vx_array points, vx_scalar num_corners, vx_border_t *bordermode);
+vx_status vxMinMaxLoc(vx_image input, vx_scalar minVal, vx_scalar maxVal, vx_array minLoc, vx_array maxLoc, vx_scalar minCount, vx_scalar maxCount);
+vx_status vxAccumulate(vx_image input, vx_image accum);
+vx_status vxLaplacianReconstruct(vx_pyramid pyramid, vx_image src, vx_image dst);
+vx_status vxAccumulateWeighted(vx_image input, vx_scalar scalar, vx_image accum);
+vx_status vxAccumulateSquare(vx_image input, vx_scalar scalar, vx_image accum);
+vx_status vxBilateralFilter(void* src, vx_size* src_strides, vx_size* dims, vx_size num_of_dims,
+                            vx_int32 diameter, vx_float32 sigmaSpace, vx_float32 sigmaValues,
+                            void* dst, vx_size* dst_strides, vx_enum type);
+vx_status vxLBP(vx_image src, vx_scalar sformat, vx_scalar ksize, vx_image dst);
+vx_status vxTableLookup(vx_image src, vx_lut lut, vx_image dst);
+vx_status vxTensorTableLookup(void* src, vx_size* src_strides, vx_size* dims, vx_size num_of_dims, void* lut, vx_size lut_size,
+                              vx_uint32 lut_offset, void* dst, vx_size* dst_strides, vx_enum type);
 
-void Multiply2DMatrixesImpl(
-        const void* src1, const vx_size* src1_strides, const vx_size* dims1,
-        const void* src2, const vx_size* src2_strides, const vx_size* dims2,
-        const void* src3, const vx_size* src3_strides,
-        void* dst, const vx_size* dst_strides,
-        vx_enum type);
+void Multiply2DMatrixesImpl(const void* src1, const vx_size* src1_strides, const vx_size* dims1,
+                            const void* src2, const vx_size* src2_strides, const vx_size* dims2,
+                            const void* src3, const vx_size* src3_strides,
+                            void* dst, const vx_size* dst_strides, vx_enum type);
+
+
+typedef struct 
+{
+    size_t dim_num;
+    const size_t * dims;
+    const size_t * strides;
+}tensor_desc_t;
+
+enum ElementwiseTensorMathOp
+{
+    ELEMENTWISE_TENSOR_ADD,
+    ELEMENTWISE_TENSOR_SUB,
+    ELEMENTWISE_TENSOR_MUL,
+};
+
+enum TensorCFmt
+{
+    TENSOR_C_FMT_Q78,
+    TENSOR_C_FMT_U8,
+    TENSOR_C_FMT_S8,
+};
+
+void ElementwiseTensorOpImpl(enum ElementwiseTensorMathOp op, enum TensorCFmt fmt, const void * input0_ptr, tensor_desc_t input0,
+                             const void * input1_ptr, tensor_desc_t input1, float scale, 
+                             bool wrap,  // true for wrap, sat otherwise
+                             bool to_ne,  // true for to_ne, to_zero, otherwise (only usef for MUL)
+                             void * output_ptr, tensor_desc_t output);
 
 
 #ifdef __cplusplus
