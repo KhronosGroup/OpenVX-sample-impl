@@ -314,7 +314,9 @@ vx_status vxEqualizeHist(vx_image src, vx_image dst)
         {
             const vx_uint8 * src_ptr = (vx_uint8 *)src_base + y * src_addr.stride_y;
             vx_uint8 * dst_ptr = (vx_uint8 *)dst_base + y * dst_addr.stride_y;
-            for (x = 0; x < src_addr.dim_x; x += 8)
+            vx_int32 roiw8 = src_addr.dim_x >= 7 ? src_addr.dim_x - 7 : 0;
+            x = 0;
+            for (; x < roiw8; x += 8)
             {
                 dst_ptr[x] = eqHist[src_ptr[x]];
                 dst_ptr[x + 1] = eqHist[src_ptr[x + 1]];
@@ -324,6 +326,10 @@ vx_status vxEqualizeHist(vx_image src, vx_image dst)
                 dst_ptr[x + 5] = eqHist[src_ptr[x + 5]];
                 dst_ptr[x + 6] = eqHist[src_ptr[x + 6]];
                 dst_ptr[x + 7] = eqHist[src_ptr[x + 7]];
+            }
+            for (; x < src_addr.dim_x; x++)
+            {
+                dst_ptr[x] = eqHist[src_ptr[x]];
             }
         }
     }

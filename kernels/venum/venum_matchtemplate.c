@@ -241,7 +241,7 @@ vx_status vxMatchTemplateEntry(const vx_image source_image,
     vx_int32 templBufSize = 0, imgBufSize = 0,
              sumBufSize = 0, sqsumBufSize = 0, resNumBufSize = 0, resDenomBufSize = 0;
     vx_int32 i;
-    char *buffer = (char *) pBuffer;
+    vx_int8 *buffer = (vx_int8 *) pBuffer;
 
     if( !pBuffer )
         return VX_FAILURE;

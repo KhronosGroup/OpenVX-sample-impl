@@ -190,6 +190,53 @@ vx_status vxMultiply(vx_image in0, vx_image in1, vx_scalar scale_param, vx_scala
                 }
             }
         }
+        for (; x < dst_addr.dim_x; x++)
+        {
+            void *src0p = vxFormatImagePatchAddress2d(src_base[0], x, y, &src_addr[0]);
+            void *src1p = vxFormatImagePatchAddress2d(src_base[1], x, y, &src_addr[1]);
+            void *dstp = vxFormatImagePatchAddress2d(dst_base, x, y, &dst_addr);
+            
+            vx_int32 src0 = in0_format == VX_DF_IMAGE_U8 ? *(vx_uint8 *)src0p : *(vx_int16 *)src0p;
+            vx_int32 src1 = in1_format == VX_DF_IMAGE_U8 ? *(vx_uint8 *)src1p : *(vx_int16 *)src1p;
+            vx_int32 unscaled_unconverted_result = src0 * src1;
+
+            vx_float64 unscaled_result = (vx_float64)unscaled_unconverted_result;
+            vx_float64 scaled_result = scale * unscaled_result;
+
+            vx_int32 int_typed_result = (vx_int32)scaled_result;
+            vx_int32 final_result_value;
+            if (overflow_policy == VX_CONVERT_POLICY_SATURATE)
+            {
+                if (out_format == VX_DF_IMAGE_U8)
+                {
+                    if (int_typed_result > UINT8_MAX)
+                        final_result_value = UINT8_MAX;
+                    else if (int_typed_result < 0)
+                        final_result_value = 0;
+                    else
+                        final_result_value = int_typed_result;
+                }
+                else /* Already verified to be VX_DF_IMAGE_S16 */
+                {
+                    if (int_typed_result > INT16_MAX)
+                        final_result_value = INT16_MAX;
+                    else if (int_typed_result < INT16_MIN)
+                        final_result_value = INT16_MIN;
+                    else
+                        final_result_value = int_typed_result;
+                }
+            }
+            else
+            {
+                final_result_value = (out_format == VX_DF_IMAGE_U8) ?
+                    (vx_uint8)int_typed_result : (vx_int16)int_typed_result;
+            }
+
+            if (out_format == VX_DF_IMAGE_U8)
+              *(vx_uint8 *)dstp = (vx_uint8)final_result_value;
+            else
+              *(vx_int16 *)dstp = (vx_int16)final_result_value;
+        }
     }
     status |= vxUnmapImagePatch(in0, map_id_0);
     status |= vxUnmapImagePatch(in1, map_id_1);

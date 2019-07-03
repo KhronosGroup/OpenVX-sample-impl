@@ -17,7 +17,7 @@
 #include <venum.h>
 #include <arm_neon.h>
 
-static inline void vxAcc(uint8_t * input, int16_t * accum)
+static inline void vxAcc(vx_uint8 * input, vx_int16 * accum)
 {
     uint8x16_t ta1 = vld1q_u8(input);
     int16x8_t  ta2 = vld1q_s16(accum);
@@ -50,14 +50,24 @@ vx_status vxAccumulate(vx_image input, vx_image accum)
     height = src_addr.dim_y;
     for (y = 0; y < height; y++)
     {
-        vx_uint8* srcp = (uint8_t *)src_base + y * width;
+        vx_uint8* srcp = (vx_uint8 *)src_base + y * width;
         vx_int16* dstp = (vx_int16 *)dst_base + y * width;
-
-        for (x = 0; x < width; x+=16)
+        vx_int32 roiw16 = width >= 15 ? width - 15 : 0;
+        x = 0;
+        for (; x < roiw16; x+=16)
         {
             vxAcc(srcp,dstp);
             srcp += 16;
             dstp += 16;
+        }
+        for (; x < width; x++)
+        {
+            vx_uint8 *srcp = vxFormatImagePatchAddress2d(src_base, x, y, &src_addr);
+            vx_int16 *dstp = vxFormatImagePatchAddress2d(dst_base, x, y, &dst_addr);
+            vx_int32 res = ((vx_int32)(*dstp)) + (vx_int32)(*srcp);
+            if (res > INT16_MAX)
+                res = INT16_MAX;
+            *dstp = (vx_int16)(res);
         }
     }
     status |= vxUnmapImagePatch(input, map_id);
@@ -106,7 +116,7 @@ static inline float32x4x4_t vxVectorAccumulateWeighted(const float32x4x4_t *vect
     return vector_output;
 }
 
-static inline void vxAccWe(uint8_t*  input, uint8_t*  accum, const float32x4_t scale_val, const float32x4_t scale_val2)
+static inline void vxAccWe(vx_uint8*  input, vx_uint8*  accum, const float32x4_t scale_val, const float32x4_t scale_val2)
 {
     uint8x16_t input_buffer = vld1q_u8(input);
     uint8x16_t accum_buffer = vld1q_u8(accum);
@@ -147,14 +157,22 @@ vx_status vxAccumulateWeighted(vx_image input, vx_scalar scalar, vx_image accum)
 
     for (y = 0; y < height; y++)
     {
-        uint8_t* srcp = (uint8_t *)src_base + y * width;
-        uint8_t* dstp = (uint8_t *)dst_base + y * width;
+        vx_uint8* srcp = (vx_uint8 *)src_base + y * width;
+        vx_uint8* dstp = (vx_uint8 *)dst_base + y * width;
 
-        for (x = 0; x < width; x+=16)
+        vx_int32 roiw16 = width >= 15 ? width - 15 : 0;
+        x = 0;
+        for (; x < roiw16; x+=16)
         {
             vxAccWe(srcp, dstp, scale_val, scale_val2);
             srcp+=16;
             dstp+=16;
+        }
+        for (; x < width; x++)
+        {
+            vx_uint8 *srcp = vxFormatImagePatchAddress2d(src_base, x, y, &src_addr);
+            vx_uint8 *dstp = vxFormatImagePatchAddress2d(dst_base, x, y, &dst_addr);
+            *dstp = (vx_uint8)(((1 - alpha) * (*dstp)) + ((alpha) * (vx_uint16)(*srcp)));
         }
     }
     status |= vxUnmapImagePatch(input, map_id);
@@ -162,14 +180,14 @@ vx_status vxAccumulateWeighted(vx_image input, vx_scalar scalar, vx_image accum)
 
     return status;
 }
-static inline void vxAccSq(uint8_t *input, uint32_t shift, int16_t *accum)
+static inline void vxAccSq(vx_uint8 *input, vx_uint32 shift, vx_int16 *accum)
 {
-    uint16x8_t max_int_u16 = vdupq_n_u16((uint16_t)(INT16_MAX));
+    uint16x8_t max_int_u16 = vdupq_n_u16((vx_uint16)(INT16_MAX));
     const uint8x16_t ta1 = vld1q_u8(input);
     uint16x8_t       ta2 = vreinterpretq_u16_s16(vld1q_s16(accum));
     uint16x8_t       ta3 = vreinterpretq_u16_s16(vld1q_s16(accum + 8));
 
-    const int16x8_t vector_shift = vdupq_n_s16(-(int16_t)shift);
+    const int16x8_t vector_shift = vdupq_n_s16(-(vx_int16)shift);
 
     uint16x8_t linput = vmovl_u8(vget_low_u8(ta1));
     uint16x8_t hinput = vmovl_u8(vget_high_u8(ta1));
@@ -210,11 +228,23 @@ vx_status vxAccumulateSquare(vx_image input, vx_scalar scalar, vx_image accum)
     {
         vx_uint8* srcp = (vx_uint8 *)src_base + y * width;
         vx_int16 *dstp = (vx_int16 *)dst_base + y * width;
-        for (x = 0; x < width; x+=16)
+        vx_int32 roiw16 = width >= 15 ? width - 15 : 0;
+        x = 0;
+        for (; x < width; x+=16)
         {
             vxAccSq(srcp, shift, dstp);
             srcp += 16;
             dstp += 16;
+        }
+        for (; x < width; x++)
+        {
+            vx_uint8 *srcp = vxFormatImagePatchAddress2d(src_base, x, y, &src_addr);
+            vx_int16 *dstp = vxFormatImagePatchAddress2d(dst_base, x, y, &dst_addr);
+            vx_int32 res = ((vx_int32)(*srcp) * (vx_int32)(*srcp));
+            res = ((vx_uint32)*dstp) + (res >> shift);
+            if (res > INT16_MAX) // saturate to S16
+                res = INT16_MAX;
+            *dstp = (vx_int16)(res);
         }
     }
     status |= vxUnmapImagePatch(input, map_id);

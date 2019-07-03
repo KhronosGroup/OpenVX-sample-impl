@@ -17,7 +17,6 @@
 
 #include <venum.h>
 #include <arm_neon.h>
-#include <stdio.h>
 
 // nodeless version of the And kernel
 vx_status vxAnd(vx_image in1, vx_image in2, vx_image output)
@@ -176,7 +175,7 @@ vx_status vxXor(vx_image in1, vx_image in2, vx_image output)
     return status;
 }
 
-static inline void vxbitwiseNot(const uint8_t * input, uint8_t * output)
+static inline void vxbitwiseNot(const vx_uint8 * input, vx_uint8 * output)
 {
     const uint8x16_t val0 = vld1q_u8(input);
 
@@ -204,11 +203,20 @@ vx_status vxNot(vx_image input, vx_image output)
         vx_uint8* srcp = (vx_uint8 *)src_base + y * width;
         vx_uint8* dstp = (vx_uint8 *)dst_base + y * width;
 
-        for (x = 0; x < width; x+=16)
+        vx_int32 roiw16 = width >= 15 ? width - 15 : 0;
+        x = 0;
+        for (; x < roiw16; x+=16)
         {
             vxbitwiseNot(srcp, dstp);
             srcp+=16;
             dstp+=16;
+        }
+        for (; x < width; x++)
+        {
+            vx_uint8 *src = vxFormatImagePatchAddress2d(src_base, x, y, &src_addr);
+            vx_uint8 *dst = vxFormatImagePatchAddress2d(dst_base, x, y, &dst_addr);
+
+            *dst = ~*src;
         }
     }
     status |= vxUnmapImagePatch(input, map_id);

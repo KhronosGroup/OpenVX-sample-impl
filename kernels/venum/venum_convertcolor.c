@@ -212,7 +212,7 @@ static void yuv2rgb_bt601_neon(vx_uint8 **y, vx_uint8 cb, vx_uint8 cr,
     int32x4_t ig32x4 = vcvtq_s32_f32(fg32x4);
     int32x4_t ib32x4 = vcvtq_s32_f32(fb32x4);
 
-    int32_t arr32[12]; 
+    vx_int32 arr32[12]; 
     vst1q_s32(arr32,  ir32x4);
     vst1q_s32(arr32+4, ig32x4);
     vst1q_s32(arr32+8, ib32x4);
@@ -260,7 +260,7 @@ static void yuv2rgb_bt709_neon(vx_uint8 **y, vx_uint8 cb, vx_uint8 cr,
     int32x4_t ig32x4 = vcvtq_s32_f32(fg32x4);
     int32x4_t ib32x4 = vcvtq_s32_f32(fb32x4);
 
-    int32_t arr32[12]; 
+    vx_int32 arr32[12]; 
     vst1q_s32(arr32, ir32x4);
     vst1q_s32(arr32 + 4, ig32x4);
     vst1q_s32(arr32+8, ib32x4);
@@ -308,7 +308,7 @@ static void yuv2yuv_601to709_neon(vx_uint8 *y0, vx_uint8 *cb0, vx_uint8 *cr0,
     int32x4_t icb32x4 = vcvtq_s32_f32(fcb132x4); 
     int32x4_t icr32x4 = vcvtq_s32_f32(fcr132x4); 
 
-    int32_t arr32[12]; 
+    vx_int32 arr32[12]; 
     vst1q_s32(arr32,  iy32x4);
     vst1q_s32(arr32+4, icb32x4);
     vst1q_s32(arr32+8, icr32x4);
@@ -432,8 +432,8 @@ vx_status vxConvertColor(vx_image src, vx_image dst)
     status |= vxQueryImage(src, VX_IMAGE_SPACE, &src_space, sizeof(src_space));
     status = vxGetValidRegionImage(src, &rect);
 
-    vx_map_id map_id[4] = {0, 0, 0, 0};
-    vx_map_id result_map_id[4] = {0, 0, 0, 0};
+	vx_map_id map_id[4] = {0, 0, 0, 0};
+	vx_map_id result_map_id[4] = {0, 0, 0, 0};
     for (p = 0; p < src_planes; p++)
     {
         status |= vxMapImagePatch(src, &rect, p, &map_id[p], &src_addr[p], &src_base[p], VX_READ_ONLY, VX_MEMORY_TYPE_HOST, 0);
@@ -1544,3 +1544,4 @@ vx_status vxConvertColor(vx_image src, vx_image dst)
 
     return status;
 }
+

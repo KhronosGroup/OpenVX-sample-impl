@@ -104,10 +104,10 @@ vx_status TransposeTensorKernelImpl(vx_tensor in1, vx_scalar sc_dim1, vx_scalar 
                     }
                     for (; x < width; ++x)
                     {
-                        uint16_t row0 = *(src + (0 + y) * width + x);
-                        uint16_t row1 = *(src + (1 + y) * width + x);
-                        uint16_t row2 = *(src + (2 + y) * width + x);
-                        uint16_t row3 = *(src + (3 + y) * width + x);
+                        vx_uint16 row0 = *(src + (0 + y) * width + x);
+                        vx_uint16 row1 = *(src + (1 + y) * width + x);
+                        vx_uint16 row2 = *(src + (2 + y) * width + x);
+                        vx_uint16 row3 = *(src + (3 + y) * width + x);
 
                         uint16x4_t result = vdup_n_u16(0);
                         result = vset_lane_u16(row0, result, 0);
