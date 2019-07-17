@@ -818,6 +818,10 @@ enum vx_ext_target_type_e {
  * \ingroup group_int_target
  */
 enum vx_target_priority_e {
+#if defined(OPENVX_USE_TILING)
+    /*! \brief Defines the priority of the TILING Target */
+    VX_TARGET_PRIORITY_TILING,
+#endif
     /*! \brief Defines the priority of the C model target */
     VX_TARGET_PRIORITY_C_MODEL,
     /*! \brief Defines the maximum priority */

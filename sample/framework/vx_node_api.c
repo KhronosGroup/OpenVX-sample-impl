@@ -258,10 +258,18 @@ VX_API_ENTRY vx_node VX_API_CALL vxBox3x3Node(vx_graph graph, vx_image input, vx
         (vx_reference)input,
         (vx_reference)output,
     };
+
+#if defined(OPENVX_USE_TILING)
+    return vxCreateNodeByStructure(graph,
+        VX_KERNEL_BOX_3x3_TILING,
+        params,
+        dimof(params));
+#else
     return vxCreateNodeByStructure(graph,
                                    VX_KERNEL_BOX_3x3,
                                    params,
                                    dimof(params));
+#endif
 }
 
 VX_API_ENTRY vx_node VX_API_CALL vxGaussian3x3Node(vx_graph graph, vx_image input, vx_image output)

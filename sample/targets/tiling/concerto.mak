@@ -1,5 +1,6 @@
-#
-# Copyright (c) 2011-2018 The Khronos Group Inc.
+# 
+
+# Copyright (c) 2012-2017 The Khronos Group Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,8 +16,16 @@
 #
 
 
-add_subdirectory( c_model )
-if (OPENVX_USE_TILING)
-    add_subdirectory( tiling )
-endif (OPENVX_USE_TILING)
+include $(PRELUDE)
+TARGET := openvx-c_model
+TARGETTYPE := dsmo
+DEFFILE := openvx-target.def
+CSOURCES = $(call all-c-files)
+IDIRS += $(HOST_ROOT)/$(OPENVX_SRC)/include \
+         $(HOST_ROOT)/kernels/c_model \
+         $(HOST_ROOT)/debug \
+         $(HOST_ROOT)/utils
+SHARED_LIBS := openvx vxu
+STATIC_LIBS := openvx-debug-lib openvx-extras-lib openvx-helper openvx-c_model-lib
+include $(FINALE)
 

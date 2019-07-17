@@ -22,6 +22,9 @@
 const vx_char implementation[VX_MAX_IMPLEMENTATION_NAME] = "khronos.sample";
 
 vx_char targetModules[][VX_MAX_TARGET_NAME] = {
+#if defined(OPENVX_USE_TILING)
+    "openvx-tiling",
+#endif
     "openvx-c_model",
 };
 
