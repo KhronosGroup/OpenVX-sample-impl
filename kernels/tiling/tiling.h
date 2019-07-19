@@ -17,4 +17,5 @@
 
 #include <VX/vx_khr_tiling.h>
 
-void box3x3_image_tiling(void * parameters[], void * tile_memory, vx_size tile_memory_size);
+void box3x3_image_tiling_fast(void * parameters[], void * tile_memory, vx_size tile_memory_size);
+void box3x3_image_tiling_flexible(void * parameters[], void * tile_memory, vx_size tile_memory_size);

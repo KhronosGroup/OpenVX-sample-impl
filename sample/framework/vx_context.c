@@ -23,23 +23,44 @@ const vx_char implementation[VX_MAX_IMPLEMENTATION_NAME] = "khronos.sample";
 
 vx_char targetModules[][VX_MAX_TARGET_NAME] = {
 #if defined(OPENVX_USE_TILING)
-    "openvx-tiling",
+    "openvx-tiling_chaining",
 #endif
     "openvx-c_model",
+#if defined(EXPERIMENTAL_USE_VENUM)
+    "openvx-venum",
+#endif
+#if defined(EXPERIMENTAL_USE_OPENCL)
+    "openvx-opencl",
+#endif
+#if defined(EXPERIMENTAL_USE_OPENMP)
+    "openvx-openmp"
+#endif
 };
 
 const vx_char extensions[] =
 #if defined(OPENVX_USE_TILING)
     OPENVX_KHR_TILING" "
 #endif
-#if defined(OPENVX_USE_XML)
+#if defined(EXPERIMENTAL_USE_XML)
     OPENVX_KHR_XML" "
+#endif
+#if defined(EXPERIMENTAL_USE_OPENCL)
+    OPENVX_KHR_OPENCL" "
+#endif
+#if defined(EXPERIMENTAL_USE_NODE_MEMORY)
+    OPENVX_KHR_NODE_MEMORY" "
 #endif
 #if defined(OPENVX_USE_S16)
     "vx_khr_s16 "
 #endif
 #if defined(EXPERIMENTAL_USE_DOT)
     OPENVX_KHR_DOT" "
+#endif
+#if defined(EXPERIMENTAL_USE_TARGET)
+    OPENVX_EXT_TARGET" "
+#endif
+#if defined(EXPERIMENTAL_USE_VARIANTS)
+    OPENVX_KHR_VARIANTS" "
 #endif
     " ";
 
@@ -782,6 +803,18 @@ VX_API_ENTRY vx_status VX_API_CALL vxQueryContext(vx_context context, vx_enum at
                     status = VX_ERROR_INVALID_PARAMETERS;
                 }
                 break;
+#if defined(EXPERIMENTAL_USE_TARGET)
+            case VX_CONTEXT_TARGETS:
+                if (VX_CHECK_PARAM(ptr, size, vx_uint32, 0x3))
+                {
+                    *(vx_uint32 *)ptr = context->num_targets;
+                }
+                else
+                {
+                    status = VX_ERROR_INVALID_PARAMETERS;
+                }
+                break;
+#endif
             case VX_CONTEXT_IMPLEMENTATION:
                 if (size <= VX_MAX_IMPLEMENTATION_NAME && ptr)
                 {
@@ -915,7 +948,21 @@ VX_API_ENTRY vx_status VX_API_CALL vxQueryContext(vx_context context, vx_enum at
                             {
                                 VX_PRINT(VX_ZONE_INFO, "Kernel %s is unique\n", context->targets[t].kernels[k].name);
                                 table[numk].enumeration = context->targets[t].kernels[k].enumeration;
+#if defined(EXPERIMENTAL_USE_TARGET) || defined(EXPERIMENTAL_USE_VARIANT)
+                                // get the central string out
+                                {
+                                    vx_uint32 c = 0;
+                                    strncpy(table[numk].name, context->targets[t].kernels[k].name, VX_MAX_KERNEL_NAME);
+                                    for (c = 0; table[numk].name[c] != '\0'; c++) {
+                                        if (table[numk].name[c] == ';') {
+                                            table[numk].name[c] = '\0';
+                                            break;
+                                        }
+                                    }
+                                }
+#else
                                 strncpy(table[numk].name, context->targets[t].kernels[k].name, VX_MAX_KERNEL_NAME);
+#endif
                                 numk++;
                             }
                         }
@@ -935,8 +982,6 @@ VX_API_ENTRY vx_status VX_API_CALL vxQueryContext(vx_context context, vx_enum at
 VX_API_ENTRY vx_status VX_API_CALL vxHint(vx_reference reference, vx_enum hint, const void* data, vx_size data_size)
 {
     vx_status status = VX_SUCCESS;
-    (void)data;
-    (void)data_size;
 
     /* reference param should be a valid OpenVX reference*/
     if (ownIsValidContext((vx_context)reference) == vx_false_e && ownIsValidReference(reference) == vx_false_e)
@@ -1067,7 +1112,7 @@ VX_API_ENTRY vx_enum VX_API_CALL vxRegisterUserStructWithName(vx_context context
             {
                 context->user_structs[i].type = VX_TYPE_USER_STRUCT_START + i;
                 context->user_structs[i].size = size;
-                strncpy(context->user_structs[i].name, name, VX_MAX_STRUCT_NAME - 1);
+                strncpy(context->user_structs[i].name, name, VX_MAX_STRUCT_NAME);
                 type = context->user_structs[i].type;
                 break;
             }

@@ -16,7 +16,7 @@
 
 
 # set target name
-set( TARGET_NAME openVX-tiling )
+set( TARGET_NAME openvx-tiling_chaining )
 
 include_directories( BEFORE
                      ${CMAKE_CURRENT_SOURCE_DIR}
@@ -40,7 +40,7 @@ if (CYGWIN)
     set_target_properties( ${TARGET_NAME} PROPERTIES LINK_FLAGS ${CMAKE_CURRENT_SOURCE_DIR}/${DEF_FILE} )
 endif (CYGWIN)
 
-target_link_libraries( ${TARGET_NAME} openvx-debug-lib openvx-extras-lib openvx-helper openvx-tiling-lib openvx vxu half)
+target_link_libraries( ${TARGET_NAME} openvx-debug-lib openvx-extras-lib openvx-helper openvx-tiling_chaining-lib openvx vxu half)
 
 install ( TARGETS ${TARGET_NAME} 
           RUNTIME DESTINATION bin

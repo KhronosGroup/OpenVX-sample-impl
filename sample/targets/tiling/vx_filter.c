@@ -82,14 +82,14 @@ vx_tiling_kernel_t box_3x3_kernels =
 {
     "org.khronos.openvx.tiling_box_3x3",
     VX_KERNEL_BOX_3x3_TILING,
-    NULL,
-    box3x3_image_tiling,
+    box3x3_image_tiling_flexible,
+    box3x3_image_tiling_fast,
     2,
     { { VX_INPUT, VX_TYPE_IMAGE, VX_PARAMETER_STATE_REQUIRED },
     { VX_OUTPUT, VX_TYPE_IMAGE, VX_PARAMETER_STATE_REQUIRED } },
     vxFilterInputValidator,
     vxFilterOutputValidator,
-    { 1, 1 },
+    { 16, 16 },
     { -1, 1, -1, 1 },
     { VX_BORDER_MODE_UNDEFINED, 0 },
 };

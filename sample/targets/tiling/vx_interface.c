@@ -345,7 +345,9 @@ vx_kernel vxTargetAddTilingKernel(vx_target target,
         kernel = &(target->kernels[k]);
         if (kernel->enabled == vx_false_e)
         {
-            kernel->tiling_function = fast_func_ptr;
+            kernel->tilingfast_function = fast_func_ptr;
+            kernel->tilingflexible_function = flexible_func_ptr;
+
             ownInitializeKernel(target->base.context,
                                kernel,
                                enumeration, vxTilingKernel, name,
@@ -444,9 +446,6 @@ vx_status VX_CALLBACK vxTilingKernel(vx_node node, vx_reference parameters[], vx
             vxCopyScalar((vx_scalar)parameters[p], (void *)&scalars[p], VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
             params[p] = &scalars[p];
         }
-#if defined(OPENVX_TILING_1_1)
-        /*! \todo add addition data types here */
-#endif
     }
 
     /* choose the index of the first output image to based the tiling on */
@@ -456,13 +455,8 @@ vx_status VX_CALLBACK vxTilingKernel(vx_node node, vx_reference parameters[], vx
     status |= vxQueryNode(node, VX_NODE_INPUT_NEIGHBORHOOD, &nbhd, sizeof(nbhd));
     status |= vxQueryNode(node, VX_NODE_TILE_MEMORY_SIZE, &size, sizeof(size));
 
-#if 0
-    tile_size_y = (height - (nbhd.y[1] + abs(nbhd.y[0]))) / block_multiple;
-    tile_size_x = (width - (nbhd.x[1] + abs(nbhd.x[0])));
-#else
-    tile_size_y = height;
-    tile_size_x = width;
-#endif
+    tile_size_y = tiles[index].tile_block.height;
+    tile_size_x = tiles[index].tile_block.width;
 
     if ((borders.mode != VX_BORDER_UNDEFINED) &&
         (borders.mode != VX_BORDER_MODE_SELF))
@@ -471,63 +465,98 @@ vx_status VX_CALLBACK vxTilingKernel(vx_node node, vx_reference parameters[], vx
     }
 
     status = VX_SUCCESS;
-#if 0
-    for (ty = abs(nbhd.y[0]); (ty < (height - nbhd.y[1])) && (status == VX_SUCCESS); ty += tile_size_y)
+
+    rect.start_x = 0;
+    rect.start_y = 0;
+    rect.end_x = width;
+    rect.end_y = height;
+    for (p = 0u; p < num; p++)
     {
-        for (tx = abs(nbhd.x[0]); tx < (width - nbhd.x[1]); tx += tile_size_x)
+        if (types[p] == VX_TYPE_IMAGE)
         {
-#else
-    for (ty = 0u; (ty < height) && (status == VX_SUCCESS); ty += tile_size_y)
-    {
-        for (tx = 0u; tx < width; tx += tile_size_x)
-        {
-#endif
-            rect.start_x = tx;
-            rect.start_y = ty;
-            rect.end_x = tx+tile_size_x;
-            rect.end_y = ty+tile_size_y;
-            for (p = 0u; p < num; p++)
-            {
-                if (types[p] == VX_TYPE_IMAGE)
-                {
-                    tiles[p].tile_x = tx;
-                    tiles[p].tile_y = ty;
-                    status |= vxGetPatchToTile(images[p], &rect, &tiles[p]);
-                }
-            }
-            if (status == VX_SUCCESS)
-            {
-                //printf("Calling Tile{%u,%u} with %s\n", tx, ty, ((vx_node_t *)node)->kernel->name);
-                tile_memory = ((vx_node_t *)node)->attributes.tileDataPtr;
-                ((vx_node_t *)node)->kernel->tiling_function(params, tile_memory, size);
-            }
-            else
-            {
-                printf("Failed to get tile {%u, %u} (status = %d)\n", tx, ty, status);
-            }
-            for (p = 0u; p < num; p++)
-            {
-                if (types[p] == VX_TYPE_IMAGE)
-                {
-                    if (dirs[p] == VX_INPUT)
-                    {
-                        status |= vxSetTileToPatch(images[p], 0, &tiles[p]);
-                    }
-                    else
-                    {
-                        status |= vxSetTileToPatch(images[p], &rect, &tiles[p]);
-                    }
-                }
-            }
-            if (status != VX_SUCCESS)
-            {
-                break;
-            }
+            tiles[p].tile_x = 0;
+            tiles[p].tile_y = 0;
+            status |= vxGetPatchToTile(images[p], &rect, &tiles[p]);
         }
     }
 
-    //printf("Tiling Kernel returning = %d\n", status);
+    vx_uint32 blkCntY = (height / tile_size_y) * tile_size_y;
+    vx_uint32 blkCntX = (width / tile_size_x) * tile_size_x;
+    //tiling fast function    
+    if (((vx_node_t *)node)->kernel->tilingfast_function)
+    {
+        for (ty = 0u; (ty < blkCntY) && (status == VX_SUCCESS); ty += tile_size_y)
+        {
+            for (tx = 0u; tx < blkCntX; tx += tile_size_x)
+            {
+                for (p = 0u; p < num; p++)
+                {
+                    if (types[p] == VX_TYPE_IMAGE)
+                    {
+                        tiles[p].tile_x = tx;
+                        tiles[p].tile_y = ty;
+                    }
+                }
+                tile_memory = ((vx_node_t *)node)->attributes.tileDataPtr;
+                ((vx_node_t *)node)->kernel->tilingfast_function(params, tile_memory, size);
+            }
+        }
+    
+        if (((vx_node_t *)node)->kernel->tilingflexible_function)
+        {
+            for (ty = blkCntY; ty < height; ty++)
+            {
+                for (tx = blkCntX; tx < width; tx++)
+                {
+                    for (p = 0u; p < num; p++)
+                    {
+                        if (types[p] == VX_TYPE_IMAGE)
+                        {
+                            tiles[p].tile_x = tx;
+                            tiles[p].tile_y = ty;
+                        }
+                    }
+                    tile_memory = ((vx_node_t *)node)->attributes.tileDataPtr;
+                    ((vx_node_t *)node)->kernel->tilingflexible_function(params, tile_memory, size);
+                }
+            }
+        }
+    }
+    //tiling flexible function  
+    else if (((vx_node_t *)node)->kernel->tilingflexible_function)
+    {
+        for (ty = 0; ty < height; ty++)
+        {
+            for (tx = 0; tx < width; tx++)
+            {
+                for (p = 0u; p < num; p++)
+                {
+                    if (types[p] == VX_TYPE_IMAGE)
+                    {
+                        tiles[p].tile_x = tx;
+                        tiles[p].tile_y = ty;
+                    }
+                }
+            }
+        }
+        tile_memory = ((vx_node_t *)node)->attributes.tileDataPtr;
+        ((vx_node_t *)node)->kernel->tilingflexible_function(params, tile_memory, size);
+    }
+
+    for (p = 0u; p < num; p++)
+    {
+        if (types[p] == VX_TYPE_IMAGE)
+        {
+            if (dirs[p] == VX_INPUT)
+            {
+                status |= vxSetTileToPatch(images[p], 0, &tiles[p]);
+            }
+            else
+            {
+                status |= vxSetTileToPatch(images[p], &rect, &tiles[p]);
+            }
+        }
+    }
     return status;
 }
 #endif
-

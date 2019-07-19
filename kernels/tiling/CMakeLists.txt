@@ -17,7 +17,7 @@
 
 
 # set target name
-set( TARGET_NAME openvx-tiling-lib )
+set( TARGET_NAME openvx-tiling_chaining-lib )
 
 include_directories( BEFORE
                      ${CMAKE_CURRENT_SOURCE_DIR}

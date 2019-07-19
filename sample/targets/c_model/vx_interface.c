@@ -15,12 +15,6 @@
  * limitations under the License.
  */
 
-/*!
- * \file
- * \brief The C-Model Target Interface
- * \author Erik Rainey <erik.rainey@gmail.com>
- */
-
 #include <VX/vx.h>
 #include <VX/vx_helper.h>
 
@@ -358,7 +352,7 @@ vx_kernel vxTargetAddTilingKernel(vx_target target,
         kernel = &(target->kernels[k]);
         if (kernel->enabled == vx_false_e)
         {
-            kernel->tiling_function = fast_func_ptr;
+            kernel->tilingfast_function = fast_func_ptr;
             ownInitializeKernel(target->base.context,
                                kernel,
                                enumeration, vxTilingKernel, name,
@@ -511,7 +505,7 @@ vx_status VX_CALLBACK vxTilingKernel(vx_node node, const vx_reference parameters
             {
                 //printf("Calling Tile{%u,%u} with %s\n", tx, ty, ((vx_node_t *)node)->kernel->name);
                 tile_memory = ((vx_node_t *)node)->attributes.tileDataPtr;
-                ((vx_node_t *)node)->kernel->tiling_function(params, tile_memory, size);
+                ((vx_node_t *)node)->kernel->tilingfast_function(params, tile_memory, size);
             }
             else
             {
