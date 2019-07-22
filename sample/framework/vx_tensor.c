@@ -465,7 +465,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxCopyTensorPatch(vx_tensor tensor, vx_size n
     }
 
     /* determine if virtual before checking for memory */
-    if (tensor->base.is_virtual == vx_true_e)
+    if (tensor->base.is_virtual == vx_true_e && tensor->base.is_accessible == vx_false_e)
     {
         /* User tried to access a "virtual" tensor. */
         VX_PRINT(VX_ZONE_ERROR, "Can not access a virtual tensor\n");
