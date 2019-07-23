@@ -103,6 +103,7 @@ static vx_kernel_description_t *target_kernels[] =
     &select_kernel,
     &hogcells_kernel,
     &hogfeatures_kernel,
+    &weightedaverage_kernel,
 
     #ifdef OPENVX_USE_NN
     &nn_convolution_kernel,

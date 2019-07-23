@@ -90,6 +90,8 @@ extern vx_kernel_description_t select_kernel;
 extern vx_kernel_description_t hogcells_kernel;
 extern vx_kernel_description_t hogfeatures_kernel;
 
+extern vx_kernel_description_t weightedaverage_kernel;
+
 #ifdef OPENVX_USE_NN
 extern vx_kernel_description_t nn_convolution_kernel;
 extern vx_kernel_description_t nn_deconvolution_kernel;

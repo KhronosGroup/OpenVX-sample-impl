@@ -407,6 +407,17 @@ VX_API_ENTRY vx_node VX_API_CALL vxMinMaxLocNode(vx_graph graph,
                                    dimof(params));
 }
 
+VX_API_ENTRY vx_node VX_API_CALL vxWeightedAverageImageNode(vx_graph graph, vx_image img1, vx_scalar alpha, vx_image img2, vx_image output)
+{
+    vx_reference params[] = {
+        (vx_reference)img1,
+        (vx_reference)alpha,
+        (vx_reference)img2,
+        (vx_reference)output,
+    };
+    return vxCreateNodeByStructure(graph, VX_KERNEL_WEIGHTED_AVERAGE, params, dimof(params));
+}
+
 VX_API_ENTRY vx_node VX_API_CALL vxConvertDepthNode(vx_graph graph, vx_image input, vx_image output, vx_enum policy, vx_scalar shift)
 {
     vx_scalar pol = vxCreateScalar(vxGetContext((vx_reference)graph), VX_TYPE_ENUM, &policy);

@@ -277,6 +277,8 @@ vx_status vxSelect(vx_scalar condition, vx_reference true_value, vx_reference fa
 vx_status vxHogCells(vx_image img, vx_scalar cell_width, vx_scalar cell_height, vx_scalar num_bins, vx_tensor magnitudes, vx_tensor bins);
 vx_status vxHogFeatures(vx_image img, vx_tensor magnitudes, vx_tensor bins, vx_array hog_params, vx_scalar hog_param_size, vx_tensor features);
 
+vx_status vxWeightedAverage(vx_image img1, vx_scalar alpha, vx_image img2, vx_image output);
+
 #ifdef __cplusplus
 }
 #endif

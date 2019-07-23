@@ -91,6 +91,7 @@ static vx_kernel_description_t *target_kernels[] =
     &accumulate_square_kernel,
     &accumulate_kernel,
     &laplacian_reconstruct_kernel,
+	&weightedaverage_kernel,
 };
 
 /*! \brief Declares the number of base supported kernels.

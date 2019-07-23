@@ -80,6 +80,7 @@ extern vx_kernel_description_t accumulate_kernel;
 extern vx_kernel_description_t accumulate_weighted_kernel;
 extern vx_kernel_description_t accumulate_square_kernel;
 extern vx_kernel_description_t laplacian_reconstruct_kernel;
+extern vx_kernel_description_t weightedaverage_kernel;
 
 #endif
 

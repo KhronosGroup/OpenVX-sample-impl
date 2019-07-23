@@ -25,6 +25,7 @@ EXPORTS
 ;    vxuMeanStdDev
 ;    vxuMedian3x3
 ;    vxuMinMaxLoc
+;    vxuWeightedAverageImage
 ;    vxuMultiply
 ;    vxuNot
 ;    vxuOr

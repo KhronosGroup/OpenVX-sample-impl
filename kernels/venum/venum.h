@@ -141,6 +141,8 @@ void ElementwiseTensorOpImpl(enum ElementwiseTensorMathOp op, enum TensorCFmt fm
 
 vx_status TransposeTensorKernelImpl(vx_tensor in1, vx_scalar sc_dim1, vx_scalar sc_dim2, vx_tensor out, vx_size el_size);
 
+vx_status vxWeightedAverage(vx_image img1, vx_scalar alpha, vx_image img2, vx_image output);
+
 
 #ifdef __cplusplus
 }
