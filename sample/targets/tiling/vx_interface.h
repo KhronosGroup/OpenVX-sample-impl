@@ -50,6 +50,11 @@ typedef struct _vx_tiling_kernel_t {
 } vx_tiling_kernel_t;
 
 extern vx_tiling_kernel_t box_3x3_kernels;
+extern vx_tiling_kernel_t phase_kernel;
+extern vx_tiling_kernel_t And_kernel;
+extern vx_tiling_kernel_t Or_kernel;
+extern vx_tiling_kernel_t Xor_kernel;
+extern vx_tiling_kernel_t Not_kernel;
 
 #endif
 

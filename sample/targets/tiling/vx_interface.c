@@ -28,6 +28,11 @@ static const vx_char name[VX_MAX_TARGET_NAME] = "khronos.tiling";
 vx_tiling_kernel_t *tiling_kernels[] =
 {
     &box_3x3_kernels,
+    &phase_kernel,
+    &And_kernel,
+    &Or_kernel,
+    &Xor_kernel,
+    &Not_kernel,
 };
 
 /*! \brief The Entry point into a user defined kernel module */
@@ -422,7 +427,6 @@ vx_status VX_CALLBACK vxTilingKernel(vx_node node, vx_reference parameters[], vx
             vxQueryParameter(param, VX_PARAMETER_TYPE, &types[p], sizeof(types[p]));
             vxReleaseParameter(&param);
         }
-        //printf("Tiling Kernel Parameter[%u] dir:%d type:0%08x\n", p, dirs[p], types[p]);
         if (types[p] == VX_TYPE_IMAGE)
         {
             vxQueryNode(node, VX_NODE_OUTPUT_TILE_BLOCK_SIZE, &tiles[p].tile_block, sizeof(vx_tile_block_size_t));
@@ -438,7 +442,6 @@ vx_status VX_CALLBACK vxTilingKernel(vx_node node, vx_reference parameters[], vx
             if ((dirs[p] == VX_OUTPUT) && (index == UINT32_MAX))
             {
                 index = p;
-                //printf("Using index %u as coordinate basis\n", index);
             }
         }
         else if (types[p] == VX_TYPE_SCALAR)
@@ -504,39 +507,27 @@ vx_status VX_CALLBACK vxTilingKernel(vx_node node, vx_reference parameters[], vx
     
         if (((vx_node_t *)node)->kernel->tilingflexible_function)
         {
-            for (ty = blkCntY; ty < height; ty++)
+            for (p = 0u; p < num; p++)
             {
-                for (tx = blkCntX; tx < width; tx++)
+                if (types[p] == VX_TYPE_IMAGE)
                 {
-                    for (p = 0u; p < num; p++)
-                    {
-                        if (types[p] == VX_TYPE_IMAGE)
-                        {
-                            tiles[p].tile_x = tx;
-                            tiles[p].tile_y = ty;
-                        }
-                    }
-                    tile_memory = ((vx_node_t *)node)->attributes.tileDataPtr;
-                    ((vx_node_t *)node)->kernel->tilingflexible_function(params, tile_memory, size);
+                    tiles[p].tile_x = tx;
+                    tiles[p].tile_y = ty;
                 }
             }
+            tile_memory = ((vx_node_t *)node)->attributes.tileDataPtr;
+            ((vx_node_t *)node)->kernel->tilingflexible_function(params, tile_memory, size);
         }
     }
     //tiling flexible function  
     else if (((vx_node_t *)node)->kernel->tilingflexible_function)
     {
-        for (ty = 0; ty < height; ty++)
+        for (p = 0u; p < num; p++)
         {
-            for (tx = 0; tx < width; tx++)
+            if (types[p] == VX_TYPE_IMAGE)
             {
-                for (p = 0u; p < num; p++)
-                {
-                    if (types[p] == VX_TYPE_IMAGE)
-                    {
-                        tiles[p].tile_x = tx;
-                        tiles[p].tile_y = ty;
-                    }
-                }
+                tiles[p].tile_x = tx;
+                tiles[p].tile_y = ty;
             }
         }
         tile_memory = ((vx_node_t *)node)->attributes.tileDataPtr;

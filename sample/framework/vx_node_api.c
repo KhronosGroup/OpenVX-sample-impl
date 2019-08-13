@@ -15,13 +15,11 @@
  * limitations under the License.
  */
 
-/*!
- * \file
- * \brief The Graph Mode Interface for all Base Kernels.
- * \author Erik Rainey <erik.rainey@gmail.com>
- */
-
 #include "vx_internal.h"
+
+#if defined(OPENVX_USE_TILING)
+#include "../../kernels/tiling/tiling.h"
+#endif
 
 VX_API_ENTRY vx_node VX_API_CALL vxColorConvertNode(vx_graph graph, vx_image input, vx_image output)
 {
@@ -105,10 +103,17 @@ VX_API_ENTRY vx_node VX_API_CALL vxPhaseNode(vx_graph graph, vx_image grad_x, vx
        (vx_reference)grad_y,
        (vx_reference)orientation,
     };
+#if defined(OPENVX_USE_TILING)
+    return vxCreateNodeByStructure(graph,
+                                   VX_KERNEL_PHASE_TILING,
+                                   params,
+                                   dimof(params));
+#else
     return vxCreateNodeByStructure(graph,
                                    VX_KERNEL_PHASE,
                                    params,
                                    dimof(params));
+#endif
 }
 
 VX_API_ENTRY vx_node VX_API_CALL vxScaleImageNode(vx_graph graph, vx_image src, vx_image dst, vx_enum type)
@@ -198,6 +203,12 @@ VX_API_ENTRY vx_node VX_API_CALL vxThresholdNode(vx_graph graph, vx_image input,
         (vx_reference)thesh,
         (vx_reference)output,
     };
+#if defined(OPENVX_USE_TILING)
+    return vxCreateNodeByStructure(graph,
+                                   VX_KERNEL_THRESHOLD_TILING,
+                                   params,
+                                   dimof(params));
+#else
     return vxCreateNodeByStructure(graph,
                                    VX_KERNEL_THRESHOLD,
                                    params,
@@ -415,6 +426,24 @@ VX_API_ENTRY vx_node VX_API_CALL vxMinMaxLocNode(vx_graph graph,
                                    dimof(params));
 }
 
+VX_API_ENTRY vx_node VX_API_CALL vxWeightedAverageImageNode(vx_graph graph,
+	vx_image img1,
+	vx_scalar alpha,
+	vx_image img2,
+	vx_image output)
+{
+	vx_reference params[] = {
+		(vx_reference)img1,
+		(vx_reference)alpha,
+		(vx_reference)img2,
+		(vx_reference)output,
+	};
+	return vxCreateNodeByStructure(graph,
+		VX_KERNEL_WEIGHTED_AVERAGE,
+		params,
+		dimof(params));
+}
+
 VX_API_ENTRY vx_node VX_API_CALL vxConvertDepthNode(vx_graph graph, vx_image input, vx_image output, vx_enum policy, vx_scalar shift)
 {
     vx_scalar pol = vxCreateScalar(vxGetContext((vx_reference)graph), VX_TYPE_ENUM, &policy);
@@ -461,10 +490,17 @@ VX_API_ENTRY vx_node VX_API_CALL vxAndNode(vx_graph graph, vx_image in1, vx_imag
        (vx_reference)in2,
        (vx_reference)out,
     };
-    return vxCreateNodeByStructure(graph,
+    #if defined(OPENVX_USE_TILING)
+        return vxCreateNodeByStructure(graph,
+            VX_KERNEL_AND_TILING,
+            params,
+            dimof(params));
+    #else
+        return vxCreateNodeByStructure(graph,
                                    VX_KERNEL_AND,
                                    params,
                                    dimof(params));
+    #endif
 }
 
 VX_API_ENTRY vx_node VX_API_CALL vxOrNode(vx_graph graph, vx_image in1, vx_image in2, vx_image out)
@@ -474,10 +510,17 @@ VX_API_ENTRY vx_node VX_API_CALL vxOrNode(vx_graph graph, vx_image in1, vx_image
        (vx_reference)in2,
        (vx_reference)out,
     };
-    return vxCreateNodeByStructure(graph,
+    #if defined(OPENVX_USE_TILING)
+        return vxCreateNodeByStructure(graph,
+            VX_KERNEL_OR_TILING,
+            params,
+            dimof(params));
+    #else
+        return vxCreateNodeByStructure(graph,
                                    VX_KERNEL_OR,
                                    params,
                                    dimof(params));
+    #endif
 }
 
 VX_API_ENTRY vx_node VX_API_CALL vxXorNode(vx_graph graph, vx_image in1, vx_image in2, vx_image out)
@@ -487,10 +530,17 @@ VX_API_ENTRY vx_node VX_API_CALL vxXorNode(vx_graph graph, vx_image in1, vx_imag
        (vx_reference)in2,
        (vx_reference)out,
     };
-    return vxCreateNodeByStructure(graph,
+    #if defined(OPENVX_USE_TILING)
+        return vxCreateNodeByStructure(graph,
+            VX_KERNEL_XOR_TILING,
+            params,
+            dimof(params));
+    #else
+        return vxCreateNodeByStructure(graph,
                                    VX_KERNEL_XOR,
                                    params,
                                    dimof(params));
+    #endif
 }
 
 VX_API_ENTRY vx_node VX_API_CALL vxNotNode(vx_graph graph, vx_image input, vx_image output)
@@ -499,10 +549,17 @@ VX_API_ENTRY vx_node VX_API_CALL vxNotNode(vx_graph graph, vx_image input, vx_im
        (vx_reference)input,
        (vx_reference)output,
     };
-    return vxCreateNodeByStructure(graph,
+    #if defined(OPENVX_USE_TILING)
+        return vxCreateNodeByStructure(graph,
+            VX_KERNEL_NOT_TILING,
+            params,
+            dimof(params));
+    #else
+        return vxCreateNodeByStructure(graph,
                                    VX_KERNEL_NOT,
                                    params,
                                    dimof(params));
+    #endif
 }
 
 VX_API_ENTRY vx_node VX_API_CALL vxMultiplyNode(vx_graph graph, vx_image in1, vx_image in2, vx_scalar scale, vx_enum overflow_policy, vx_enum rounding_policy, vx_image out)

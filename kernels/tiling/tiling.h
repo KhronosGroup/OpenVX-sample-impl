@@ -17,5 +17,30 @@
 
 #include <VX/vx_khr_tiling.h>
 
+enum vx_tiling_kernels_e
+{
+    VX_KERNEL_BOX_3x3_TILING = VX_KERNEL_BASE(VX_ID_KHRONOS, VX_LIBRARY_KHR_BASE) + 0x100,
+    VX_KERNEL_PHASE_TILING = VX_KERNEL_BASE(VX_ID_KHRONOS, VX_LIBRARY_KHR_BASE) + 0x101,
+	VX_KERNEL_AND_TILING = VX_KERNEL_BASE(VX_ID_KHRONOS, VX_LIBRARY_KHR_BASE) + 0x102,
+    VX_KERNEL_OR_TILING = VX_KERNEL_BASE(VX_ID_KHRONOS, VX_LIBRARY_KHR_BASE) + 0x103,
+    VX_KERNEL_XOR_TILING = VX_KERNEL_BASE(VX_ID_KHRONOS, VX_LIBRARY_KHR_BASE) + 0x104,
+    VX_KERNEL_NOT_TILING = VX_KERNEL_BASE(VX_ID_KHRONOS, VX_LIBRARY_KHR_BASE) + 0x105,
+};
+
 void box3x3_image_tiling_fast(void * parameters[], void * tile_memory, vx_size tile_memory_size);
 void box3x3_image_tiling_flexible(void * parameters[], void * tile_memory, vx_size tile_memory_size);
+
+void Phase_image_tiling_fast(void * parameters[], void * tile_memory, vx_size tile_memory_size);
+void Phase_image_tiling_flexible(void * parameters[], void * tile_memory, vx_size tile_memory_size);
+
+void And_image_tiling_fast(void * parameters[], void * tile_memory, vx_size tile_memory_size);
+void And_image_tiling_flexible(void * parameters[], void * tile_memory, vx_size tile_memory_size);
+
+void Or_image_tiling_fast(void * parameters[], void * tile_memory, vx_size tile_memory_size);
+void Or_image_tiling_flexible(void * parameters[], void * tile_memory, vx_size tile_memory_size);
+
+void Xor_image_tiling_fast(void * parameters[], void * tile_memory, vx_size tile_memory_size);
+void Xor_image_tiling_flexible(void * parameters[], void * tile_memory, vx_size tile_memory_size);
+
+void Not_image_tiling_fast(void * parameters[], void * tile_memory, vx_size tile_memory_size);
+void Not_image_tiling_flexible(void * parameters[], void * tile_memory, vx_size tile_memory_size);
