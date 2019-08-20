@@ -15,9 +15,6 @@
  * limitations under the License.
  */
 
-#include <VX/vx.h>
-#include <VX/vx_helper.h>
-
 #include "vx_internal.h"
 #include <vx_interface.h>
 
@@ -33,6 +30,9 @@ vx_tiling_kernel_t *tiling_kernels[] =
     &Or_kernel,
     &Xor_kernel,
     &Not_kernel,
+    &threshold_kernel,
+    &colorconvert_kernel,
+    &Multiply_kernel,
 };
 
 /*! \brief The Entry point into a user defined kernel module */
@@ -372,11 +372,13 @@ static vx_status vxGetPatchToTile(vx_image image, vx_rectangle_t *rect, vx_tile_
     vx_status status = VX_SUCCESS;
     vx_uint32 p = 0;
     vx_image_t *img = (vx_image_t *)image;
+
     for (p = 0; p < img->planes; p++)
     {
         tile->base[p] = NULL;
-        status = vxAccessImagePatch(image, rect, 0, &tile->addr[p], (void **)&tile->base[p], VX_READ_AND_WRITE);
+        status = vxAccessImagePatch(image, rect, p, &tile->addr[p], (void **)&tile->base[p], VX_READ_AND_WRITE);
     }
+
     return status;
 }
 
@@ -384,11 +386,13 @@ static vx_status vxSetTileToPatch(vx_image image, vx_rectangle_t *rect, vx_tile_
 {
     vx_image_t *img = (vx_image_t *)image;
     vx_uint32 p = 0;
-    vx_status status = VX_SUCCESS;;
+    vx_status status = VX_SUCCESS;
+
     for (p = 0; p < img->planes; p++)
     {
-        status = vxCommitImagePatch(image, rect, 0, &tile->addr[p], tile->base[p]);
+        status = vxCommitImagePatch(image, rect, p, &tile->addr[p], tile->base[p]);
     }
+
     return status;
 }
 
@@ -412,6 +416,8 @@ vx_status VX_CALLBACK vxTilingKernel(vx_node node, vx_reference parameters[], vx
     vx_neighborhood_size_t nbhd;
     void *tile_memory = NULL;
     vx_size size = 0;
+
+    vx_tile_threshold_t threshold[VX_INT_MAX_PARAMS];
 
     /* Do the following:
      * \arg find out each parameters direction
@@ -449,6 +455,18 @@ vx_status VX_CALLBACK vxTilingKernel(vx_node node, vx_reference parameters[], vx
             vxCopyScalar((vx_scalar)parameters[p], (void *)&scalars[p], VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
             params[p] = &scalars[p];
         }
+        else if (types[p] == VX_TYPE_THRESHOLD)
+        {
+            vxQueryThreshold((vx_threshold)parameters[p], VX_THRESHOLD_TYPE, &threshold[p].thresh_type, sizeof(threshold[p].thresh_type));
+            vxQueryThreshold((vx_threshold)parameters[p], VX_THRESHOLD_THRESHOLD_VALUE, &threshold[p].value, sizeof(threshold[p].value));
+            vxQueryThreshold((vx_threshold)parameters[p], VX_THRESHOLD_THRESHOLD_LOWER, &threshold[p].lower, sizeof(threshold[p].lower));
+            vxQueryThreshold((vx_threshold)parameters[p], VX_THRESHOLD_THRESHOLD_UPPER, &threshold[p].upper, sizeof(threshold[p].upper));
+            vxQueryThreshold((vx_threshold)parameters[p], VX_THRESHOLD_TRUE_VALUE, &threshold[p].true_value, sizeof(threshold[p].true_value));
+            vxQueryThreshold((vx_threshold)parameters[p], VX_THRESHOLD_FALSE_VALUE, &threshold[p].false_value, sizeof(threshold[p].false_value));
+            vxQueryThreshold((vx_threshold)parameters[p], VX_THRESHOLD_INPUT_FORMAT, &threshold[p].input_format, sizeof(threshold[p].input_format));
+
+            params[p] = &threshold[p];
+        }
     }
 
     /* choose the index of the first output image to based the tiling on */
@@ -485,6 +503,7 @@ vx_status VX_CALLBACK vxTilingKernel(vx_node node, vx_reference parameters[], vx
 
     vx_uint32 blkCntY = (height / tile_size_y) * tile_size_y;
     vx_uint32 blkCntX = (width / tile_size_x) * tile_size_x;
+
     //tiling fast function    
     if (((vx_node_t *)node)->kernel->tilingfast_function)
     {
@@ -505,8 +524,8 @@ vx_status VX_CALLBACK vxTilingKernel(vx_node node, vx_reference parameters[], vx
             }
         }
     
-        if (((vx_node_t *)node)->kernel->tilingflexible_function)
-        {
+        if (((vx_node_t *)node)->kernel->tilingflexible_function && ((blkCntY < height) || (blkCntX < width)))
+        {    
             for (p = 0u; p < num; p++)
             {
                 if (types[p] == VX_TYPE_IMAGE)
@@ -548,6 +567,7 @@ vx_status VX_CALLBACK vxTilingKernel(vx_node node, vx_reference parameters[], vx
             }
         }
     }
+
     return status;
 }
 #endif

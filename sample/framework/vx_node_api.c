@@ -17,17 +17,17 @@
 
 #include "vx_internal.h"
 
-#if defined(OPENVX_USE_TILING)
-#include "../../kernels/tiling/tiling.h"
-#endif
-
 VX_API_ENTRY vx_node VX_API_CALL vxColorConvertNode(vx_graph graph, vx_image input, vx_image output)
 {
     vx_reference params[] = {
         (vx_reference)input,
         (vx_reference)output,
     };
+#if defined(OPENVX_USE_TILING)
+    return vxCreateNodeByStructure(graph, VX_KERNEL_COLOR_CONVERT_TILING, params, dimof(params));
+#else
     return vxCreateNodeByStructure(graph, VX_KERNEL_COLOR_CONVERT, params, dimof(params));
+#endif
 }
 
 VX_API_ENTRY vx_node VX_API_CALL vxChannelExtractNode(vx_graph graph,
@@ -213,6 +213,7 @@ VX_API_ENTRY vx_node VX_API_CALL vxThresholdNode(vx_graph graph, vx_image input,
                                    VX_KERNEL_THRESHOLD,
                                    params,
                                    dimof(params));
+#endif
 }
 
 VX_API_ENTRY vx_node VX_API_CALL vxIntegralImageNode(vx_graph graph, vx_image input, vx_image output)
@@ -575,10 +576,19 @@ VX_API_ENTRY vx_node VX_API_CALL vxMultiplyNode(vx_graph graph, vx_image in1, vx
        (vx_reference)rpolicy,
        (vx_reference)out,
     };
-    vx_node node = vxCreateNodeByStructure(graph,
-                                           VX_KERNEL_MULTIPLY,
-                                           params,
-                                           dimof(params));
+    vx_node node;
+    
+    #if defined(OPENVX_USE_TILING)
+        node = vxCreateNodeByStructure(graph,
+            VX_KERNEL_MULTIPLY_TILING,
+            params,
+            dimof(params));
+    #else
+        node = vxCreateNodeByStructure(graph,
+                                   VX_KERNEL_MULTIPLY,
+                                   params,
+                                   dimof(params));
+    #endif
     vxReleaseScalar(&spolicy);
     vxReleaseScalar(&rpolicy);
     return node;

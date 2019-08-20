@@ -220,7 +220,8 @@ static vx_status VX_CALLBACK vxAlphaOutputValidator(vx_node node, vx_uint32 inde
     return status;
 }
 
-
+//Move this struct into "include/VX/vx_khr_tiling.h"
+#if 0  
 /*! [publish_support] */
 typedef struct _vx_tiling_kernel_t {
     /*! kernel name */
@@ -246,6 +247,7 @@ typedef struct _vx_tiling_kernel_t {
     /*! border information. */
     vx_border_t border;
 } vx_tiling_kernel_t;
+#endif
 
 static vx_tiling_kernel_t tiling_kernels[] = {
         {"org.khronos.openvx.tiling_gaussian_3x3",
