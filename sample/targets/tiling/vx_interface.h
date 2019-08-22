@@ -29,6 +29,8 @@ extern vx_tiling_kernel_t Not_kernel;
 extern vx_tiling_kernel_t threshold_kernel;
 extern vx_tiling_kernel_t colorconvert_kernel;
 extern vx_tiling_kernel_t Multiply_kernel;
+extern vx_tiling_kernel_t nonlinearfilter_kernel;
+extern vx_tiling_kernel_t Magnitude_kernel;
 
 #endif
 

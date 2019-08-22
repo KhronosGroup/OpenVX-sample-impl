@@ -90,10 +90,18 @@ VX_API_ENTRY vx_node VX_API_CALL vxMagnitudeNode(vx_graph graph, vx_image grad_x
        (vx_reference)grad_y,
        (vx_reference)mag,
     };
+    
+#if defined(OPENVX_USE_TILING)
+    return vxCreateNodeByStructure(graph,
+                                   VX_KERNEL_MAGNITUDE_TILING,
+                                   params,
+                                   dimof(params));
+#else
     return vxCreateNodeByStructure(graph,
                                    VX_KERNEL_MAGNITUDE,
                                    params,
                                    dimof(params));
+#endif
 }
 
 VX_API_ENTRY vx_node VX_API_CALL vxPhaseNode(vx_graph graph, vx_image grad_x, vx_image grad_y, vx_image orientation)
@@ -306,11 +314,17 @@ VX_API_ENTRY vx_node VX_API_CALL vxNonLinearFilterNode(vx_graph graph, vx_enum f
         (vx_reference)mask,
         (vx_reference)output,
     };
-
+#if defined(OPENVX_USE_TILING)
+    vx_node node = vxCreateNodeByStructure(graph,
+        VX_KERNEL_NON_LINEAR_FILTER_TILING,
+        params,
+        dimof(params));
+#else
     vx_node node = vxCreateNodeByStructure(graph,
         VX_KERNEL_NON_LINEAR_FILTER,
         params,
         dimof(params));
+#endif
 
     vxReleaseScalar(&func);
     return node;

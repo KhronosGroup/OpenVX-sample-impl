@@ -33,6 +33,8 @@ vx_tiling_kernel_t *tiling_kernels[] =
     &threshold_kernel,
     &colorconvert_kernel,
     &Multiply_kernel,
+    &nonlinearfilter_kernel,
+    &Magnitude_kernel,
 };
 
 /*! \brief The Entry point into a user defined kernel module */
@@ -418,6 +420,7 @@ vx_status VX_CALLBACK vxTilingKernel(vx_node node, vx_reference parameters[], vx
     vx_size size = 0;
 
     vx_tile_threshold_t threshold[VX_INT_MAX_PARAMS];
+    vx_tile_matrix_t mask[VX_INT_MAX_PARAMS];
 
     /* Do the following:
      * \arg find out each parameters direction
@@ -466,6 +469,20 @@ vx_status VX_CALLBACK vxTilingKernel(vx_node node, vx_reference parameters[], vx
             vxQueryThreshold((vx_threshold)parameters[p], VX_THRESHOLD_INPUT_FORMAT, &threshold[p].input_format, sizeof(threshold[p].input_format));
 
             params[p] = &threshold[p];
+        }
+        else if (types[p] == VX_TYPE_MATRIX)
+        {
+            vxQueryMatrix((vx_matrix)parameters[p], VX_MATRIX_ROWS, &mask[p].rows, sizeof(mask[p].rows));
+            vxQueryMatrix((vx_matrix)parameters[p], VX_MATRIX_COLUMNS, &mask[p].columns, sizeof(mask[p].columns));
+            vxQueryMatrix((vx_matrix)parameters[p], VX_MATRIX_TYPE, &mask[p].data_type, sizeof(mask[p].data_type));
+            vxQueryMatrix((vx_matrix)parameters[p], VX_MATRIX_ORIGIN, &mask[p].origin, sizeof(mask[p].origin));
+
+            if ((mask[p].data_type != VX_TYPE_UINT8) || (sizeof(mask[p].m) < mask[p].rows * mask[p].columns))
+                status = VX_ERROR_INVALID_PARAMETERS;
+
+            status |= vxCopyMatrix((vx_matrix)parameters[p], mask[p].m, VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
+
+            params[p] = &mask[p];
         }
     }
 

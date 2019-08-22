@@ -913,7 +913,9 @@ VX_API_ENTRY vx_status VX_API_CALL vxAddParameterToKernel(vx_kernel kernel,
             if (kern->tilingfast_function)
             {
                 if (((data_type != VX_TYPE_IMAGE) &&
-                     (data_type != VX_TYPE_SCALAR)) ||
+                     (data_type != VX_TYPE_SCALAR) &&
+                     (data_type != VX_TYPE_THRESHOLD) &&
+                     (data_type != VX_TYPE_MATRIX)) ||
                     (ownIsValidDirection(dir) == vx_false_e) ||
                     (ownIsValidState(state) == vx_false_e))
                 {
