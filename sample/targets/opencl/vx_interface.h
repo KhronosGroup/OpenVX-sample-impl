@@ -100,7 +100,7 @@ extern vx_cl_kernel_description_t nonlinearfilter_kernel;
 extern vx_cl_kernel_description_t phase_kernel;
 extern vx_cl_kernel_description_t warp_affine_kernel;
 extern vx_cl_kernel_description_t warp_perspective_kernel;
-
+extern vx_cl_kernel_description_t convolution_kernel;
 
 #endif
 

@@ -195,6 +195,8 @@ static vx_status VX_CALLBACK vxclCallOpenCLKernel(vx_node node, const vx_referen
 
     VX_PRINT(VX_ZONE_API, "%s exiting %d\n", __FUNCTION__, status);
 
+    clReleaseMemObject(mat);
+
     return status;
 }
 

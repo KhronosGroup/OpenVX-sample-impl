@@ -45,6 +45,7 @@ static vx_cl_kernel_description_t *cl_kernels[] =
     &phase_kernel,
 	&warp_affine_kernel,
 	&warp_perspective_kernel,
+    &convolution_kernel,
 };
 
 static vx_uint32 num_cl_kernels = dimof(cl_kernels);
