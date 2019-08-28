@@ -177,6 +177,7 @@ vx_tiling_kernel_t colorconvert_kernel =
     2, 
     { { VX_INPUT, VX_TYPE_IMAGE, VX_PARAMETER_STATE_REQUIRED },
     { VX_OUTPUT, VX_TYPE_IMAGE, VX_PARAMETER_STATE_REQUIRED } },
+    NULL,
     vxColorConvertInputValidator,
     vxColorConvertOutputValidator,
     { 8, 8 },

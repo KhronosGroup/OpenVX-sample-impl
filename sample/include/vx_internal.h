@@ -808,6 +808,7 @@ typedef vx_kernel (*vx_target_addtilingkernel_f)(vx_target target,
                                                   vx_tiling_kernel_f flexible_func_ptr,
                                                   vx_tiling_kernel_f fast_func_ptr,
                                                   vx_uint32 num_parameters,
+                                                  vx_kernel_validate_f validate,
                                                   vx_kernel_input_validate_f input,
                                                   vx_kernel_output_validate_f output);
 #endif

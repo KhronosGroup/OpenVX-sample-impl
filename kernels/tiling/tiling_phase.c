@@ -209,20 +209,53 @@ void Phase_image_tiling_flexible(void * parameters[], void * tile_memory, vx_siz
     vx_uint32 high_x = vxTileWidth(out, 0);
 
     FASTATAN2CONST(256.0f / 360.0f);
-
-    for (y = low_y; y < high_y; y++)
+    
+    if (low_y == 0 && low_x == 0)
     {
-        const vx_int16 * src0 = (vx_int16 *)src_base_x + y * grad_x->addr->stride_y / 2;
-        const vx_int16 * src1 = (vx_int16 *)src_base_y + y * grad_y->addr->stride_y / 2;
-        vx_uint8 * dst = (vx_uint8 *)dst_base + y * out->addr->stride_y;
-
-        x = low_x;
-        for (; x < high_x; x++)
+        for (y = low_y; y < high_y; y++)
         {
-            vx_float32 val_x = src0[x], val_y = src1[x];
-            vx_float32 a;
-            FASTATAN2SCALAR(val_y, val_x, a);
-            dst[x] = (vx_uint8)(vx_uint32)floor(a + 0.5f);
+            const vx_int16 * src0 = (vx_int16 *)src_base_x + y * grad_x->addr->stride_y / 2;
+            const vx_int16 * src1 = (vx_int16 *)src_base_y + y * grad_y->addr->stride_y / 2;
+            vx_uint8 * dst = (vx_uint8 *)dst_base + y * out->addr->stride_y;
+
+            for (x = low_x; x < high_x; x++)
+            {
+                vx_float32 val_x = src0[x], val_y = src1[x];
+                vx_float32 a;
+                FASTATAN2SCALAR(val_y, val_x, a);
+                dst[x] = (vx_uint8)(vx_uint32)floor(a + 0.5f);
+            }
+        }
+    }
+    else
+    {
+        for (y = 0; y < low_y; y++)
+        {
+            const vx_int16 * src0 = (vx_int16 *)src_base_x + y * grad_x->addr->stride_y / 2;
+            const vx_int16 * src1 = (vx_int16 *)src_base_y + y * grad_y->addr->stride_y / 2;
+            vx_uint8 * dst = (vx_uint8 *)dst_base + y * out->addr->stride_y;
+
+            for (x = low_x; x < high_x; x++)
+            {
+                vx_float32 val_x = src0[x], val_y = src1[x];
+                vx_float32 a;
+                FASTATAN2SCALAR(val_y, val_x, a);
+                dst[x] = (vx_uint8)(vx_uint32)floor(a + 0.5f);
+            }
+        }
+        for (y = low_y; y < high_y; y++)
+        {
+            const vx_int16 * src0 = (vx_int16 *)src_base_x + y * grad_x->addr->stride_y / 2;
+            const vx_int16 * src1 = (vx_int16 *)src_base_y + y * grad_y->addr->stride_y / 2;
+            vx_uint8 * dst = (vx_uint8 *)dst_base + y * out->addr->stride_y;
+
+            for (x = 0; x < high_x; x++)
+            {
+                vx_float32 val_x = src0[x], val_y = src1[x];
+                vx_float32 a;
+                FASTATAN2SCALAR(val_y, val_x, a);
+                dst[x] = (vx_uint8)(vx_uint32)floor(a + 0.5f);
+            }
         }
     }
 }

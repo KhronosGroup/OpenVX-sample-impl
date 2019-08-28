@@ -126,6 +126,7 @@ vx_tiling_kernel_t threshold_kernel =
     { { VX_INPUT, VX_TYPE_IMAGE, VX_PARAMETER_STATE_REQUIRED },
     { VX_INPUT, VX_TYPE_THRESHOLD,   VX_PARAMETER_STATE_REQUIRED },
     { VX_OUTPUT, VX_TYPE_IMAGE, VX_PARAMETER_STATE_REQUIRED } },
+    NULL,
     vxThresholdInputValidator,
     vxThresholdOutputValidator,
     { 16, 16 },

@@ -120,6 +120,7 @@ vx_tiling_kernel_t phase_kernel =
     { { VX_INPUT, VX_TYPE_IMAGE, VX_PARAMETER_STATE_REQUIRED },
     { VX_INPUT, VX_TYPE_IMAGE, VX_PARAMETER_STATE_REQUIRED },
     { VX_OUTPUT, VX_TYPE_IMAGE, VX_PARAMETER_STATE_REQUIRED } },
+    NULL,
     vxPhaseInputValidator,
     vxPhaseOutputValidator,
     { 8, 8 },

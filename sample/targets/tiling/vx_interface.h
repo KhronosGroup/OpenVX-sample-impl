@@ -31,6 +31,9 @@ extern vx_tiling_kernel_t colorconvert_kernel;
 extern vx_tiling_kernel_t Multiply_kernel;
 extern vx_tiling_kernel_t nonlinearfilter_kernel;
 extern vx_tiling_kernel_t Magnitude_kernel;
+extern vx_tiling_kernel_t erode3x3_kernel;
+extern vx_tiling_kernel_t dilate3x3_kernel;
+extern vx_tiling_kernel_t median3x3_kernel;
 
 #endif
 

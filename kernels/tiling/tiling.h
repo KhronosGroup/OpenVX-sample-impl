@@ -43,3 +43,18 @@ void ConvertColor_image_tiling_flexible(void * parameters[], void * tile_memory,
 
 void Multiply_image_tiling_fast(void * parameters[], void * tile_memory, vx_size tile_memory_size);
 void Multiply_image_tiling_flexible(void * parameters[], void * tile_memory, vx_size tile_memory_size);
+
+void NonLinearFilter_image_tiling_fast(void * parameters[], void * tile_memory, vx_size tile_memory_size);
+void NonLinearFilter_image_tiling_flexible(void * parameters[], void * tile_memory, vx_size tile_memory_size);
+
+void Magnitude_image_tiling_fast(void * parameters[], void * tile_memory, vx_size tile_memory_size);
+void Magnitude_image_tiling_flexible(void * parameters[], void * tile_memory, vx_size tile_memory_size);
+
+void Erode3x3_image_tiling_fast(void * parameters[], void * tile_memory, vx_size tile_memory_size);
+void Erode3x3_image_tiling_flexible(void * parameters[], void * tile_memory, vx_size tile_memory_size);
+
+void Dilate3x3_image_tiling_fast(void * parameters[], void * tile_memory, vx_size tile_memory_size);
+void Dilate3x3_image_tiling_flexible(void * parameters[], void * tile_memory, vx_size tile_memory_size);
+
+void Median3x3_image_tiling_fast(void * parameters[], void * tile_memory, vx_size tile_memory_size);
+void Median3x3_image_tiling_flexible(void * parameters[], void * tile_memory, vx_size tile_memory_size);

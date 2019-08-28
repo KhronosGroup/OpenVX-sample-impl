@@ -35,6 +35,9 @@ vx_tiling_kernel_t *tiling_kernels[] =
     &Multiply_kernel,
     &nonlinearfilter_kernel,
     &Magnitude_kernel,
+    &erode3x3_kernel,
+    &dilate3x3_kernel,
+    &median3x3_kernel,
 };
 
 /*! \brief The Entry point into a user defined kernel module */
@@ -50,7 +53,8 @@ vx_status VX_API_CALL vxPublishKernels(vx_context context)
             tiling_kernels[k]->enumeration,
             tiling_kernels[k]->flexible_function,
             tiling_kernels[k]->fast_function,
-            tiling_kernels[k]->num_params,
+            tiling_kernels[k]->num_params,            
+            tiling_kernels[k]->validate,
             tiling_kernels[k]->input_validator,
             tiling_kernels[k]->output_validator);
         if (kernel)
@@ -342,6 +346,7 @@ vx_kernel vxTargetAddTilingKernel(vx_target target,
                             vx_tiling_kernel_f flexible_func_ptr,
                             vx_tiling_kernel_f fast_func_ptr,
                             vx_uint32 numParams,
+                            vx_kernel_validate_f validate,
                             vx_kernel_input_validate_f input,
                             vx_kernel_output_validate_f output)
 {
@@ -359,7 +364,7 @@ vx_kernel vxTargetAddTilingKernel(vx_target target,
                                kernel,
                                enumeration, vxTilingKernel, name,
                                NULL, numParams,
-                               NULL, input, output, NULL, NULL);
+                               validate, input, output, NULL, NULL);
             VX_PRINT(VX_ZONE_KERNEL, "Reserving %s Kernel[%u] for %s\n", target->name, k, kernel->name);
             target->num_kernels++;
             break;

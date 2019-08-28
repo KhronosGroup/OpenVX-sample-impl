@@ -679,6 +679,7 @@ VX_API_ENTRY vx_kernel VX_API_CALL vxAddTilingKernel(vx_context c,
                             vx_tiling_kernel_f flexible_func_ptr,
                             vx_tiling_kernel_f fast_func_ptr,
                             vx_uint32 num_params,
+                            vx_kernel_validate_f validate,
                             vx_kernel_input_validate_f input,
                             vx_kernel_output_validate_f output)
 {
@@ -695,8 +696,7 @@ VX_API_ENTRY vx_kernel VX_API_CALL vxAddTilingKernel(vx_context c,
         return (vx_kernel)NULL;
     }
     if ((flexible_func_ptr == NULL && fast_func_ptr == NULL) ||
-        input == NULL ||
-        output == NULL ||
+        ((validate == NULL) && (input == NULL || output == NULL)) ||
         num_params > VX_INT_MAX_PARAMS || num_params == 0 ||
         name == NULL ||
         strncmp(name, "",  VX_MAX_KERNEL_NAME) == 0)
@@ -730,7 +730,7 @@ VX_API_ENTRY vx_kernel VX_API_CALL vxAddTilingKernel(vx_context c,
     if (target && target->funcs.addtilingkernel)
     {
         kernel = target->funcs.addtilingkernel(target, name, enumeration,
-                                         flexible_func_ptr, fast_func_ptr, num_params,
+                                         flexible_func_ptr, fast_func_ptr, num_params, validate,  
                                          input, output);
         VX_PRINT(VX_ZONE_KERNEL,"Added Kernel %s to Target %s ("VX_FMT_REF")\n", name, target->name, kernel);
     }

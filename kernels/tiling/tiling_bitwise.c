@@ -59,20 +59,54 @@ void And_image_tiling_flexible(void * parameters[], void * tile_memory, vx_size 
     vx_uint8 *src_1 = in_1->base[0] + in_1->tile_x;
     vx_uint8 *src_2 = in_2->base[0] + in_2->tile_x;
     vx_uint8 *dst = out->base[0] + out->tile_x;
- 
-    for (y = 0; y < vxTileHeight(out, 0); y++) 
+    
+    vx_uint32 ty = out->tile_y;
+    vx_uint32 tx = out->tile_x;
+    if (ty == 0 && tx == 0)
     {
-        const vx_uint8* src1R = src_1 + y * in_1->image.width;
-        const vx_uint8* src2R = src_2 + y * in_2->image.width;
-        vx_uint8* dstR = dst + y * out->image.width;
-        for (x = 0; x < vxTileWidth(out, 0); x++) 
-        {            
-            *(dstR+x) = *(src1R + x)&*(src2R + x);
-            src2R ++;
-            src1R ++;
-            dstR ++;
-        }
+        for (y = 0; y < vxTileHeight(out, 0); y++) 
+        {
+            const vx_uint8* src1R = src_1 + y * in_1->image.width;
+            const vx_uint8* src2R = src_2 + y * in_2->image.width;
+            vx_uint8* dstR = dst + y * out->image.width;
+            for (x = 0; x < vxTileWidth(out, 0); x++) 
+            {            
+                *(dstR+x) = *(src1R + x)&*(src2R + x);
+                src2R ++;
+                src1R ++;
+                dstR ++;
+            }
+        }        
     }
+    else
+    {
+        for (y = 0; y < ty; y++)
+        {
+            const vx_uint8* src1R = src_1 + y * in_1->image.width;
+            const vx_uint8* src2R = src_2 + y * in_2->image.width;
+            vx_uint8* dstR = dst + y * out->image.width;
+            for (x = tx; x < vxTileWidth(out, 0); x++) 
+            {            
+                *(dstR+x) = *(src1R + x)&*(src2R + x);
+                src2R ++;
+                src1R ++;
+                dstR ++;
+            }
+        }
+        for (y = ty; y < vxTileHeight(out, 0); y++)
+        {              
+            const vx_uint8* src1R = src_1 + y * in_1->image.width;
+            const vx_uint8* src2R = src_2 + y * in_2->image.width;
+            vx_uint8* dstR = dst + y * out->image.width;
+            for (x = 0; x < vxTileWidth(out, 0); x++) 
+            {            
+                *(dstR+x) = *(src1R + x)&*(src2R + x);
+                src2R ++;
+                src1R ++;
+                dstR ++;
+            }
+        }
+    } 
 }
 
 void Or_image_tiling_fast(void * parameters[], void * tile_memory, vx_size tile_memory_size)
@@ -115,20 +149,54 @@ void Or_image_tiling_flexible(void * parameters[], void * tile_memory, vx_size t
     vx_uint8 *src_1 = in_1->base[0] + in_1->tile_x;
     vx_uint8 *src_2 = in_2->base[0] + in_2->tile_x;
     vx_uint8 *dst = out->base[0] + out->tile_x;
- 
-    for (y = 0; y < vxTileHeight(out, 0); y++) 
+    
+    vx_uint32 ty = out->tile_y;
+    vx_uint32 tx = out->tile_x;
+    if (ty == 0 && tx == 0)
     {
-        const vx_uint8* src1R = src_1 + y * in_1->image.width;
-        const vx_uint8* src2R = src_2 + y * in_2->image.width;
-        vx_uint8* dstR = dst + y * out->image.width;
-        for (x = 0; x < vxTileWidth(out, 0); x++) 
-        {            
-            *(dstR+x) = *(src1R + x)|*(src2R + x);
-            src2R ++;
-            src1R ++;
-            dstR ++;
-        }
+        for (y = 0; y < vxTileHeight(out, 0); y++) 
+        {
+            const vx_uint8* src1R = src_1 + y * in_1->image.width;
+            const vx_uint8* src2R = src_2 + y * in_2->image.width;
+            vx_uint8* dstR = dst + y * out->image.width;
+            for (x = 0; x < vxTileWidth(out, 0); x++) 
+            {            
+                *(dstR+x) = *(src1R + x)|*(src2R + x);
+                src2R ++;
+                src1R ++;
+                dstR ++;
+            }
+        }        
     }
+    else
+    {
+        for (y = 0; y < ty; y++)
+        {
+            const vx_uint8* src1R = src_1 + y * in_1->image.width;
+            const vx_uint8* src2R = src_2 + y * in_2->image.width;
+            vx_uint8* dstR = dst + y * out->image.width;
+            for (x = tx; x < vxTileWidth(out, 0); x++) 
+            {            
+                *(dstR+x) = *(src1R + x)|*(src2R + x);
+                src2R ++;
+                src1R ++;
+                dstR ++;
+            }
+        }
+        for (y = ty; y < vxTileHeight(out, 0); y++)
+        {              
+            const vx_uint8* src1R = src_1 + y * in_1->image.width;
+            const vx_uint8* src2R = src_2 + y * in_2->image.width;
+            vx_uint8* dstR = dst + y * out->image.width;
+            for (x = 0; x < vxTileWidth(out, 0); x++) 
+            {            
+                *(dstR+x) = *(src1R + x)|*(src2R + x);
+                src2R ++;
+                src1R ++;
+                dstR ++;
+            }
+        }
+    } 
 }
 
 void Xor_image_tiling_fast(void * parameters[], void * tile_memory, vx_size tile_memory_size)
@@ -171,20 +239,54 @@ void Xor_image_tiling_flexible(void * parameters[], void * tile_memory, vx_size 
     vx_uint8 *src_1 = in_1->base[0] + in_1->tile_x;
     vx_uint8 *src_2 = in_2->base[0] + in_2->tile_x;
     vx_uint8 *dst = out->base[0] + out->tile_x;
- 
-    for (y = 0; y < vxTileHeight(out, 0); y++) 
+    
+    vx_uint32 ty = out->tile_y;
+    vx_uint32 tx = out->tile_x;
+    if (ty == 0 && tx == 0)
     {
-        const vx_uint8* src1R = src_1 + y * in_1->image.width;
-        const vx_uint8* src2R = src_2 + y * in_2->image.width;
-        vx_uint8* dstR = dst + y * out->image.width;
-        for (x = 0; x < vxTileWidth(out, 0); x++) 
-        {            
-            *(dstR+x) = *(src1R + x)^*(src2R + x);
-            src2R ++;
-            src1R ++;
-            dstR ++;
-        }
+        for (y = 0; y < vxTileHeight(out, 0); y++) 
+        {
+            const vx_uint8* src1R = src_1 + y * in_1->image.width;
+            const vx_uint8* src2R = src_2 + y * in_2->image.width;
+            vx_uint8* dstR = dst + y * out->image.width;
+            for (x = 0; x < vxTileWidth(out, 0); x++) 
+            {            
+                *(dstR+x) = *(src1R + x)^*(src2R + x);
+                src2R ++;
+                src1R ++;
+                dstR ++;
+            }
+        }        
     }
+    else
+    {
+        for (y = 0; y < ty; y++)
+        {
+            const vx_uint8* src1R = src_1 + y * in_1->image.width;
+            const vx_uint8* src2R = src_2 + y * in_2->image.width;
+            vx_uint8* dstR = dst + y * out->image.width;
+            for (x = tx; x < vxTileWidth(out, 0); x++) 
+            {            
+                *(dstR+x) = *(src1R + x)^*(src2R + x);
+                src2R ++;
+                src1R ++;
+                dstR ++;
+            }
+        }
+        for (y = ty; y < vxTileHeight(out, 0); y++)
+        {              
+            const vx_uint8* src1R = src_1 + y * in_1->image.width;
+            const vx_uint8* src2R = src_2 + y * in_2->image.width;
+            vx_uint8* dstR = dst + y * out->image.width;
+            for (x = 0; x < vxTileWidth(out, 0); x++) 
+            {            
+                *(dstR+x) = *(src1R + x)^*(src2R + x);
+                src2R ++;
+                src1R ++;
+                dstR ++;
+            }
+        }
+    }    
 }
 
 void Not_image_tiling_fast(void * parameters[], void * tile_memory, vx_size tile_memory_size)
@@ -220,16 +322,46 @@ void Not_image_tiling_flexible(void * parameters[], void * tile_memory, vx_size 
     vx_tile_t *out = (vx_tile_t *)parameters[1];
     vx_uint8 *src = in->base[0] + in->tile_x;
     vx_uint8 *dst = out->base[0] + out->tile_x;
- 
-    for (y = 0; y < vxTileHeight(out, 0); y++) 
+    
+    vx_uint32 ty = out->tile_y;
+    vx_uint32 tx = out->tile_x;
+    if (ty == 0 && tx == 0)
     {
-        const vx_uint8* srcR = src + y * in->image.width;
-        vx_uint8* dstR = dst + y * out->image.width;
-        for (x = 0; x < vxTileWidth(out, 0); x++) 
-        {            
-            *(dstR+x) = ~*(srcR + x);
-            srcR ++;
-            dstR ++;
-        }
+        for (y = 0; y < vxTileHeight(out, 0); y++) 
+        {
+            const vx_uint8* srcR = src + y * in->image.width;
+            vx_uint8* dstR = dst + y * out->image.width;
+            for (x = 0; x < vxTileWidth(out, 0); x++) 
+            {            
+                *(dstR+x) = ~*(srcR + x);
+                srcR ++;
+                dstR ++;
+            }
+        }        
     }
+    else
+    {
+        for (y = 0; y < ty; y++)
+        {
+            const vx_uint8* srcR = src + y * in->image.width;
+            vx_uint8* dstR = dst + y * out->image.width;
+            for (x = tx; x < vxTileWidth(out, 0); x++) 
+            {            
+                *(dstR+x) = ~*(srcR + x);
+                srcR ++;
+                dstR ++;
+            }
+        }
+        for (y = ty; y < vxTileHeight(out, 0); y++)
+        {              
+            const vx_uint8* srcR = src + y * in->image.width;
+            vx_uint8* dstR = dst + y * out->image.width;
+            for (x = 0; x < vxTileWidth(out, 0); x++) 
+            {            
+                *(dstR+x) = ~*(srcR + x);
+                srcR ++;
+                dstR ++;
+            }
+        }
+    } 
 }

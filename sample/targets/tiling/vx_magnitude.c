@@ -105,6 +105,7 @@ vx_tiling_kernel_t Magnitude_kernel =
     { { VX_INPUT, VX_TYPE_IMAGE, VX_PARAMETER_STATE_REQUIRED },
         { VX_INPUT, VX_TYPE_IMAGE, VX_PARAMETER_STATE_REQUIRED },
         { VX_OUTPUT, VX_TYPE_IMAGE, VX_PARAMETER_STATE_REQUIRED } },
+    NULL,
     vxMagnitudeInputValidator,
     vxMagnitudeOutputValidator,
     { 8, 8 },

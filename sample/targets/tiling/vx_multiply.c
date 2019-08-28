@@ -251,6 +251,7 @@ vx_tiling_kernel_t Multiply_kernel =
         { VX_INPUT, VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED },
         { VX_INPUT, VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED },
         { VX_OUTPUT, VX_TYPE_IMAGE, VX_PARAMETER_STATE_REQUIRED } },
+    NULL,
     vxMultiplyInputValidator,
     vxMultiplyOutputValidator,
     { 16, 16 },
