@@ -111,3 +111,20 @@ vx_tiling_kernel_t median3x3_kernel =
     { -1, 1, -1, 1 },
     { VX_BORDER_MODE_UNDEFINED, 0 },
 };
+
+vx_tiling_kernel_t gaussian3x3_kernel = 
+{
+    "org.khronos.openvx.tiling_gaussian_3x3",
+    VX_KERNEL_GAUSSIAN_3x3_TILING,
+    Gaussian3x3_image_tiling_flexible,
+    Gaussian3x3_image_tiling_fast,
+    2,
+    { { VX_INPUT, VX_TYPE_IMAGE, VX_PARAMETER_STATE_REQUIRED },
+    { VX_OUTPUT, VX_TYPE_IMAGE, VX_PARAMETER_STATE_REQUIRED } },
+    NULL,
+    vxFilterInputValidator,
+    vxFilterOutputValidator,
+    { 16, 16 },
+    { -1, 1, -1, 1 },
+    { VX_BORDER_MODE_UNDEFINED, 0 },
+};

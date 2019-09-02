@@ -298,7 +298,7 @@ static int vx_uint8_compare(const void *p1, const void *p2)
 }
 
 
-#define Median3x3(low_y, high_y, low_x)                                                \
+#define Median3x3(low_y, high_y, low_x, high_x)                                        \
     for (y = low_y; y < high_y; y++)                                                   \
     {                                                                                  \
         for (x = low_x; x < high_x; x++)                                               \
@@ -326,19 +326,156 @@ void Median3x3_image_tiling_flexible(void * parameters[], void * tile_memory, vx
     vx_tile_t *in = (vx_tile_t *)parameters[0];
     vx_tile_t *out = (vx_tile_t *)parameters[1];
 
-    vx_uint32 low_y = out->tile_y + 1;
+    vx_uint32 low_y = out->tile_y;
     vx_uint32 high_y = vxTileHeight(out, 0);
 
-    vx_uint32 low_x = out->tile_x + 1;
+    vx_uint32 low_x = out->tile_x;
     vx_uint32 high_x = vxTileWidth(out, 0);
 
-    if (low_y == 1 && low_x == 1)
+    if (low_y == 0 && low_x == 0)
     {
-        Median3x3(low_y, high_y, low_x)
+        Median3x3(low_y + 1, high_y - 1, low_x + 1, high_x - 1)
     }
     else
     {
-        Median3x3(1, low_y, low_x)
-        Median3x3(low_y, high_y, 1)
+        Median3x3(1, low_y, low_x, high_x - 1)
+        Median3x3(low_y, high_y, 1, high_x - 1)
+    }
+}
+
+
+void Gaussian3x3_image_tiling_fast(void * parameters[], void * tile_memory, vx_size tile_memory_size)
+{
+    vx_uint32 x, y;
+    vx_tile_t *in = (vx_tile_t *)parameters[0];
+    vx_tile_t *out = (vx_tile_t *)parameters[1];
+
+    vx_uint8 *src_base = in->base[0] + in->tile_x;
+    vx_uint8 *dst_base = out->base[0] + out->tile_x;
+
+    vx_uint32 low_y = out->tile_y;
+    vx_uint32 high_y = out->tile_y + out->tile_block.height;
+
+    int16x8_t two  = vdupq_n_s16(2);
+    int16x8_t four = vdupq_n_s16(4);
+
+    if (low_y == 0)
+    {
+        low_y = 1;
+    }
+    if (high_y == out->image.height)
+    {
+        high_y = high_y - 1;
+    }
+
+    for (y = low_y; y < high_y; y++)
+    {
+        vx_uint8* dst = (vx_uint8 *)dst_base + 1 + y * out->addr->stride_y;
+        vx_uint8* top_src = (vx_uint8 *)src_base + (y - 1) * in->addr->stride_y;
+        vx_uint8* mid_src = (vx_uint8 *)src_base + (y) * in->addr->stride_y;
+        vx_uint8* bot_src = (vx_uint8 *)src_base + (y + 1) * in->addr->stride_y;
+
+        for (x = 0; x < out->tile_block.width; x += 8)
+        {
+            const uint8x16_t top_data = vld1q_u8(top_src);
+            const uint8x16_t mid_data = vld1q_u8(mid_src);
+            const uint8x16_t bot_data = vld1q_u8(bot_src);
+
+            const int16x8x2_t top_s16 =
+            {
+                {
+                    vreinterpretq_s16_u16(vmovl_u8(vget_low_u8(top_data))),
+                    vreinterpretq_s16_u16(vmovl_u8(vget_high_u8(top_data)))
+                }
+            };
+            const int16x8x2_t mid_s16 =
+            {
+                {
+                    vreinterpretq_s16_u16(vmovl_u8(vget_low_u8(mid_data))),
+                    vreinterpretq_s16_u16(vmovl_u8(vget_high_u8(mid_data)))
+                }
+            };
+            const int16x8x2_t bot_s16 =
+            {
+                {
+                    vreinterpretq_s16_u16(vmovl_u8(vget_low_u8(bot_data))),
+                    vreinterpretq_s16_u16(vmovl_u8(vget_high_u8(bot_data)))
+                }
+            };
+
+            //top left
+            int16x8_t out = top_s16.val[0];
+            //top mid
+            out = vmlaq_s16(out, vextq_s16(top_s16.val[0], top_s16.val[1], 1), two);
+            //top right
+            out = vaddq_s16(out, vextq_s16(top_s16.val[0], top_s16.val[1], 2));
+            //mid left
+            out = vmlaq_s16(out, mid_s16.val[0], two);
+            //mid mid
+            out = vmlaq_s16(out, vextq_s16(mid_s16.val[0], mid_s16.val[1], 1), four);
+            //mid right
+            out = vmlaq_s16(out, vextq_s16(mid_s16.val[0], mid_s16.val[1], 2), two);
+            //bot left
+            out = vaddq_s16(out, bot_s16.val[0]);
+            //bot mid
+            out = vmlaq_s16(out, vextq_s16(bot_s16.val[0], bot_s16.val[1], 1), two);
+            //bot right
+            out = vaddq_s16(out, vextq_s16(bot_s16.val[0], bot_s16.val[1], 2));
+
+            vst1_u8(dst, vqshrun_n_s16(out, 4));
+
+            top_src+=8;
+            mid_src+=8;
+            bot_src+=8;
+            dst += 8;
+        }
+    }
+}
+
+#define Gaussian3x3(low_y, high_y, low_x, high_x)                          \
+    for (y = low_y; y < high_y; y++)                                       \
+    {                                                                      \
+        for (x = low_x; x < high_x; x++)                                   \
+        {                                                                  \
+            vx_uint32 sum = 0;                                             \
+                                                                           \
+            sum += vxImagePixel(vx_uint8, in, 0, x, y, -1, -1);            \
+            sum += vxImagePixel(vx_uint8, in, 0, x, y, 0, -1) << 1;        \
+            sum += vxImagePixel(vx_uint8, in, 0, x, y, +1, -1);            \
+            sum += vxImagePixel(vx_uint8, in, 0, x, y, -1, 0) << 1;        \
+            sum += vxImagePixel(vx_uint8, in, 0, x, y, 0, 0) << 2;         \
+            sum += vxImagePixel(vx_uint8, in, 0, x, y, +1, 0) << 1;        \
+            sum += vxImagePixel(vx_uint8, in, 0, x, y, -1, +1);            \
+            sum += vxImagePixel(vx_uint8, in, 0, x, y, 0, +1) << 1;        \
+            sum += vxImagePixel(vx_uint8, in, 0, x, y, +1, +1);            \
+            sum >>= 4;                                                     \
+            if (sum > 255)                                                 \
+                sum = 255;                                                 \
+            vxImagePixel(vx_uint8, out, 0, x, y, 0, 0) = (vx_uint8)sum;    \
+        }                                                                  \
+    }
+
+
+void Gaussian3x3_image_tiling_flexible(void * parameters[], void * tile_memory, vx_size tile_memory_size)
+{
+    vx_uint32 x = 0, y = 0;
+
+    vx_tile_t *in = (vx_tile_t *)parameters[0];
+    vx_tile_t *out = (vx_tile_t *)parameters[1];
+
+    vx_uint32 low_y = out->tile_y;
+    vx_uint32 high_y = vxTileHeight(out, 0);
+
+    vx_uint32 low_x = out->tile_x;
+    vx_uint32 high_x = vxTileWidth(out, 0);
+
+    if (low_y == 0 && low_x == 0)
+    {
+        Gaussian3x3(low_y + 1, high_y - 1, low_x + 1, high_x - 1)
+    }
+    else
+    {
+        Gaussian3x3(1, low_y, low_x, high_x - 1)
+        Gaussian3x3(low_y, high_y, 1, high_x - 1)
     }
 }

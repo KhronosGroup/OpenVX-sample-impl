@@ -34,6 +34,12 @@ extern vx_tiling_kernel_t Magnitude_kernel;
 extern vx_tiling_kernel_t erode3x3_kernel;
 extern vx_tiling_kernel_t dilate3x3_kernel;
 extern vx_tiling_kernel_t median3x3_kernel;
+extern vx_tiling_kernel_t sobel3x3_kernel;
+extern vx_tiling_kernel_t Max_kernel;
+extern vx_tiling_kernel_t Min_kernel;
+extern vx_tiling_kernel_t gaussian3x3_kernel;
+extern vx_tiling_kernel_t add_kernel;
+extern vx_tiling_kernel_t subtract_kernel;
 
 #endif
 

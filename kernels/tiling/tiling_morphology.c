@@ -92,7 +92,7 @@ void Erode3x3_image_tiling_fast(void * parameters[], void * tile_memory, vx_size
     }
 }
 
-#define Erode3x3(low_y, high_y, low_x)                                                 \
+#define Erode3x3(low_y, high_y, low_x, high_x)                                         \
     for (y = low_y; y < high_y; y++)                                                   \
     {                                                                                  \
         for (x = low_x; x < high_x; x++)                                               \
@@ -120,20 +120,20 @@ void Erode3x3_image_tiling_flexible(void * parameters[], void * tile_memory, vx_
     vx_tile_t *in = (vx_tile_t *)parameters[0];
     vx_tile_t *out = (vx_tile_t *)parameters[1];
 
-    vx_uint32 low_y = out->tile_y + 1;
+    vx_uint32 low_y = out->tile_y;
     vx_uint32 high_y = vxTileHeight(out, 0);
 
-    vx_uint32 low_x = out->tile_x + 1;
+    vx_uint32 low_x = out->tile_x;
     vx_uint32 high_x = vxTileWidth(out, 0);
 
-    if (low_y == 1 && low_x == 1)
+    if (low_y == 0 && low_x == 0)
     {
-        Erode3x3(low_y, high_y, low_x)
+        Erode3x3(low_y + 1, high_y - 1, low_x + 1, high_x - 1)
     }
     else
     {
-        Erode3x3(1, low_y, low_x)
-        Erode3x3(low_y, high_y, 1)
+        Erode3x3(1, low_y, low_x, high_x - 1)
+        Erode3x3(low_y, high_y, 1, high_x - 1)
     }
 }
 
@@ -202,7 +202,7 @@ void Dilate3x3_image_tiling_fast(void * parameters[], void * tile_memory, vx_siz
 }
 
 
-#define Dilate3x3(low_y, high_y, low_x)                                                \
+#define Dilate3x3(low_y, high_y, low_x, high_x)                                        \
     for (y = low_y; y < high_y; y++)                                                   \
     {                                                                                  \
         for (x = low_x; x < high_x; x++)                                               \
@@ -231,19 +231,19 @@ void Dilate3x3_image_tiling_flexible(void * parameters[], void * tile_memory, vx
     vx_tile_t *in = (vx_tile_t *)parameters[0];
     vx_tile_t *out = (vx_tile_t *)parameters[1];
 
-    vx_uint32 low_y = out->tile_y + 1;
+    vx_uint32 low_y = out->tile_y;
     vx_uint32 high_y = vxTileHeight(out, 0);
 
-    vx_uint32 low_x = out->tile_x + 1;
+    vx_uint32 low_x = out->tile_x;
     vx_uint32 high_x = vxTileWidth(out, 0);
 
-    if (low_y == 1 && low_x == 1)
+    if (low_y == 0 && low_x == 0)
     {
-        Dilate3x3(low_y, high_y, low_x)
+        Dilate3x3(low_y + 1, high_y - 1, low_x + 1, high_x - 1)
     }
     else
     {
-        Dilate3x3(1, low_y, low_x)
-        Dilate3x3(low_y, high_y, 1)
+        Dilate3x3(1, low_y, low_x, high_x - 1)
+        Dilate3x3(low_y, high_y, 1, high_x - 1)
     }
 }

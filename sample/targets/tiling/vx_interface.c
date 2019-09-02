@@ -38,6 +38,12 @@ vx_tiling_kernel_t *tiling_kernels[] =
     &erode3x3_kernel,
     &dilate3x3_kernel,
     &median3x3_kernel,
+    &sobel3x3_kernel,
+    &Max_kernel,
+    &Min_kernel,
+    &gaussian3x3_kernel,
+    &add_kernel,
+    &subtract_kernel,
 };
 
 /*! \brief The Entry point into a user defined kernel module */
@@ -383,7 +389,10 @@ static vx_status vxGetPatchToTile(vx_image image, vx_rectangle_t *rect, vx_tile_
     for (p = 0; p < img->planes; p++)
     {
         tile->base[p] = NULL;
-        status = vxAccessImagePatch(image, rect, p, &tile->addr[p], (void **)&tile->base[p], VX_READ_AND_WRITE);
+        if(image->constant == 1)
+            status = vxAccessImagePatch(image, rect, p, &tile->addr[p], (void **)&tile->base[p], VX_READ_ONLY);
+        else
+            status = vxAccessImagePatch(image, rect, p, &tile->addr[p], (void **)&tile->base[p], VX_READ_AND_WRITE);
     }
 
     return status;

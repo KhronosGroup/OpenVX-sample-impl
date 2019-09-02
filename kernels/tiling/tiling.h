@@ -58,3 +58,21 @@ void Dilate3x3_image_tiling_flexible(void * parameters[], void * tile_memory, vx
 
 void Median3x3_image_tiling_fast(void * parameters[], void * tile_memory, vx_size tile_memory_size);
 void Median3x3_image_tiling_flexible(void * parameters[], void * tile_memory, vx_size tile_memory_size);
+
+void Sobel3x3_image_tiling_fast(void * parameters[], void * tile_memory, vx_size tile_memory_size);
+void Sobel3x3_image_tiling_flexible(void * parameters[], void * tile_memory, vx_size tile_memory_size);
+
+void Max_image_tiling_fast(void * parameters[], void * tile_memory, vx_size tile_memory_size);
+void Max_image_tiling_flexible(void * parameters[], void * tile_memory, vx_size tile_memory_size);
+
+void Min_image_tiling_fast(void * parameters[], void * tile_memory, vx_size tile_memory_size);
+void Min_image_tiling_flexible(void * parameters[], void * tile_memory, vx_size tile_memory_size);
+
+void Gaussian3x3_image_tiling_fast(void * parameters[], void * tile_memory, vx_size tile_memory_size);
+void Gaussian3x3_image_tiling_flexible(void * parameters[], void * tile_memory, vx_size tile_memory_size);
+
+void Addition_image_tiling_fast(void * parameters[], void * tile_memory, vx_size tile_memory_size);
+void Addition_image_tiling_flexible(void * parameters[], void * tile_memory, vx_size tile_memory_size);
+
+void Subtraction_image_tiling_fast(void * parameters[], void * tile_memory, vx_size tile_memory_size);
+void Subtraction_image_tiling_flexible(void * parameters[], void * tile_memory, vx_size tile_memory_size);
