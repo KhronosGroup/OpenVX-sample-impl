@@ -28,6 +28,7 @@
 
 static vx_status VX_CALLBACK vxAbsDiffKernel(vx_node node, const vx_reference parameters[], vx_uint32 num)
 {
+#ifdef OPENVX_CONFORMANCE_VISION
     vx_status status = VX_ERROR_INVALID_PARAMETERS;
     (void)node;
 
@@ -39,6 +40,9 @@ static vx_status VX_CALLBACK vxAbsDiffKernel(vx_node node, const vx_reference pa
         status = vxAbsDiff(in1, in2, output);
     }
     return status;
+#else
+    return VX_ERROR_NOT_SUPPORTED;
+#endif //OPENVX_CONFORMANCE_VISION
 }
 
 static vx_status VX_CALLBACK vxAbsDiffInputValidator(vx_node node, vx_uint32 index)
