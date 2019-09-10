@@ -1052,6 +1052,24 @@ VX_API_ENTRY vx_enum VX_API_CALL vxGetUserStructByName(vx_context context, const
     return type;
 }
 
+VX_API_ENTRY vx_char* VX_API_CALL vxGetUserStructNameByEnum(vx_context context, vx_enum type)
+{
+    vx_uint32 i = 0;
+    vx_char *name = NULL;
+    if ((ownIsValidContext(context) == vx_true_e) && (type != VX_TYPE_INVALID))
+    {
+        for (i = 0; i < VX_INT_MAX_USER_STRUCTS; ++i)
+        {
+            if (type == context->user_structs[i].type)
+            {
+                name = context->user_structs[i].name;
+                break;
+            }
+        }
+    }
+    return name;
+}
+
 VX_API_ENTRY vx_enum VX_API_CALL vxRegisterUserStructWithName(vx_context context, vx_size size, const vx_char *name)
 {
     vx_enum type = VX_TYPE_INVALID;
