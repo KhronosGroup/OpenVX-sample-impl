@@ -902,6 +902,13 @@ typedef union _vx_memory_map_extra
         vx_size start;
         vx_size end;
     } array_data;
+    struct
+    {
+        vx_size start[VX_MAX_TENSOR_DIMENSIONS];
+        vx_size end[VX_MAX_TENSOR_DIMENSIONS];
+        vx_size stride[VX_MAX_TENSOR_DIMENSIONS];
+        vx_size number_of_dims;
+    } tensor_data;
 } vx_memory_map_extra;
 
 /*! \brief The framework's mapping memory tracking structure.

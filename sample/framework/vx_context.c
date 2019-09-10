@@ -324,6 +324,17 @@ VX_INT_API vx_bool ownMemoryMap(
                     context->memory_maps[id].extra.array_data.start = extra->array_data.start;
                     context->memory_maps[id].extra.array_data.end   = extra->array_data.end;
                 }
+                else if (VX_TYPE_TENSOR == ref->type)
+                {
+                    vx_memory_map_extra* extra = (vx_memory_map_extra*)extra_data;
+                    memcpy(context->memory_maps[id].extra.tensor_data.start,
+                           extra->tensor_data.start, sizeof(vx_size) * extra->tensor_data.number_of_dims);
+                    memcpy(context->memory_maps[id].extra.tensor_data.end,
+                           extra->tensor_data.end, sizeof(vx_size) * extra->tensor_data.number_of_dims);
+                    memcpy(context->memory_maps[id].extra.tensor_data.stride,
+                           extra->tensor_data.stride, sizeof(vx_size) * extra->tensor_data.number_of_dims);
+                    context->memory_maps[id].extra.tensor_data.number_of_dims = extra->tensor_data.number_of_dims;
+                }
 
                 *ptr = buf;
                 *map_id = (vx_map_id)id;
