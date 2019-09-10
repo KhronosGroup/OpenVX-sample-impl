@@ -40,6 +40,10 @@ extern vx_tiling_kernel_t Min_kernel;
 extern vx_tiling_kernel_t gaussian3x3_kernel;
 extern vx_tiling_kernel_t add_kernel;
 extern vx_tiling_kernel_t subtract_kernel;
+extern vx_tiling_kernel_t convertdepth_kernel;
+extern vx_tiling_kernel_t warp_affine_kernel;
+extern vx_tiling_kernel_t warp_perspective_kernel;
+extern vx_tiling_kernel_t weightedaverage_kernel;
 
 #endif
 

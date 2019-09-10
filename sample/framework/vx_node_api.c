@@ -77,10 +77,17 @@ VX_API_ENTRY vx_node VX_API_CALL vxSobel3x3Node(vx_graph graph, vx_image input, 
        (vx_reference)output_x,
        (vx_reference)output_y,
     };
+#if defined(OPENVX_USE_TILING)
+    return vxCreateNodeByStructure(graph,
+                                   VX_KERNEL_SOBEL_3x3_TILING,
+                                   params,
+                                   dimof(params));
+#else
     return vxCreateNodeByStructure(graph,
                                    VX_KERNEL_SOBEL_3x3,
                                    params,
                                    dimof(params));
+#endif
 }
 
 VX_API_ENTRY vx_node VX_API_CALL vxMagnitudeNode(vx_graph graph, vx_image grad_x, vx_image grad_y, vx_image mag)
@@ -242,10 +249,17 @@ VX_API_ENTRY vx_node VX_API_CALL vxErode3x3Node(vx_graph graph, vx_image input, 
         (vx_reference)input,
         (vx_reference)output,
     };
+#if defined(OPENVX_USE_TILING)
+    return vxCreateNodeByStructure(graph,
+                                   VX_KERNEL_ERODE_3x3_TILING,
+                                   params,
+                                   dimof(params));
+#else
     return vxCreateNodeByStructure(graph,
                                    VX_KERNEL_ERODE_3x3,
                                    params,
                                    dimof(params));
+#endif
 }
 
 VX_API_ENTRY vx_node VX_API_CALL vxDilate3x3Node(vx_graph graph, vx_image input, vx_image output)
@@ -254,10 +268,17 @@ VX_API_ENTRY vx_node VX_API_CALL vxDilate3x3Node(vx_graph graph, vx_image input,
         (vx_reference)input,
         (vx_reference)output,
     };
+#if defined(OPENVX_USE_TILING)
+    return vxCreateNodeByStructure(graph,
+                                   VX_KERNEL_DILATE_3x3_TILING,
+                                   params,
+                                   dimof(params));
+#else
     return vxCreateNodeByStructure(graph,
                                    VX_KERNEL_DILATE_3x3,
                                    params,
                                    dimof(params));
+#endif
 }
 
 VX_API_ENTRY vx_node VX_API_CALL vxMedian3x3Node(vx_graph graph, vx_image input, vx_image output)
@@ -266,10 +287,17 @@ VX_API_ENTRY vx_node VX_API_CALL vxMedian3x3Node(vx_graph graph, vx_image input,
         (vx_reference)input,
         (vx_reference)output,
     };
+#if defined(OPENVX_USE_TILING)
+    return vxCreateNodeByStructure(graph,
+                                   VX_KERNEL_MEDIAN_3x3_TILING,
+                                   params,
+                                   dimof(params));
+#else
     return vxCreateNodeByStructure(graph,
                                    VX_KERNEL_MEDIAN_3x3,
                                    params,
                                    dimof(params));
+#endif
 }
 
 VX_API_ENTRY vx_node VX_API_CALL vxBox3x3Node(vx_graph graph, vx_image input, vx_image output)
@@ -298,10 +326,17 @@ VX_API_ENTRY vx_node VX_API_CALL vxGaussian3x3Node(vx_graph graph, vx_image inpu
         (vx_reference)input,
         (vx_reference)output,
     };
+#if defined(OPENVX_USE_TILING)
+    return vxCreateNodeByStructure(graph,
+                                   VX_KERNEL_GAUSSIAN_3x3_TILING,
+                                   params,
+                                   dimof(params));
+#else
     return vxCreateNodeByStructure(graph,
                                    VX_KERNEL_GAUSSIAN_3x3,
                                    params,
                                    dimof(params));
+#endif
 }
 
 VX_API_ENTRY vx_node VX_API_CALL vxNonLinearFilterNode(vx_graph graph, vx_enum function, vx_image input, vx_matrix mask, vx_image output)
@@ -453,10 +488,17 @@ VX_API_ENTRY vx_node VX_API_CALL vxWeightedAverageImageNode(vx_graph graph,
 		(vx_reference)img2,
 		(vx_reference)output,
 	};
-	return vxCreateNodeByStructure(graph,
+#if defined(OPENVX_USE_TILING)
+    return vxCreateNodeByStructure(graph, 
+        VX_KERNEL_WEIGHTED_AVERAGE_TILING, 
+        params, 
+        dimof(params));
+#else
+    return vxCreateNodeByStructure(graph,
 		VX_KERNEL_WEIGHTED_AVERAGE,
 		params,
 		dimof(params));
+#endif
 }
 
 VX_API_ENTRY vx_node VX_API_CALL vxConvertDepthNode(vx_graph graph, vx_image input, vx_image output, vx_enum policy, vx_scalar shift)
@@ -468,10 +510,17 @@ VX_API_ENTRY vx_node VX_API_CALL vxConvertDepthNode(vx_graph graph, vx_image inp
         (vx_reference)pol,
         (vx_reference)shift,
     };
+#if defined(OPENVX_USE_TILING)
+    vx_node node = vxCreateNodeByStructure(graph,
+                                   VX_KERNEL_CONVERTDEPTH_TILING,
+                                   params,
+                                   dimof(params));
+#else
     vx_node node = vxCreateNodeByStructure(graph,
                                    VX_KERNEL_CONVERTDEPTH,
                                    params,
                                    dimof(params));
+#endif
     vxReleaseScalar(&pol);
     return node;
 }
@@ -618,10 +667,18 @@ VX_API_ENTRY vx_node VX_API_CALL vxAddNode(vx_graph graph, vx_image in1, vx_imag
        (vx_reference)spolicy,
        (vx_reference)out,
     };
-    vx_node node = vxCreateNodeByStructure(graph,
-                                           VX_KERNEL_ADD,
-                                           params,
-                                           dimof(params));
+    vx_node node;                        
+#if defined(OPENVX_USE_TILING)
+    node = vxCreateNodeByStructure(graph,
+                                   VX_KERNEL_ADD_TILING,
+                                   params,
+                                   dimof(params));
+#else
+    node = vxCreateNodeByStructure(graph,
+                                   VX_KERNEL_ADD,
+                                   params,
+                                   dimof(params));
+#endif
     vxReleaseScalar(&spolicy);
     return node;
 }
@@ -636,10 +693,18 @@ VX_API_ENTRY vx_node VX_API_CALL vxSubtractNode(vx_graph graph, vx_image in1, vx
        (vx_reference)spolicy,
        (vx_reference)out,
     };
-    vx_node node = vxCreateNodeByStructure(graph,
-                                           VX_KERNEL_SUBTRACT,
-                                           params,
-                                           dimof(params));
+    vx_node node;                                           
+#if defined(OPENVX_USE_TILING)
+    node = vxCreateNodeByStructure(graph,
+                                   VX_KERNEL_SUBTRACT_TILING,
+                                   params,
+                                   dimof(params));
+#else
+    node = vxCreateNodeByStructure(graph,
+                                   VX_KERNEL_SUBTRACT,
+                                   params,
+                                   dimof(params));
+#endif
     vxReleaseScalar(&spolicy);
     return node;
 }
@@ -654,10 +719,17 @@ VX_API_ENTRY vx_node VX_API_CALL vxWarpAffineNode(vx_graph graph, vx_image input
             (vx_reference)stype,
             (vx_reference)output,
     };
+#if defined(OPENVX_USE_TILING)
+    vx_node node = vxCreateNodeByStructure(graph,
+                                           VX_KERNEL_WARP_AFFINE_TILING,
+                                           params,
+                                           dimof(params));
+#else
     vx_node node = vxCreateNodeByStructure(graph,
                                            VX_KERNEL_WARP_AFFINE,
                                            params,
                                            dimof(params));
+#endif
     vxReleaseScalar(&stype);
 
     if (vxGetStatus((vx_reference)node) == VX_SUCCESS)
@@ -681,10 +753,17 @@ VX_API_ENTRY vx_node VX_API_CALL vxWarpPerspectiveNode(vx_graph graph, vx_image 
             (vx_reference)stype,
             (vx_reference)output,
     };
+#if defined(OPENVX_USE_TILING)
+    vx_node node = vxCreateNodeByStructure(graph,
+                                           VX_KERNEL_WARP_PERSPECTIVE_TILING,
+                                           params,
+                                           dimof(params));
+#else
     vx_node node = vxCreateNodeByStructure(graph,
                                            VX_KERNEL_WARP_PERSPECTIVE,
                                            params,
                                            dimof(params));
+#endif
     vxReleaseScalar(&stype);
 
     if (vxGetStatus((vx_reference)node) == VX_SUCCESS)
@@ -1017,11 +1096,17 @@ VX_API_ENTRY vx_node VX_API_CALL vxMinNode(vx_graph graph, vx_image in1, vx_imag
 	    (vx_reference) in2,
             (vx_reference) out,
     };
-    vx_node node = vxCreateNodeByStructure(graph,
-                    					   VX_KERNEL_MIN,
-                                           params,
-                                           dimof(params));
-    return node;
+#if defined(OPENVX_USE_TILING)
+    return vxCreateNodeByStructure(graph,
+                                   VX_KERNEL_MIN_TILING,
+                                   params,
+                                   dimof(params));
+#else
+    return vxCreateNodeByStructure(graph,
+                                   VX_KERNEL_MIN,
+                                   params,
+                                   dimof(params));
+#endif
 }
 
 VX_API_ENTRY vx_node VX_API_CALL vxCopyNode(vx_graph graph, vx_reference input, vx_reference output)
@@ -1041,12 +1126,17 @@ VX_API_ENTRY vx_node VX_API_CALL vxMaxNode(vx_graph graph, vx_image in1, vx_imag
 	    (vx_reference) in2,
             (vx_reference) out,
     };
-
-    vx_node node = vxCreateNodeByStructure(graph,
-                                           VX_KERNEL_MAX,
-                                           params,
-                                           dimof(params));
-    return node;
+#if defined(OPENVX_USE_TILING)
+    return vxCreateNodeByStructure(graph,
+                                   VX_KERNEL_MAX_TILING,
+                                   params,
+                                   dimof(params));
+#else
+    return vxCreateNodeByStructure(graph,
+                                   VX_KERNEL_MAX,
+                                   params,
+                                   dimof(params));
+#endif
 }
 
 VX_API_ENTRY vx_node VX_API_CALL vxLBPNode(vx_graph graph,

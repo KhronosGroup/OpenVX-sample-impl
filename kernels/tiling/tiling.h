@@ -76,3 +76,15 @@ void Addition_image_tiling_flexible(void * parameters[], void * tile_memory, vx_
 
 void Subtraction_image_tiling_fast(void * parameters[], void * tile_memory, vx_size tile_memory_size);
 void Subtraction_image_tiling_flexible(void * parameters[], void * tile_memory, vx_size tile_memory_size);
+
+void ConvertDepth_image_tiling_fast(void * parameters[], void * tile_memory, vx_size tile_memory_size);
+void ConvertDepth_image_tiling_flexible(void * parameters[], void * tile_memory, vx_size tile_memory_size);
+
+void WarpAffine_image_tiling_fast(void * parameters[], void * tile_memory, vx_size tile_memory_size);
+void WarpAffine_image_tiling_flexible(void * parameters[], void * tile_memory, vx_size tile_memory_size);
+
+void WarpPerspective_image_tiling_fast(void * parameters[], void * tile_memory, vx_size tile_memory_size);
+void WarpPerspective_image_tiling_flexible(void * parameters[], void * tile_memory, vx_size tile_memory_size);
+
+void WeightedAverage_image_tiling_fast(void * parameters[], void * tile_memory, vx_size tile_memory_size);
+void WeightedAverage_image_tiling_flexible(void * parameters[], void * tile_memory, vx_size tile_memory_size);

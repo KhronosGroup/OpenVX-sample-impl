@@ -1208,6 +1208,9 @@ void NonLinearFilter_image_tiling_flexible(void * parameters[], void * tile_memo
     else
     {
         NonLinearFilter(0, low_y, low_x)
+
+        src_base = in->base[0];
+        dst_base = out->base[0];
         NonLinearFilter(low_y, high_y, 0)
     }
 

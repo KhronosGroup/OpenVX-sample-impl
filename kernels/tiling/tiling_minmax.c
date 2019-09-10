@@ -59,7 +59,7 @@ void Max_image_tiling_fast(void * parameters[], void * tile_memory, vx_size tile
     }
 }
 
-#define MAX_FLEXIBLE(low_y, low_x, high_y, high_x)                                                                         \
+#define MAX_FLEXIBLE(low_y, low_x, high_y, high_x, in_1_tile_x, in_2_tile_x, out_tile_x)                                   \
     for (y = low_y; y < high_y; ++y)                                                                                       \
     {                                                                                                                      \
         for (x = low_x; x < high_x; ++x)                                                                                   \
@@ -67,17 +67,17 @@ void Max_image_tiling_fast(void * parameters[], void * tile_memory, vx_size tile
             switch (out->image.format)                                                                                     \
             {                                                                                                              \
             case VX_DF_IMAGE_U8:                                                                                           \
-                src0p = (vx_uint8 *)in_1->base[0] + in_1->tile_x + y * in_1->image.width + x * in_1->addr[0].stride_x;     \
-                src1p = (vx_uint8 *)in_2->base[0] + in_2->tile_x + y * in_2->image.width + x * in_2->addr[0].stride_x;     \
-                dstp = (vx_uint8 *)out->base[0] + out->tile_x + y * out->image.width + x * out->addr[0].stride_x;          \
+                src0p = (vx_uint8 *)in_1->base[0] + in_1_tile_x + y * in_1->image.width + x * in_1->addr[0].stride_x;     \
+                src1p = (vx_uint8 *)in_2->base[0] + in_2_tile_x + y * in_2->image.width + x * in_2->addr[0].stride_x;     \
+                dstp = (vx_uint8 *)out->base[0] + out_tile_x + y * out->image.width + x * out->addr[0].stride_x;          \
                 val0 = *(src0p);                                                                                           \
                 val1 = *(src1p);                                                                                           \
                 *dstp = val0 > val1 ? val0 : val1;                                                                         \
                 break;                                                                                                     \
             case VX_DF_IMAGE_S16:                                                                                          \
-                src0p = (vx_uint8 *)in_1->base[0] + 2*in_1->tile_x + y * in_1->addr->stride_y + x * in_1->addr[0].stride_x;\
-                src1p = (vx_uint8 *)in_2->base[0] + 2*in_2->tile_x + y * in_2->addr->stride_y + x * in_2->addr[0].stride_x;\
-                dstp = (vx_uint8 *)out->base[0] + 2*out->tile_x + y * out->addr->stride_y + x * out->addr[0].stride_x;     \
+                src0p = (vx_uint8 *)in_1->base[0] + 2*in_1_tile_x + y * in_1->addr->stride_y + x * in_1->addr[0].stride_x;\
+                src1p = (vx_uint8 *)in_2->base[0] + 2*in_2_tile_x + y * in_2->addr->stride_y + x * in_2->addr[0].stride_x;\
+                dstp = (vx_uint8 *)out->base[0] + 2*out_tile_x + y * out->addr->stride_y + x * out->addr[0].stride_x;     \
                 val0_16 = *(vx_int16 *)(src0p);                                                                            \
                 val1_16 = *(vx_int16 *)(src1p);                                                                            \
                 *(vx_int16 *)dstp = val0_16 > val1_16 ? val0_16 : val1_16;                                                 \
@@ -99,12 +99,12 @@ void Max_image_tiling_flexible(void * parameters[], void * tile_memory, vx_size 
     vx_int16 val0_16, val1_16;
     if (ty == 0 && tx == 0)
     {
-        MAX_FLEXIBLE(0, 0, vxTileHeight(out, 0), vxTileWidth(out, 0))
+        MAX_FLEXIBLE(0, 0, vxTileHeight(out, 0), vxTileWidth(out, 0), in_1->tile_x, in_2->tile_x, out->tile_x)
     }
     else
     {
-        MAX_FLEXIBLE(0, tx, ty, vxTileWidth(out, 0))
-        MAX_FLEXIBLE(ty, 0, vxTileHeight(out, 0), vxTileWidth(out, 0))
+        MAX_FLEXIBLE(0, tx, ty, vxTileWidth(out, 0), in_1->tile_x, in_2->tile_x, out->tile_x)
+        MAX_FLEXIBLE(ty, 0, vxTileHeight(out, 0), vxTileWidth(out, 0), 0, 0, 0)
     }
 }
 
@@ -149,7 +149,7 @@ void Min_image_tiling_fast(void * parameters[], void * tile_memory, vx_size tile
     }
 }
 
-#define MIN_FLEXIBLE(low_y, low_x, high_y, high_x)                                                                         \
+#define MIN_FLEXIBLE(low_y, low_x, high_y, high_x, in_1_tile_x, in_2_tile_x, out_tile_x)                                   \
     for (y = low_y; y < high_y; ++y)                                                                                       \
     {                                                                                                                      \
         for (x = low_x; x < high_x; ++x)                                                                                   \
@@ -157,17 +157,17 @@ void Min_image_tiling_fast(void * parameters[], void * tile_memory, vx_size tile
             switch (out->image.format)                                                                                     \
             {                                                                                                              \
             case VX_DF_IMAGE_U8:                                                                                           \
-                src0p = (vx_uint8 *)in_1->base[0] + in_1->tile_x + y * in_1->image.width + x * in_1->addr[0].stride_x;     \
-                src1p = (vx_uint8 *)in_2->base[0] + in_2->tile_x + y * in_2->image.width + x * in_2->addr[0].stride_x;     \
-                dstp = (vx_uint8 *)out->base[0] + out->tile_x + y * out->image.width + x * out->addr[0].stride_x;          \
+                src0p = (vx_uint8 *)in_1->base[0] + in_1_tile_x + y * in_1->image.width + x * in_1->addr[0].stride_x;     \
+                src1p = (vx_uint8 *)in_2->base[0] + in_2_tile_x + y * in_2->image.width + x * in_2->addr[0].stride_x;     \
+                dstp = (vx_uint8 *)out->base[0] + out_tile_x + y * out->image.width + x * out->addr[0].stride_x;          \
                 val0 = *(src0p);                                                                                           \
                 val1 = *(src1p);                                                                                           \
                 *dstp = val0 < val1 ? val0 : val1;                                                                         \
                 break;                                                                                                     \
             case VX_DF_IMAGE_S16:                                                                                          \
-                src0p = (vx_uint8 *)in_1->base[0] + 2*in_1->tile_x + y * in_1->addr->stride_y + x * in_1->addr[0].stride_x;\
-                src1p = (vx_uint8 *)in_2->base[0] + 2*in_2->tile_x + y * in_2->addr->stride_y + x * in_2->addr[0].stride_x;\
-                dstp = (vx_uint8 *)out->base[0] + 2*out->tile_x + y * out->addr->stride_y + x * out->addr[0].stride_x;     \
+                src0p = (vx_uint8 *)in_1->base[0] + 2*in_1_tile_x + y * in_1->addr->stride_y + x * in_1->addr[0].stride_x;\
+                src1p = (vx_uint8 *)in_2->base[0] + 2*in_2_tile_x + y * in_2->addr->stride_y + x * in_2->addr[0].stride_x;\
+                dstp = (vx_uint8 *)out->base[0] + 2*out_tile_x + y * out->addr->stride_y + x * out->addr[0].stride_x;     \
                 val0_16 = *(vx_int16 *)(src0p);                                                                            \
                 val1_16 = *(vx_int16 *)(src1p);                                                                            \
                 *(vx_int16 *)dstp = val0_16 < val1_16 ? val0_16 : val1_16;                                                 \
@@ -189,11 +189,11 @@ void Min_image_tiling_flexible(void * parameters[], void * tile_memory, vx_size 
     vx_int16 val0_16, val1_16;
     if (ty == 0 && tx == 0)
     {
-        MIN_FLEXIBLE(0, 0, vxTileHeight(out, 0), vxTileWidth(out, 0))
+        MIN_FLEXIBLE(0, 0, vxTileHeight(out, 0), vxTileWidth(out, 0), in_1->tile_x, in_2->tile_x, out->tile_x)
     }
     else
     {
-        MIN_FLEXIBLE(0, tx, ty, vxTileWidth(out, 0))
-        MIN_FLEXIBLE(ty, 0, vxTileHeight(out, 0), vxTileWidth(out, 0))
+        MIN_FLEXIBLE(0, tx, ty, vxTileWidth(out, 0), in_1->tile_x, in_2->tile_x, out->tile_x)
+        MIN_FLEXIBLE(ty, 0, vxTileHeight(out, 0), vxTileWidth(out, 0), 0, 0, 0)
     }
 }

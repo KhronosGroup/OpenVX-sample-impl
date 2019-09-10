@@ -236,6 +236,9 @@ void Threshold_image_tiling_flexible(void * parameters[], void * tile_memory, vx
             else
             {
                 vxThreshold_BINARY(vx_int16, 0, low_y, low_x, high_x, 2)
+
+                src_base = (vx_int16 *)in->base[0];
+                dst_base = out->base[0];
                 vxThreshold_BINARY(vx_int16, low_y, high_y, 0, high_x, 2)
             }
         }
@@ -248,6 +251,9 @@ void Threshold_image_tiling_flexible(void * parameters[], void * tile_memory, vx
             else
             {
                 vxThreshold_RANGE(vx_int16, 0, low_y, low_x, high_x, 2)
+
+                src_base = (vx_int16 *)in->base[0];
+                dst_base = out->base[0];
                 vxThreshold_RANGE(vx_int16, low_y, high_y, 0, high_x, 2)
             }
         }
@@ -265,6 +271,9 @@ void Threshold_image_tiling_flexible(void * parameters[], void * tile_memory, vx
             else
             {
                 vxThreshold_BINARY(vx_uint8, 0, low_y, low_x, high_x, 1)
+
+                src_base = in->base[0];
+                dst_base = out->base[0];
                 vxThreshold_BINARY(vx_uint8, low_y, high_y, 0, high_x, 1)
             }
         }
@@ -277,6 +286,9 @@ void Threshold_image_tiling_flexible(void * parameters[], void * tile_memory, vx
             else
             {
                 vxThreshold_RANGE(vx_uint8, 0, low_y, low_x, high_x, 1)
+
+                src_base = in->base[0];
+                dst_base = out->base[0];
                 vxThreshold_RANGE(vx_uint8, low_y, high_y, 0, high_x, 1)
             }
         }

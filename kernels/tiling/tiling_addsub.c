@@ -173,15 +173,15 @@ void Addition_image_tiling_fast(void * parameters[], void * tile_memory, vx_size
     }
 }
 
-#define ADD_SUB_FLEXIBLE(low_y, low_x, high_y, high_x, opmode)                                 \
+#define ADD_SUB_FLEXIBLE(low_y, low_x, high_y, high_x, opmode, in_1_tile_x, in_2_tile_x, out_tile_x) \
     for (y = low_y; y < high_y; y++)                                                           \
     {                                                                                          \
-        vx_uint8 *src0p = (vx_uint8 *)in_1->base[0] + in_1->tile_x + y * in_1->image.width;    \
-        vx_uint8 *src1p = (vx_uint8 *)in_2->base[0] + in_2->tile_x + y * in_2->image.width;    \
-        vx_uint8 *dstp = (vx_uint8 *)out->base[0] + out->tile_x + y * out->image.width;        \
-        vx_int16 *src0p_16 = (vx_int16 *)in_1->base[0] + in_1->tile_x + y * in_1->image.width; \
-        vx_int16 *src1p_16 = (vx_int16 *)in_2->base[0] + in_2->tile_x + y * in_2->image.width; \
-        vx_int16 *dstp_16 = (vx_int16 *)out->base[0] + out->tile_x + y * out->image.width;     \
+        vx_uint8 *src0p = (vx_uint8 *)in_1->base[0] + in_1_tile_x + y * in_1->image.width;    \
+        vx_uint8 *src1p = (vx_uint8 *)in_2->base[0] + in_2_tile_x + y * in_2->image.width;    \
+        vx_uint8 *dstp = (vx_uint8 *)out->base[0] + out_tile_x + y * out->image.width;        \
+        vx_int16 *src0p_16 = (vx_int16 *)in_1->base[0] + in_1_tile_x + y * in_1->image.width; \
+        vx_int16 *src1p_16 = (vx_int16 *)in_2->base[0] + in_2_tile_x + y * in_2->image.width; \
+        vx_int16 *dstp_16 = (vx_int16 *)out->base[0] + out_tile_x + y * out->image.width;     \
         for (x = low_x; x < high_x; x++)                                                       \
         {                                                                                      \
             vx_int32 src0 = in_1->image.format == VX_DF_IMAGE_U8 ? *src0p : *src0p_16;         \
@@ -252,12 +252,12 @@ void Addition_image_tiling_flexible(void * parameters[], void * tile_memory, vx_
     vx_uint8 op_mode = 0;
     if (ty == 0 && tx == 0)
     {
-        ADD_SUB_FLEXIBLE(0, 0, vxTileHeight(out, 0), vxTileWidth(out, 0), op_mode)
+        ADD_SUB_FLEXIBLE(0, 0, vxTileHeight(out, 0), vxTileWidth(out, 0), op_mode, in_1->tile_x, in_2->tile_x, out->tile_x)
     }
     else
     {
-        ADD_SUB_FLEXIBLE(0, tx, ty, vxTileWidth(out, 0), op_mode)
-        ADD_SUB_FLEXIBLE(ty, 0, vxTileHeight(out, 0), vxTileWidth(out, 0), op_mode)
+        ADD_SUB_FLEXIBLE(0, tx, ty, vxTileWidth(out, 0), op_mode, in_1->tile_x, in_2->tile_x, out->tile_x)
+        ADD_SUB_FLEXIBLE(ty, 0, vxTileHeight(out, 0), vxTileWidth(out, 0), op_mode, 0, 0, 0)
     }
 }
 
@@ -429,11 +429,11 @@ void Subtraction_image_tiling_flexible(void * parameters[], void * tile_memory, 
     vx_uint8 op_mode = 1;
     if (ty == 0 && tx == 0)
     {
-        ADD_SUB_FLEXIBLE(0, 0, vxTileHeight(out, 0), vxTileWidth(out, 0), op_mode)     
+        ADD_SUB_FLEXIBLE(0, 0, vxTileHeight(out, 0), vxTileWidth(out, 0), op_mode, in_1->tile_x, in_2->tile_x, out->tile_x)     
     }
     else
     {
-        ADD_SUB_FLEXIBLE(0, tx, ty, vxTileWidth(out, 0), op_mode)
-        ADD_SUB_FLEXIBLE(ty, 0, vxTileHeight(out, 0), vxTileWidth(out, 0), op_mode)
+        ADD_SUB_FLEXIBLE(0, tx, ty, vxTileWidth(out, 0), op_mode, in_1->tile_x, in_2->tile_x, out->tile_x)
+        ADD_SUB_FLEXIBLE(ty, 0, vxTileHeight(out, 0), vxTileWidth(out, 0), op_mode, 0, 0, 0)
     }
 }

@@ -44,6 +44,10 @@ vx_tiling_kernel_t *tiling_kernels[] =
     &gaussian3x3_kernel,
     &add_kernel,
     &subtract_kernel,
+    &convertdepth_kernel,
+    &warp_affine_kernel,
+    &warp_perspective_kernel,
+    &weightedaverage_kernel,
 };
 
 /*! \brief The Entry point into a user defined kernel module */
@@ -495,6 +499,7 @@ vx_status VX_CALLBACK vxTilingKernel(vx_node node, vx_reference parameters[], vx
                 status = VX_ERROR_INVALID_PARAMETERS;
 
             status |= vxCopyMatrix((vx_matrix)parameters[p], mask[p].m, VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
+            status |= vxCopyMatrix((vx_matrix)parameters[p], mask[p].m_f32, VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
 
             params[p] = &mask[p];
         }
