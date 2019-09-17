@@ -88,3 +88,9 @@ void WarpPerspective_image_tiling_flexible(void * parameters[], void * tile_memo
 
 void WeightedAverage_image_tiling_fast(void * parameters[], void * tile_memory, vx_size tile_memory_size);
 void WeightedAverage_image_tiling_flexible(void * parameters[], void * tile_memory, vx_size tile_memory_size);
+
+void AbsDiff_image_tiling_fast(void * parameters[], void * tile_memory, vx_size tile_memory_size);
+void AbsDiff_image_tiling_flexible(void * parameters[], void * tile_memory, vx_size tile_memory_size);
+
+void IntegralImage_image_tiling_fast(void * parameters[], void * tile_memory, vx_size tile_memory_size);
+void IntegralImage_image_tiling_flexible(void * parameters[], void * tile_memory, vx_size tile_memory_size);

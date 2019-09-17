@@ -48,6 +48,8 @@ vx_tiling_kernel_t *tiling_kernels[] =
     &warp_affine_kernel,
     &warp_perspective_kernel,
     &weightedaverage_kernel,
+    &absdiff_kernel,
+    &integral_image_kernel,
 };
 
 /*! \brief The Entry point into a user defined kernel module */

@@ -44,6 +44,8 @@ extern vx_tiling_kernel_t convertdepth_kernel;
 extern vx_tiling_kernel_t warp_affine_kernel;
 extern vx_tiling_kernel_t warp_perspective_kernel;
 extern vx_tiling_kernel_t weightedaverage_kernel;
+extern vx_tiling_kernel_t absdiff_kernel;
+extern vx_tiling_kernel_t integral_image_kernel;
 
 #endif
 
