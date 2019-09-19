@@ -921,6 +921,28 @@ VX_API_ENTRY vx_status VX_API_CALL vxQueryContext(vx_context context, vx_enum at
                     status = VX_ERROR_INVALID_PARAMETERS;
                 }
                 break;
+#if defined(OPENVX_USE_OPENCL_INTEROP)
+            case VX_CONTEXT_CL_CONTEXT:
+                if (VX_CHECK_PARAM(ptr, size, cl_context, 0x3))
+                {
+                    *(cl_context *)ptr = context->opencl_context;
+                }
+                else
+                {
+                    status = VX_ERROR_INVALID_PARAMETERS;
+                }
+                break;
+            case VX_CONTEXT_CL_COMMAND_QUEUE:
+                if (VX_CHECK_PARAM(ptr, size, cl_command_queue, 0x3))
+                {
+                    *(cl_command_queue  *)ptr = context->opencl_command_queue;
+                }
+                else
+                {
+                    status = VX_ERROR_INVALID_PARAMETERS;
+                }
+                break;
+#endif
             default:
                 status = VX_ERROR_NOT_SUPPORTED;
                 break;
@@ -1173,4 +1195,15 @@ VX_API_ENTRY vx_status VX_API_CALL vxSetImmediateModeTarget(vx_context context, 
     return status;
 }
 
+#if defined (OPENVX_USE_OPENCL_INTEROP)
 
+VX_API_ENTRY vx_context VX_API_CALL vxCreateContextFromCL(cl_context opencl_context, cl_command_queue opencl_command_queue)
+{
+    vx_context context = vxCreateContext();
+    context->opencl_context = opencl_context;
+    context->opencl_command_queue = opencl_command_queue;
+
+    return (vx_context)context;
+}
+
+#endif 

@@ -79,7 +79,9 @@
 #if defined(OPENVX_USE_IX)
 #include <VX/vx_khr_ix.h>
 #endif
-
+#if defined(OPENVX_USE_OPENCL_INTEROP)
+#include <VX/vx_khr_opencl_interop.h>
+#endif
 #define VX_MAX_TENSOR_DIMENSIONS 6
 #define Q78_FIXED_POINT_POSITION 8
 
@@ -988,6 +990,11 @@ typedef struct _vx_context {
     vx_enum             imm_target_enum;
     /*! \brief The immediate mode target string */
     vx_char             imm_target_string[VX_MAX_TARGET_NAME];
+#if defined (OPENVX_USE_OPENCL_INTEROP)
+    cl_context opencl_context;
+    cl_command_queue opencl_command_queue;
+#endif
+
 } vx_context_t;
 
 /*! \brief A data structure used to track the various costs which could being optimized.
