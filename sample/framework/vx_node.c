@@ -277,6 +277,18 @@ VX_API_ENTRY vx_status VX_API_CALL vxQueryNode(vx_node n, vx_enum attribute, voi
                     status = VX_ERROR_INVALID_PARAMETERS;
                 }
                 break;
+#ifdef OPENVX_USE_OPENCL_INTEROP
+            case VX_NODE_CL_COMMAND_QUEUE:
+                if (VX_CHECK_PARAM(ptr, size, cl_command_queue, 0x3))
+                {
+                    *(cl_command_queue *)ptr = node->base->context->opencl_command_queue;
+                }
+                else
+                {
+                    status = VX_ERROR_INVALID_PARAMETERS;
+                }
+                break;
+#endif
             default:
                 status = VX_ERROR_NOT_SUPPORTED;
                 break;
