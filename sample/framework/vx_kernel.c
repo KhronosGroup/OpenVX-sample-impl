@@ -118,6 +118,9 @@ vx_status ownInitializeKernel(vx_context context,
         kernel->attributes.borders.constant_value.U32 = 0;
         kernel->attributes.valid_rect_reset = vx_false_e; /* default value for std nodes */
         kernel->attributes.localDataSize = 0;
+#ifdef OPENVX_USE_OPENCL_INTEROP
+        kernel->attributes.opencl_access = vx_false_e;
+#endif
         if (kernel->signature.num_parameters <= VX_INT_MAX_PARAMS)
         {
             vx_uint32 p = 0;
@@ -767,6 +770,18 @@ VX_API_ENTRY vx_status VX_API_CALL vxQueryKernel(vx_kernel kern, vx_enum attribu
                 }
                 break;
 #endif
+#ifdef OPENVX_USE_OPENCL_INTEROP
+            case VX_KERNEL_USE_OPENCL:
+                if (VX_CHECK_PARAM(ptr, size, vx_bool, 0x3))
+                {
+                    (*vx_bool *)ptr = &kernel->attributes.opencl_access;
+                }
+                else
+                {
+                    status = VX_ERROR_INVALID_PARAMETERS;
+                }
+                break;
+#endif
             default:
                 status = VX_ERROR_NOT_SUPPORTED;
                 break;
@@ -993,6 +1008,17 @@ VX_API_ENTRY vx_status VX_API_CALL vxSetKernelAttribute(vx_kernel k, vx_enum att
                 status = VX_ERROR_INVALID_PARAMETERS;
             }
             break;
+#endif
+#ifdef OPENVX_USE_OPENCL_INTEROP
+        case VX_KERNEL_USE_OPENCL:
+            if (VX_CHECK_PARAM(ptr, size, vx_bool, 0x3))
+            {
+                kernel->attributes.opencl_access = *(vx_bool *)ptr;
+            }
+            else
+            {
+                status = VX_ERROR_INVALID_VALUE;
+            }
 #endif
         default:
             status = VX_ERROR_NOT_SUPPORTED;

@@ -660,6 +660,10 @@ typedef struct _vx_kernel_attr_t {
 #endif
     /*! \brief The reset valid rectangle flag */
     vx_bool       valid_rect_reset;
+
+#ifdef OPENVX_USE_OPENCL_INTEROP
+    vx_bool opencl_access;
+#endif
 } vx_kernel_attr_t;
 
 /*! \brief The internal representation of an abstract kernel.
