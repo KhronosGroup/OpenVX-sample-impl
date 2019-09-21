@@ -852,8 +852,11 @@ VX_API_ENTRY vx_image VX_API_CALL vxCreateImageFromHandle(vx_context context, vx
                 vxReleaseImage(&image);
                 return (vx_image)ownGetErrorObject(context, VX_ERROR_INVALID_PARAMETERS);
             }
-
+#ifdef OPENVX_USE_OPENCL_INTEROP
+            clEnqueueReadBuffer(context->opencl_command_queue, *ptrs[p], CL_TRUE, sizeof(vx_uint8) * sizeof(*ptrs[p]), *image->memory.ptrs[p], 0, NULL, NULL);
+#else
             image->memory.ptrs[p] = ptrs[p];
+#endif            
             image->memory.strides[p][VX_DIM_C] = (vx_uint32)vxSizeOfChannel(color);
             image->memory.strides[p][VX_DIM_X] = addrs[p].stride_x;
             image->memory.strides[p][VX_DIM_Y] = addrs[p].stride_y;
