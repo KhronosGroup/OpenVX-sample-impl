@@ -148,6 +148,11 @@ VX_INT_API vx_bool ownIsValidImport(vx_enum type)
         case VX_MEMORY_TYPE_HOST:
             ret = vx_true_e;
             break;
+#ifdef OPENVX_USE_OPENCL_INTEROP
+        case VX_MEMORY_TYPE_OPENCL_BUFFER:
+            ret = vx_true_e;
+            break;
+#endif
         case VX_MEMORY_TYPE_NONE:
         default:
             ret = vx_false_e;

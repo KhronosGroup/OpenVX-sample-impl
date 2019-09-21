@@ -48,7 +48,9 @@ static vx_bool vxIsValidArrayItemType(vx_context context, vx_enum item_type)
     {
         res = vx_true_e;
     }
-
+#ifdef OPENVX_USE_OPENCL_INTEROP
+    if (type == VX_MEMORY_TYPE_OPENCL_BUFFER) res = vx_true_e;
+#endif
     return res;
 }
 
