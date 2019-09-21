@@ -281,7 +281,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxQueryNode(vx_node n, vx_enum attribute, voi
             case VX_NODE_CL_COMMAND_QUEUE:
                 if (VX_CHECK_PARAM(ptr, size, cl_command_queue, 0x3))
                 {
-                    *(cl_command_queue *)ptr = node->base->context->opencl_command_queue;
+                    *(cl_command_queue *)ptr = node->base.context->opencl_command_queue;
                 }
                 else
                 {

@@ -774,7 +774,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxQueryKernel(vx_kernel kern, vx_enum attribu
             case VX_KERNEL_USE_OPENCL:
                 if (VX_CHECK_PARAM(ptr, size, vx_bool, 0x3))
                 {
-                    (*vx_bool *)ptr = &kernel->attributes.opencl_access;
+                    *(vx_bool *)ptr = kernel->attributes.opencl_access;
                 }
                 else
                 {

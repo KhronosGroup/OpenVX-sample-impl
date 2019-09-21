@@ -853,7 +853,8 @@ VX_API_ENTRY vx_image VX_API_CALL vxCreateImageFromHandle(vx_context context, vx
                 return (vx_image)ownGetErrorObject(context, VX_ERROR_INVALID_PARAMETERS);
             }
 #ifdef OPENVX_USE_OPENCL_INTEROP
-            clEnqueueReadBuffer(context->opencl_command_queue, *ptrs[p], CL_TRUE, sizeof(vx_uint8) * sizeof(*ptrs[p]), *image->memory.ptrs[p], 0, NULL, NULL);
+            //clEnqueueReadBuffer(context->opencl_command_queue, ptrs[p], CL_TRUE, 0, sizeof(vx_uint8) * sizeof(*ptrs[p]), (void *) image->memory.ptrs[p], 0, NULL, NULL);
+            image->memory.ptrs[p] = ptrs[p];
 #else
             image->memory.ptrs[p] = ptrs[p];
 #endif            
