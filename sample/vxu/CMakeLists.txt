@@ -24,7 +24,11 @@ include_directories( BEFORE
                      ${CMAKE_SOURCE_DIR}/debug
                      ${VX_HEADER_DIR}
                      )
-					 
+
+if (OPENVX_USE_OPENCL_INTEROP)
+    include_directories(${OpenCL_INCLUDE_DIRS} ${OpenCL_INCLUDE_DIRS}/Headers)
+endif (OPENVX_USE_OPENCL_INTEROP)
+
 if ((WIN32) OR (CYGWIN))
    add_definitions( ${OPENVX_BUILDING_EXPORT_DEF} )
 endif ((WIN32) OR (CYGWIN))
@@ -43,6 +47,10 @@ if (CYGWIN)
 endif (CYGWIN)
 
 target_link_libraries( ${TARGET_NAME} openvx openvx-helper )
+
+if (OPENVX_USE_OPENCL_INTEROP)
+    target_link_libraries( openvx ${OpeCL_LIBRARIES})
+endif (OPENVX_USE_OPENCL_INTEROP)
 
 install ( TARGETS ${TARGET_NAME} 
           RUNTIME DESTINATION bin

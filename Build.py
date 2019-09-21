@@ -85,6 +85,7 @@ def main():
     # Official extensions
     parser.add_option("--ix", dest="ix", help="Add -DOPENVX_USE_IX=ON to support the import-export extension", default=False, action='store_true')
     parser.add_option("--nn", dest="nn", help="Add -DOPENVX_USE_NN=ON to support the neural network extension", default=False, action='store_true')
+    parser.add_option("--opencl", dest="opencl", help="Add -DOPENVX_USE_OPENCL_INTEROP=ON to support OpenVX OpenCL InterOp", default=False, action='store_true')
     # Provisional extensions
     parser.add_option("--tiling", dest="tiling", help="Add -DOPENVX_USE_TILING=ON to support the tiling extension", default=False, action='store_true')
     parser.add_option("--s16", dest="s16", help="Add -DOPENVX_USE_S16=ON to have an extended support for S16", default=False, action='store_true')
@@ -186,6 +187,8 @@ def main():
         cmd += ['-DOPENVX_USE_IX=ON']
     if options.nn:
         cmd += ['-DOPENVX_USE_NN=ON']
+    if options.opencl:
+        cmd += ['-DOPENVX_USE_OPENCL_INTEROP=ON']
 #    if options.nn16:
 #        cmd += ['-DOPENVX_USE_NN_16=ON']
     if options.tiling:

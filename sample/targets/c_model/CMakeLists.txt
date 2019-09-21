@@ -27,6 +27,10 @@ include_directories( BEFORE
                      ${CMAKE_SOURCE_DIR}/utils
                      )
 
+if (OPENVX_USE_OPENCL_INTEROP)
+    include_directories( ${OpenCL_INCLUDE_DIRS} ${OpenCL_INCLUDE_DIRS}/Headers  )
+endif (OPENVX_USE_OPENCL_INTEROP)
+
 FIND_SOURCES()
 
 if ((WIN32) OR (CYGWIN))
