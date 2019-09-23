@@ -209,7 +209,7 @@ void IntegralImage_image_tiling_flexible(void * parameters[], void * tile_memory
     }
     else
     {
-        INTEGRAL_IMAGE(0, high_y, low_x)
+        INTEGRAL_IMAGE(0, low_y, low_x)
 
         vx_uint8 *src_base = in->base[0];
         vx_uint8 *dst_base = out->base[0];

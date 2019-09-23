@@ -386,10 +386,17 @@ VX_API_ENTRY vx_node VX_API_CALL vxConvolveNode(vx_graph graph, vx_image input, 
         (vx_reference)conv,
         (vx_reference)output,
     };
+#if defined(OPENVX_USE_TILING)
+    return vxCreateNodeByStructure(graph,
+                                   VX_KERNEL_CUSTOM_CONVOLUTION_TILING,
+                                   params,
+                                   dimof(params));
+#else
     return vxCreateNodeByStructure(graph,
                                    VX_KERNEL_CUSTOM_CONVOLUTION,
                                    params,
                                    dimof(params));
+#endif
 }
 
 VX_API_ENTRY vx_node VX_API_CALL vxGaussianPyramidNode(vx_graph graph, vx_image input, vx_pyramid gaussian)
@@ -905,10 +912,17 @@ VX_API_ENTRY vx_node VX_API_CALL vxRemapNode(vx_graph graph,
             (vx_reference)spolicy,
             (vx_reference)output,
     };
+#if defined(OPENVX_USE_TILING)
+    vx_node node = vxCreateNodeByStructure(graph,
+                                           VX_KERNEL_REMAP_TILING,
+                                           params,
+                                           dimof(params));
+#else
     vx_node node = vxCreateNodeByStructure(graph,
                                            VX_KERNEL_REMAP,
                                            params,
                                            dimof(params));
+#endif
     vxReleaseScalar(&spolicy);
 
     if (vxGetStatus((vx_reference)node) == VX_SUCCESS)

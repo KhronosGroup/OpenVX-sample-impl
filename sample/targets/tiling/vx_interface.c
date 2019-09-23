@@ -50,6 +50,8 @@ vx_tiling_kernel_t *tiling_kernels[] =
     &weightedaverage_kernel,
     &absdiff_kernel,
     &integral_image_kernel,
+    &remap_kernel,
+    &convolution_kernel,
 };
 
 /*! \brief The Entry point into a user defined kernel module */
@@ -441,6 +443,7 @@ vx_status VX_CALLBACK vxTilingKernel(vx_node node, vx_reference parameters[], vx
 
     vx_tile_threshold_t threshold[VX_INT_MAX_PARAMS];
     vx_tile_matrix_t mask[VX_INT_MAX_PARAMS];
+    vx_tile_convolution_t conv[VX_INT_MAX_PARAMS];
 
     /* Do the following:
      * \arg find out each parameters direction
@@ -500,10 +503,25 @@ vx_status VX_CALLBACK vxTilingKernel(vx_node node, vx_reference parameters[], vx
             if ((mask[p].data_type != VX_TYPE_UINT8) || (sizeof(mask[p].m) < mask[p].rows * mask[p].columns))
                 status = VX_ERROR_INVALID_PARAMETERS;
 
-            status |= vxCopyMatrix((vx_matrix)parameters[p], mask[p].m, VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
-            status |= vxCopyMatrix((vx_matrix)parameters[p], mask[p].m_f32, VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
+            vxCopyMatrix((vx_matrix)parameters[p], mask[p].m, VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
+            vxCopyMatrix((vx_matrix)parameters[p], mask[p].m_f32, VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
 
             params[p] = &mask[p];
+        }
+        else if (types[p] == VX_TYPE_REMAP)
+        {
+            vx_remap map = (vx_remap)parameters[p];
+            params[p] = &map;
+        }
+        else if (types[p] == VX_TYPE_CONVOLUTION)
+        {
+            vxQueryConvolution((vx_convolution)parameters[p], VX_CONVOLUTION_COLUMNS, &conv[p].conv_width, sizeof(conv[p].conv_width));
+            vxQueryConvolution((vx_convolution)parameters[p], VX_CONVOLUTION_ROWS, &conv[p].conv_height, sizeof(conv[p].conv_height));
+            vxQueryConvolution((vx_convolution)parameters[p], VX_CONVOLUTION_SCALE, &conv[p].scale, sizeof(conv[p].scale));
+
+            vxCopyConvolutionCoefficients((vx_convolution)parameters[p], conv[p].conv_mat, VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
+
+            params[p] = &conv[p];
         }
     }
 

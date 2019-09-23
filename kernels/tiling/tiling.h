@@ -94,3 +94,6 @@ void AbsDiff_image_tiling_flexible(void * parameters[], void * tile_memory, vx_s
 
 void IntegralImage_image_tiling_fast(void * parameters[], void * tile_memory, vx_size tile_memory_size);
 void IntegralImage_image_tiling_flexible(void * parameters[], void * tile_memory, vx_size tile_memory_size);
+
+void Convolve_image_tiling_fast(void * parameters[], void * tile_memory, vx_size tile_memory_size);
+void Convolve_image_tiling_flexible(void * parameters[], void * tile_memory, vx_size tile_memory_size);
