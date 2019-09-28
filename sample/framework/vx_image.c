@@ -857,7 +857,7 @@ VX_API_ENTRY vx_image VX_API_CALL vxCreateImageFromHandle(vx_context context, vx
             image->memory.ptrs[p] = ptrs[p];
 #else
             image->memory.ptrs[p] = ptrs[p];
-#endif            
+#endif
             image->memory.strides[p][VX_DIM_C] = (vx_uint32)vxSizeOfChannel(color);
             image->memory.strides[p][VX_DIM_X] = addrs[p].stride_x;
             image->memory.strides[p][VX_DIM_Y] = addrs[p].stride_y;

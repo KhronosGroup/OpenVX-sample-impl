@@ -30,6 +30,15 @@ vx_bool ownFreeMemory(vx_context context, vx_memory_t *memory)
         {
             if (memory->ptrs[p])
             {
+#ifdef OPENVX_USE_OPENCL_INTEROP
+                if (context->opencl_context)
+                {
+                    cl_int cerr = clReleaseMemObject(memory->opencl_buf[p]);
+                    VX_PRINT(VX_ZONE_CONTEXT, "OPENCL: ownFreeMemory: clReleaseMemObject(%p) => (%d)\n",
+                        memory->opencl_buf[p], cerr);
+                    memory->opencl_buf[p] = NULL;
+                }
+#endif
                 VX_PRINT(VX_ZONE_INFO, "Freeing %p\n", memory->ptrs[p]);
                 free(memory->ptrs[p]);
                 ownDestroySem(&memory->locks[p]);
@@ -65,6 +74,41 @@ vx_bool ownAllocateMemory(vx_context context, vx_memory_t *memory)
             }
             /* don't presume that memory should be zeroed */
             memory->ptrs[p] = malloc(size);
+#ifdef OPENVX_USE_OPENCL_INTEROP
+            memory->opencl_buf[p] = NULL;
+            memory->opencl_offset[p] = 0;
+            if (memory->ptrs[p] && context->opencl_context)
+            {
+                /* create OpenCL buffer using the host allocated pointer */
+                cl_int cerr = 0;
+                memory->opencl_buf[p] = clCreateBuffer(context->opencl_context,
+                    CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR,
+                    size, memory->ptrs[p], &cerr);
+                VX_PRINT(VX_ZONE_CONTEXT, "OPENCL: ownAllocateMemory: clCreateBuffer(%u) => %p (%d)\n",
+                    (vx_uint32)size, memory->opencl_buf[p], cerr);
+                if (cerr != CL_SUCCESS)
+                {
+                    free(memory->ptrs[p]);
+                    memory->ptrs[p] = NULL;
+                }
+                else
+                {
+                    /* lock OpenCL buffer for use by host */
+                    void * buf_map = clEnqueueMapBuffer(context->opencl_command_queue,
+                        memory->opencl_buf[p], CL_TRUE, CL_MAP_READ | CL_MAP_WRITE,
+                        0, size, 0, NULL, NULL, &cerr);
+                    VX_PRINT(VX_ZONE_CONTEXT, "OPENCL: ownAllocateMemory: clEnqueueMapBuffer(%p) => %p/%p (%u)\n",
+                        memory->opencl_buf[p], buf_map, memory->ptrs[p], cerr);
+                    if (cerr != CL_SUCCESS || buf_map != (void *)memory->ptrs[p])
+                    {
+                        free(memory->ptrs[p]);
+                        memory->ptrs[p] = NULL;
+                        clReleaseMemObject(memory->opencl_buf[p]);
+                        memory->opencl_buf[p] = NULL;
+                    }
+                }
+            }
+#endif
             if (memory->ptrs[p] == NULL)
             {
                 vx_uint32 pi;
@@ -76,6 +120,16 @@ vx_bool ownAllocateMemory(vx_context context, vx_memory_t *memory)
                     VX_PRINT(VX_ZONE_INFO, "Freeing %p\n", memory->ptrs[pi]);
                     free(memory->ptrs[pi]);
                     memory->ptrs[pi] = NULL;
+#ifdef OPENVX_USE_OPENCL_INTEROP
+                    if (memory->opencl_buf[pi])
+                    {
+                        clEnqueueUnmapMemObject(context->opencl_command_queue,
+                            memory->opencl_buf[pi], memory->ptrs[pi], 0, NULL, NULL);
+                        clFinish(context->opencl_command_queue);
+                        clReleaseMemObject(memory->opencl_buf[pi]);
+                        memory->opencl_buf[pi] = NULL;
+                    }
+#endif
                 }
                 break;
             }

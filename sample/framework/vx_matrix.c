@@ -53,12 +53,6 @@ VX_API_ENTRY vx_matrix VX_API_CALL vxCreateMatrix(vx_context context, vx_enum da
     {
         dim = sizeof(vx_uint64);
     }
-#ifdef OPENVX_USE_OPENCL_INTEROP
-    else if ((data_type == VX_MEMORY_TYPE_OPENCL_BUFFER))
-    {
-        dim = sizeof(cl_mem);
-    }
-#endif
     if (dim == 0ul)
     {
         VX_PRINT(VX_ZONE_ERROR, "Invalid data type\n");

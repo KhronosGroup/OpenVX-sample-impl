@@ -79,7 +79,7 @@
 #if defined(OPENVX_USE_IX)
 #include <VX/vx_khr_ix.h>
 #endif
-#if defined(OPENVX_USE_OPENCL_INTEROP)
+#ifdef OPENVX_USE_OPENCL_INTEROP
 #include <VX/vx_khr_opencl_interop.h>
 #endif
 #define VX_MAX_TENSOR_DIMENSIONS 6
@@ -925,6 +925,10 @@ typedef struct _vx_memory_map_t
     vx_uint32 flags;
     /*! \brief The mapping buffer pointer associated with the reference. */
     void* ptr;
+#ifdef OPENVX_USE_OPENCL_INTEROP
+    cl_mem         opencl_buf;
+    vx_uint32      opencl_offset;
+#endif
 } vx_memory_map_t;
 
 /*! \brief The top level context data for the entire OpenVX instance
@@ -994,7 +998,7 @@ typedef struct _vx_context {
     vx_enum             imm_target_enum;
     /*! \brief The immediate mode target string */
     vx_char             imm_target_string[VX_MAX_TARGET_NAME];
-#if defined (OPENVX_USE_OPENCL_INTEROP)
+#ifdef OPENVX_USE_OPENCL_INTEROP
     cl_context opencl_context;
     cl_command_queue opencl_command_queue;
 #endif
@@ -1139,6 +1143,10 @@ typedef struct _vx_memory_t {
     vx_uint32      offset[VX_PLANE_MAX];
     /*! \brief The array of pointers (one per plane for images) */
     vx_uint8*      ptrs[VX_PLANE_MAX];
+#ifdef OPENVX_USE_OPENCL_INTEROP
+    cl_mem         opencl_buf[VX_PLANE_MAX];
+    vx_uint32      opencl_offset[VX_PLANE_MAX];
+#endif
     /*! \brief The number of dimensions per ptr */
     vx_uint32       ndims;
     /*! \brief The dimensional values per ptr */

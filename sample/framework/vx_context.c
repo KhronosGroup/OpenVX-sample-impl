@@ -40,6 +40,10 @@ const vx_char extensions[] =
 #endif
     " ";
 
+static vx_context_t *single_context = NULL;
+static vx_sem_t context_lock;
+static vx_sem_t global_lock;
+
 static vx_bool vxWorkerNode(vx_threadpool_worker_t *worker)
 {
     vx_bool ret = vx_true_e;
@@ -150,7 +154,9 @@ VX_INT_API vx_bool ownIsValidImport(vx_enum type)
             break;
 #ifdef OPENVX_USE_OPENCL_INTEROP
         case VX_MEMORY_TYPE_OPENCL_BUFFER:
-            ret = vx_true_e;
+            if (single_context && single_context->opencl_context) {
+                ret = vx_true_e;
+            }
             break;
 #endif
         case VX_MEMORY_TYPE_NONE:
@@ -405,10 +411,6 @@ VX_INT_API void ownMemoryUnmap(vx_context context, vx_uint32 map_id)
 /* PUBLIC API */
 /******************************************************************************/
 
-static vx_context_t *single_context = NULL;
-static vx_sem_t context_lock;
-static vx_sem_t global_lock;
-
 /* Note: context is an exception in term of error management since it
    returns 0 in case of error. This is due to the fact that error
    objects belong to the context in this implementation. But since
@@ -443,6 +445,10 @@ VX_API_ENTRY vx_context VX_API_CALL vxCreateContext(void)
         if (context)
         {
             vx_uint32 p = 0u, p2 = 0u, t = 0u, m = 0u;
+#ifdef OPENVX_USE_OPENCL_INTEROP
+            context->opencl_context = NULL;
+            context->opencl_command_queue = NULL;
+#endif
             context->p_global_lock = &global_lock;
             context->imm_border.mode = VX_BORDER_UNDEFINED;
             context->imm_border_policy = VX_BORDER_POLICY_DEFAULT_TO_UNDEFINED;
@@ -926,7 +932,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxQueryContext(vx_context context, vx_enum at
                     status = VX_ERROR_INVALID_PARAMETERS;
                 }
                 break;
-#if defined(OPENVX_USE_OPENCL_INTEROP)
+#ifdef OPENVX_USE_OPENCL_INTEROP
             case VX_CONTEXT_CL_CONTEXT:
                 if (VX_CHECK_PARAM(ptr, size, cl_context, 0x3))
                 {
@@ -1200,15 +1206,12 @@ VX_API_ENTRY vx_status VX_API_CALL vxSetImmediateModeTarget(vx_context context, 
     return status;
 }
 
-#if defined (OPENVX_USE_OPENCL_INTEROP)
-
+#ifdef OPENVX_USE_OPENCL_INTEROP
 VX_API_ENTRY vx_context VX_API_CALL vxCreateContextFromCL(cl_context opencl_context, cl_command_queue opencl_command_queue)
 {
     vx_context context = vxCreateContext();
     context->opencl_context = opencl_context;
     context->opencl_command_queue = opencl_command_queue;
-
-    return (vx_context)context;
+    return context;
 }
-
-#endif 
+#endif
