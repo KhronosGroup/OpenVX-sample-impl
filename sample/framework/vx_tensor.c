@@ -496,6 +496,35 @@ VX_API_ENTRY vx_status VX_API_CALL vxCopyTensorPatch(vx_tensor tensor, vx_size n
         goto exit;
 
     }
+
+#ifdef OPENVX_USE_OPENCL_INTEROP
+    void * user_ptr_given = user_ptr;
+    vx_enum user_memory_type_given = user_memory_type;
+    if (user_memory_type == VX_MEMORY_TYPE_OPENCL_BUFFER)
+    {
+        // get user_ptr from OpenCL buffer for HOST
+        size_t size = 0;
+        cl_mem opencl_buf = (cl_mem)user_ptr;
+        cl_int cerr = clGetMemObjectInfo(opencl_buf, CL_MEM_SIZE, sizeof(size_t), &size, NULL);
+        VX_PRINT(VX_ZONE_CONTEXT, "OPENCL: vxCopyTensorPatch: clGetMemObjectInfo(%p) => (%d)\n",
+            opencl_buf, cerr);
+        if (cerr != CL_SUCCESS)
+        {
+            return VX_ERROR_INVALID_PARAMETERS;
+        }
+        user_ptr = clEnqueueMapBuffer(tensor->base.context->opencl_command_queue,
+            opencl_buf, CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, 0, size,
+            0, NULL, NULL, &cerr);
+        VX_PRINT(VX_ZONE_CONTEXT, "OPENCL: vxCopyTensorPatch: clEnqueueMapBuffer(%p,%d) => %p (%d)\n",
+            opencl_buf, (int)size, user_ptr, cerr);
+        if (cerr != CL_SUCCESS)
+        {
+            return VX_ERROR_INVALID_PARAMETERS;
+        }
+        user_memory_type = VX_MEMORY_TYPE_HOST;
+    }
+#endif
+
     //element_size = ownSizeOfType(tensor->data_type);
     vx_uint8* user_curr_ptr = (vx_uint8*)user_ptr;
     vx_uint8* tensor_ptr = (vx_uint8*)tensor->addr;
@@ -512,6 +541,15 @@ VX_API_ENTRY vx_status VX_API_CALL vxCopyTensorPatch(vx_tensor tensor, vx_size n
 
     }
     status = VX_SUCCESS;
+
+#ifdef OPENVX_USE_OPENCL_INTEROP
+    if (user_memory_type_given == VX_MEMORY_TYPE_OPENCL_BUFFER)
+    {
+        clEnqueueUnmapMemObject(tensor->base.context->opencl_command_queue,
+            (cl_mem)user_ptr_given, user_ptr, 0, NULL, NULL);
+        clFinish(tensor->base.context->opencl_command_queue);
+    }
+#endif
 
 exit:
     VX_PRINT(VX_ZONE_API, "returned %d\n", status);

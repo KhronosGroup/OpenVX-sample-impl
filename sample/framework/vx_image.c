@@ -853,11 +853,26 @@ VX_API_ENTRY vx_image VX_API_CALL vxCreateImageFromHandle(vx_context context, vx
                 return (vx_image)ownGetErrorObject(context, VX_ERROR_INVALID_PARAMETERS);
             }
 #ifdef OPENVX_USE_OPENCL_INTEROP
-            //clEnqueueReadBuffer(context->opencl_command_queue, ptrs[p], CL_TRUE, 0, sizeof(vx_uint8) * sizeof(*ptrs[p]), (void *) image->memory.ptrs[p], 0, NULL, NULL);
-            image->memory.ptrs[p] = ptrs[p];
-#else
-            image->memory.ptrs[p] = ptrs[p];
+            if (context->opencl_context && ptrs[p])
+            {
+                vx_rectangle_t rect = { 0, 0, image->width, image->height };
+                vx_size size = vxComputeImagePatchSize(image, &rect, p);
+                cl_int cerr;
+                image->memory.opencl_buf[p] = (cl_mem)ptrs[p];
+                image->memory.ptrs[p] = clEnqueueMapBuffer(context->opencl_command_queue,
+                    image->memory.opencl_buf[p], CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, 0, size,
+                    0, NULL, NULL, &cerr);
+                VX_PRINT(VX_ZONE_CONTEXT, "OPENCL: vxCreateImageFromHandle: clEnqueueMapBuffer(%p) => %p (%d)\n",
+                    image->memory.opencl_buf[p], image->memory.ptrs[p], cerr);
+                if (cerr != CL_SUCCESS)
+                {
+                    vxReleaseImage(&image);
+                    return (vx_image)ownGetErrorObject(context, VX_ERROR_INVALID_PARAMETERS);
+                }
+            }
+            else
 #endif
+            image->memory.ptrs[p] = ptrs[p];
             image->memory.strides[p][VX_DIM_C] = (vx_uint32)vxSizeOfChannel(color);
             image->memory.strides[p][VX_DIM_X] = addrs[p].stride_x;
             image->memory.strides[p][VX_DIM_Y] = addrs[p].stride_y;
@@ -902,6 +917,18 @@ VX_API_ENTRY vx_status VX_API_CALL vxSwapImageHandle(vx_image image, void* const
                 /* return previous image handles */
                 for (p = 0; p < image->planes; p++)
                 {
+#ifdef OPENVX_USE_OPENCL_INTEROP
+                    if (image->memory_type == VX_MEMORY_TYPE_OPENCL_BUFFER)
+                    {
+                        clEnqueueUnmapMemObject(image->base.context->opencl_command_queue,
+                            image->memory.opencl_buf[p], image->memory.ptrs[p], 0, NULL, NULL);
+                        clFinish(image->base.context->opencl_command_queue);
+                        prev_ptrs[p] = image->memory.opencl_buf[p];
+                        image->memory.opencl_buf[p] = NULL;
+                        image->memory.ptrs[p] = NULL;
+                    }
+                    else
+#endif
                     prev_ptrs[p] = image->memory.ptrs[p];
                 }
             }
@@ -938,6 +965,31 @@ VX_API_ENTRY vx_status VX_API_CALL vxSwapImageHandle(vx_image image, void* const
                 else
                 {
                     /* set new pointers for subimage */
+#ifdef OPENVX_USE_OPENCL_INTEROP
+                    if (image->memory_type == VX_MEMORY_TYPE_OPENCL_BUFFER)
+                    {
+                        image->memory.opencl_buf[p] = (cl_mem)new_ptrs[p];
+                        size_t size = 0;
+                        cl_int cerr = clGetMemObjectInfo(image->memory.opencl_buf[p],
+                                            CL_MEM_SIZE, sizeof(size_t), &size, NULL);
+                        VX_PRINT(VX_ZONE_CONTEXT, "OPENCL: vxSwapImageHandle: clGetMemObjectInfo(%p) => (%d)\n",
+                            image->memory.opencl_buf[p], cerr);
+                        if (cerr != CL_SUCCESS)
+                        {
+                            return VX_ERROR_INVALID_PARAMETERS;
+                        }
+                        image->memory.ptrs[p] = clEnqueueMapBuffer(image->base.context->opencl_command_queue,
+                            image->memory.opencl_buf[p], CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, 0, size,
+                            0, NULL, NULL, &cerr);
+                        VX_PRINT(VX_ZONE_CONTEXT, "OPENCL: vxSwapImageHandle: clEnqueueMapBuffer(%p) => %p (%d)\n",
+                            image->memory.opencl_buf[p], image->memory.ptrs[p], cerr);
+                        if (cerr != CL_SUCCESS)
+                        {
+                            return VX_ERROR_INVALID_PARAMETERS;
+                        }
+                    }
+                    else
+#endif
                     image->memory.ptrs[p] = new_ptrs[p];
                 }
             }
@@ -1856,6 +1908,34 @@ VX_API_ENTRY vx_status VX_API_CALL vxCopyImagePatch(
     VX_PRINT(VX_ZONE_IMAGE, "CopyImagePatch from "VX_FMT_REF" to ptr %p from {%u,%u} to {%u,%u} plane %u\n",
         image, ptr, start_x, start_y, end_x, end_y, plane_index);
 
+#ifdef OPENVX_USE_OPENCL_INTEROP
+    void * ptr_given = ptr;
+    vx_enum mem_type_given = mem_type;
+    if (mem_type == VX_MEMORY_TYPE_OPENCL_BUFFER)
+    {
+        // get ptr from OpenCL buffer for HOST
+        size_t size = 0;
+        cl_mem opencl_buf = (cl_mem)ptr;
+        cl_int cerr = clGetMemObjectInfo(opencl_buf, CL_MEM_SIZE, sizeof(size_t), &size, NULL);
+        VX_PRINT(VX_ZONE_CONTEXT, "OPENCL: vxCopyImagePatch: clGetMemObjectInfo(%p) => (%d)\n",
+            opencl_buf, cerr);
+        if (cerr != CL_SUCCESS)
+        {
+            return VX_ERROR_INVALID_PARAMETERS;
+        }
+        ptr = clEnqueueMapBuffer(image->base.context->opencl_command_queue,
+            opencl_buf, CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, 0, size,
+            0, NULL, NULL, &cerr);
+        VX_PRINT(VX_ZONE_CONTEXT, "OPENCL: vxCopyImagePatch: clEnqueueMapBuffer(%p,%d) => %p (%d)\n",
+            opencl_buf, (int)size, ptr, cerr);
+        if (cerr != CL_SUCCESS)
+        {
+            return VX_ERROR_INVALID_PARAMETERS;
+        }
+        mem_type = VX_MEMORY_TYPE_HOST;
+    }
+#endif
+
     if (usage == VX_READ_ONLY)
     {
         /* Copy from image (READ) mode */
@@ -2007,6 +2087,15 @@ VX_API_ENTRY vx_status VX_API_CALL vxCopyImagePatch(
         ownSemPost(&image->memory.locks[plane_index]);
     }
 
+#ifdef OPENVX_USE_OPENCL_INTEROP
+    if (mem_type_given == VX_MEMORY_TYPE_OPENCL_BUFFER)
+    {
+        clEnqueueUnmapMemObject(image->base.context->opencl_command_queue,
+            (cl_mem)ptr_given, ptr, 0, NULL, NULL);
+        clFinish(image->base.context->opencl_command_queue);
+    }
+#endif
+
     status = VX_SUCCESS;
 
 exit:
@@ -2028,6 +2117,14 @@ VX_API_ENTRY vx_status VX_API_CALL vxMapImagePatch(
     vx_enum mem_type,
     vx_uint32 flags)
 {
+#ifdef OPENVX_USE_OPENCL_INTEROP
+    vx_enum mem_type_requested = mem_type;
+    if (mem_type == VX_MEMORY_TYPE_OPENCL_BUFFER)
+    {
+        mem_type = VX_MEMORY_TYPE_HOST;
+    }
+#endif
+    vx_size size = 0;
     vx_uint32 start_x = rect ? rect->start_x : 0u;
     vx_uint32 start_y = rect ? rect->start_y : 0u;
     vx_uint32 end_x   = rect ? rect->end_x : 0u;
@@ -2097,7 +2194,6 @@ VX_API_ENTRY vx_status VX_API_CALL vxMapImagePatch(
 
     /* MAP mode */
     {
-        vx_size size;
         vx_memory_map_extra extra;
         vx_uint8* buf = 0;
 
@@ -2195,6 +2291,31 @@ VX_API_ENTRY vx_status VX_API_CALL vxMapImagePatch(
     }
 
 exit:
+
+#ifdef OPENVX_USE_OPENCL_INTEROP
+    if ((status == VX_SUCCESS) && image->base.context->opencl_context &&
+        (mem_type_requested == VX_MEMORY_TYPE_OPENCL_BUFFER) &&
+        (size > 0) && ptr && *ptr)
+    {
+        /* create OpenCL buffer using the host allocated pointer */
+        cl_int cerr = 0;
+        cl_mem opencl_buf = clCreateBuffer(image->base.context->opencl_context,
+            CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR,
+            size, *ptr, &cerr);
+        VX_PRINT(VX_ZONE_CONTEXT, "OPENCL: vxMapImagePatch: clCreateBuffer(%u) => %p (%d)\n",
+            (vx_uint32)size, opencl_buf, cerr);
+        if (cerr == CL_SUCCESS)
+        {
+            image->base.context->memory_maps[*map_id].opencl_buf = opencl_buf;
+            *ptr = opencl_buf;
+        }
+        else
+        {
+            status = VX_FAILURE;
+        }
+    }
+#endif
+
     VX_PRINT(VX_ZONE_API, "return %d\n", status);
 
     return status;
@@ -2218,6 +2339,22 @@ VX_API_ENTRY vx_status VX_API_CALL vxUnmapImagePatch(vx_image image, vx_map_id m
         VX_PRINT(VX_ZONE_ERROR, "Invalid parameters to unmap image patch\n");
         return status;
     }
+
+#ifdef OPENVX_USE_OPENCL_INTEROP
+    if (image->base.context->opencl_context &&
+        image->base.context->memory_maps[map_id].opencl_buf &&
+        image->base.context->memory_maps[map_id].ptr)
+    {
+        clEnqueueUnmapMemObject(image->base.context->opencl_command_queue,
+            image->base.context->memory_maps[map_id].opencl_buf,
+            image->base.context->memory_maps[map_id].ptr, 0, NULL, NULL);
+        clFinish(image->base.context->opencl_command_queue);
+        cl_int cerr = clReleaseMemObject(image->base.context->memory_maps[map_id].opencl_buf);
+        VX_PRINT(VX_ZONE_CONTEXT, "OPENCL: vxUnmapImagePatch: clReleaseMemObject(%p) => (%d)\n",
+            image->base.context->memory_maps[map_id].opencl_buf, cerr);
+        image->base.context->memory_maps[map_id].opencl_buf = NULL;
+    }
+#endif
 
     {
         vx_context       context = image->base.context;

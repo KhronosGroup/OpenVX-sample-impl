@@ -891,7 +891,44 @@ VX_API_ENTRY vx_status VX_API_CALL vxCopyArrayRange(vx_array arr, vx_size start,
         return VX_ERROR_INVALID_REFERENCE;
     }
 
+#ifdef OPENVX_USE_OPENCL_INTEROP
+    void * ptr_given = ptr;
+    vx_enum mem_type_given = mem_type;
+    if (mem_type == VX_MEMORY_TYPE_OPENCL_BUFFER)
+    {
+        // get ptr from OpenCL buffer for HOST
+        size_t size = 0;
+        cl_mem opencl_buf = (cl_mem)ptr;
+        cl_int cerr = clGetMemObjectInfo(opencl_buf, CL_MEM_SIZE, sizeof(size_t), &size, NULL);
+        VX_PRINT(VX_ZONE_CONTEXT, "OPENCL: vxCopyArrayRange: clGetMemObjectInfo(%p) => (%d)\n",
+            opencl_buf, cerr);
+        if (cerr != CL_SUCCESS)
+        {
+            return VX_ERROR_INVALID_PARAMETERS;
+        }
+        ptr = clEnqueueMapBuffer(arr->base.context->opencl_command_queue,
+            opencl_buf, CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, 0, size,
+            0, NULL, NULL, &cerr);
+        VX_PRINT(VX_ZONE_CONTEXT, "OPENCL: vxCopyArrayRange: clEnqueueMapBuffer(%p,%d) => %p (%d)\n",
+            opencl_buf, (int)size, ptr, cerr);
+        if (cerr != CL_SUCCESS)
+        {
+            return VX_ERROR_INVALID_PARAMETERS;
+        }
+        mem_type = VX_MEMORY_TYPE_HOST;
+    }
+#endif
+
     status = ownCopyArrayRangeInt(arr, start, end, stride, ptr, usage, mem_type);
+
+#ifdef OPENVX_USE_OPENCL_INTEROP
+    if (mem_type_given == VX_MEMORY_TYPE_OPENCL_BUFFER)
+    {
+        clEnqueueUnmapMemObject(arr->base.context->opencl_command_queue,
+            (cl_mem)ptr_given, ptr, 0, NULL, NULL);
+        clFinish(arr->base.context->opencl_command_queue);
+    }
+#endif
 
     return status;
 }
@@ -907,7 +944,40 @@ VX_API_ENTRY vx_status VX_API_CALL vxMapArrayRange(vx_array arr, vx_size start, 
         return VX_ERROR_INVALID_REFERENCE;
     }
 
+#ifdef OPENVX_USE_OPENCL_INTEROP
+    vx_enum mem_type_requested = mem_type;
+    if (mem_type == VX_MEMORY_TYPE_OPENCL_BUFFER)
+    {
+        mem_type = VX_MEMORY_TYPE_HOST;
+    }
+#endif
+
     status = ownMapArrayRangeInt(arr, start, end, map_id, stride, ptr, usage, mem_type, flags);
+
+#ifdef OPENVX_USE_OPENCL_INTEROP
+    vx_size size = (end - start) * *stride;
+    if ((status == VX_SUCCESS) && arr->base.context->opencl_context &&
+        (mem_type_requested == VX_MEMORY_TYPE_OPENCL_BUFFER) &&
+        (size > 0) && ptr && *ptr)
+    {
+        /* create OpenCL buffer using the host allocated pointer */
+        cl_int cerr = 0;
+        cl_mem opencl_buf = clCreateBuffer(arr->base.context->opencl_context,
+            CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR,
+            size, *ptr, &cerr);
+        VX_PRINT(VX_ZONE_CONTEXT, "OPENCL: vxMapArrayRange: clCreateBuffer(%u) => %p (%d)\n",
+            (vx_uint32)size, opencl_buf, cerr);
+        if (cerr == CL_SUCCESS)
+        {
+            arr->base.context->memory_maps[*map_id].opencl_buf = opencl_buf;
+            *ptr = opencl_buf;
+        }
+        else
+        {
+            status = VX_FAILURE;
+        }
+    }
+#endif
 
     return status;
 }
@@ -921,6 +991,22 @@ VX_API_ENTRY vx_status VX_API_CALL vxUnmapArrayRange(vx_array arr, vx_map_id map
         VX_PRINT(VX_ZONE_ERROR, "Not a valid array!\n");
         return VX_ERROR_INVALID_REFERENCE;
     }
+
+#ifdef OPENVX_USE_OPENCL_INTEROP
+    if (arr->base.context->opencl_context &&
+        arr->base.context->memory_maps[map_id].opencl_buf &&
+        arr->base.context->memory_maps[map_id].ptr)
+    {
+        clEnqueueUnmapMemObject(arr->base.context->opencl_command_queue,
+            arr->base.context->memory_maps[map_id].opencl_buf,
+            arr->base.context->memory_maps[map_id].ptr, 0, NULL, NULL);
+        clFinish(arr->base.context->opencl_command_queue);
+        cl_int cerr = clReleaseMemObject(arr->base.context->memory_maps[map_id].opencl_buf);
+        VX_PRINT(VX_ZONE_CONTEXT, "OPENCL: vxUnmapArrayRange: clReleaseMemObject(%p) => (%d)\n",
+            arr->base.context->memory_maps[map_id].opencl_buf, cerr);
+        arr->base.context->memory_maps[map_id].opencl_buf = NULL;
+    }
+#endif
 
     status = ownUnmapArrayRangeInt(arr, map_id);
 

@@ -239,6 +239,33 @@ VX_API_ENTRY vx_status VX_API_CALL vxCopyScalar(vx_scalar scalar, void* user_ptr
     if (NULL == user_ptr || VX_MEMORY_TYPE_HOST != user_mem_type)
         return VX_ERROR_INVALID_PARAMETERS;
 
+#ifdef OPENVX_USE_OPENCL_INTEROP
+    void * user_ptr_given = user_ptr;
+    vx_enum user_mem_type_given = user_mem_type;
+    if (user_mem_type == VX_MEMORY_TYPE_OPENCL_BUFFER)
+    {
+        // get ptr from OpenCL buffer for HOST
+        size_t size = 0;
+        cl_mem opencl_buf = (cl_mem)user_ptr;
+        cl_int cerr = clGetMemObjectInfo(opencl_buf, CL_MEM_SIZE, sizeof(size_t), &size, NULL);
+        VX_PRINT(VX_ZONE_CONTEXT, "OPENCL: vxCopyScalar: clGetMemObjectInfo(%p) => (%d)\n",
+            opencl_buf, cerr);
+        if (cerr != CL_SUCCESS)
+        {
+            return VX_ERROR_INVALID_PARAMETERS;
+        }
+        user_ptr = clEnqueueMapBuffer(scalar->base.context->opencl_command_queue,
+            opencl_buf, CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, 0, size,
+            0, NULL, NULL, &cerr);
+        VX_PRINT(VX_ZONE_CONTEXT, "OPENCL: vxCopyScalar: clEnqueueMapBuffer(%p,%d) => %p (%d)\n",
+            opencl_buf, (int)size, user_ptr, cerr);
+        if (cerr != CL_SUCCESS)
+        {
+            return VX_ERROR_INVALID_PARAMETERS;
+        }
+        user_mem_type = VX_MEMORY_TYPE_HOST;
+    }
+#endif
 
     switch (usage)
     {
@@ -249,6 +276,15 @@ VX_API_ENTRY vx_status VX_API_CALL vxCopyScalar(vx_scalar scalar, void* user_ptr
         status = VX_ERROR_INVALID_PARAMETERS;
         break;
     }
+
+#ifdef OPENVX_USE_OPENCL_INTEROP
+    if (user_mem_type_given == VX_MEMORY_TYPE_OPENCL_BUFFER)
+    {
+        clEnqueueUnmapMemObject(scalar->base.context->opencl_command_queue,
+            (cl_mem)user_ptr_given, user_ptr, 0, NULL, NULL);
+        clFinish(scalar->base.context->opencl_command_queue);
+    }
+#endif
 
     return status;
 } /* vxCopyScalar() */

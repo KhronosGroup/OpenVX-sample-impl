@@ -570,6 +570,13 @@ VX_API_ENTRY vx_status VX_API_CALL vxCopyThresholdOutput(vx_threshold threshold,
         }
     }
 
+#ifdef OPENVX_USE_OPENCL_INTEROP
+    if (user_mem_type == VX_MEMORY_TYPE_OPENCL_BUFFER)
+    {
+        return VX_ERROR_INVALID_PARAMETERS;
+    }
+#endif
+
     if (VX_MEMORY_TYPE_HOST == user_mem_type)
     {
         if (usage == VX_READ_ONLY)
@@ -615,6 +622,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxCopyThresholdOutput(vx_threshold threshold,
         VX_PRINT(VX_ZONE_ERROR, "Failed to allocate threshold\n");
         status = VX_ERROR_NO_MEMORY;
     }
+
     return status;
 }
 
@@ -643,6 +651,13 @@ VX_API_ENTRY vx_status VX_API_CALL vxCopyThresholdRange(vx_threshold threshold,
             return status;
         }
     }
+
+#ifdef OPENVX_USE_OPENCL_INTEROP
+    if (user_mem_type == VX_MEMORY_TYPE_OPENCL_BUFFER)
+    {
+        return VX_ERROR_INVALID_PARAMETERS;
+    }
+#endif
 
     if (VX_MEMORY_TYPE_HOST == user_mem_type)
     {
@@ -718,6 +733,13 @@ VX_API_ENTRY vx_status VX_API_CALL vxCopyThresholdValue(vx_threshold threshold,
             return status;
         }
     }
+
+#ifdef OPENVX_USE_OPENCL_INTEROP
+    if (user_mem_type == VX_MEMORY_TYPE_OPENCL_BUFFER)
+    {
+        return VX_ERROR_INVALID_PARAMETERS;
+    }
+#endif
 
     if (VX_MEMORY_TYPE_HOST == user_mem_type)
     {

@@ -926,8 +926,7 @@ typedef struct _vx_memory_map_t
     /*! \brief The mapping buffer pointer associated with the reference. */
     void* ptr;
 #ifdef OPENVX_USE_OPENCL_INTEROP
-    cl_mem         opencl_buf;
-    vx_uint32      opencl_offset;
+    cl_mem opencl_buf;
 #endif
 } vx_memory_map_t;
 
@@ -1144,8 +1143,8 @@ typedef struct _vx_memory_t {
     /*! \brief The array of pointers (one per plane for images) */
     vx_uint8*      ptrs[VX_PLANE_MAX];
 #ifdef OPENVX_USE_OPENCL_INTEROP
+    /*! \brief OpenCL buffer for handles */
     cl_mem         opencl_buf[VX_PLANE_MAX];
-    vx_uint32      opencl_offset[VX_PLANE_MAX];
 #endif
     /*! \brief The number of dimensions per ptr */
     vx_uint32       ndims;
