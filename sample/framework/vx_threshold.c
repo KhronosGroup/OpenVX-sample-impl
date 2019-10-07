@@ -571,9 +571,55 @@ VX_API_ENTRY vx_status VX_API_CALL vxCopyThresholdOutput(vx_threshold threshold,
     }
 
 #ifdef OPENVX_USE_OPENCL_INTEROP
+    vx_pixel_value_t * true_value_ptr_given = true_value_ptr;
+    vx_pixel_value_t * false_value_ptr_given = false_value_ptr;
+    vx_enum user_mem_type_given = user_mem_type;
     if (user_mem_type == VX_MEMORY_TYPE_OPENCL_BUFFER)
     {
-        return VX_ERROR_INVALID_PARAMETERS;
+        // get ptr from OpenCL buffer for HOST
+        if (true_value_ptr)
+        {
+            size_t size = 0;
+            cl_mem opencl_buf = (cl_mem)true_value_ptr;
+            cl_int cerr = clGetMemObjectInfo(opencl_buf, CL_MEM_SIZE, sizeof(size_t), &size, NULL);
+            VX_PRINT(VX_ZONE_CONTEXT, "OPENCL: vxCopyThresholdOutput: clGetMemObjectInfo(%p) => (%d)\n",
+                opencl_buf, cerr);
+            if (cerr != CL_SUCCESS)
+            {
+                return VX_ERROR_INVALID_PARAMETERS;
+            }
+            true_value_ptr = (vx_pixel_value_t *)clEnqueueMapBuffer(threshold->base.context->opencl_command_queue,
+                opencl_buf, CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, 0, size,
+                0, NULL, NULL, &cerr);
+            VX_PRINT(VX_ZONE_CONTEXT, "OPENCL: vxCopyThresholdOutput: clEnqueueMapBuffer(%p,%d) => %p (%d)\n",
+                opencl_buf, (int)size, true_value_ptr, cerr);
+            if (cerr != CL_SUCCESS)
+            {
+                return VX_ERROR_INVALID_PARAMETERS;
+            }
+        }
+        if (false_value_ptr)
+        {
+            size_t size = 0;
+            cl_mem opencl_buf = (cl_mem)false_value_ptr;
+            cl_int cerr = clGetMemObjectInfo(opencl_buf, CL_MEM_SIZE, sizeof(size_t), &size, NULL);
+            VX_PRINT(VX_ZONE_CONTEXT, "OPENCL: vxCopyThresholdOutput: clGetMemObjectInfo(%p) => (%d)\n",
+                opencl_buf, cerr);
+            if (cerr != CL_SUCCESS)
+            {
+                return VX_ERROR_INVALID_PARAMETERS;
+            }
+            false_value_ptr = (vx_pixel_value_t *)clEnqueueMapBuffer(threshold->base.context->opencl_command_queue,
+                opencl_buf, CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, 0, size,
+                0, NULL, NULL, &cerr);
+            VX_PRINT(VX_ZONE_CONTEXT, "OPENCL: vxCopyThresholdOutput: clEnqueueMapBuffer(%p,%d) => %p (%d)\n",
+                opencl_buf, (int)size, false_value_ptr, cerr);
+            if (cerr != CL_SUCCESS)
+            {
+                return VX_ERROR_INVALID_PARAMETERS;
+            }
+        }
+        user_mem_type = VX_MEMORY_TYPE_HOST;
     }
 #endif
 
@@ -623,6 +669,24 @@ VX_API_ENTRY vx_status VX_API_CALL vxCopyThresholdOutput(vx_threshold threshold,
         status = VX_ERROR_NO_MEMORY;
     }
 
+#ifdef OPENVX_USE_OPENCL_INTEROP
+    if (user_mem_type_given == VX_MEMORY_TYPE_OPENCL_BUFFER)
+    {
+        if (true_value_ptr_given)
+        {
+            clEnqueueUnmapMemObject(threshold->base.context->opencl_command_queue,
+                (cl_mem)true_value_ptr_given, true_value_ptr, 0, NULL, NULL);
+            clFinish(threshold->base.context->opencl_command_queue);
+        }
+        if (false_value_ptr_given)
+        {
+            clEnqueueUnmapMemObject(threshold->base.context->opencl_command_queue,
+                (cl_mem)false_value_ptr_given, false_value_ptr, 0, NULL, NULL);
+            clFinish(threshold->base.context->opencl_command_queue);
+        }
+    }
+#endif
+
     return status;
 }
 
@@ -653,9 +717,55 @@ VX_API_ENTRY vx_status VX_API_CALL vxCopyThresholdRange(vx_threshold threshold,
     }
 
 #ifdef OPENVX_USE_OPENCL_INTEROP
+    vx_pixel_value_t * lower_value_ptr_given = lower_value_ptr;
+    vx_pixel_value_t * upper_value_ptr_given = upper_value_ptr;
+    vx_enum user_mem_type_given = user_mem_type;
     if (user_mem_type == VX_MEMORY_TYPE_OPENCL_BUFFER)
     {
-        return VX_ERROR_INVALID_PARAMETERS;
+        // get ptr from OpenCL buffer for HOST
+        if (lower_value_ptr)
+        {
+            size_t size = 0;
+            cl_mem opencl_buf = (cl_mem)lower_value_ptr;
+            cl_int cerr = clGetMemObjectInfo(opencl_buf, CL_MEM_SIZE, sizeof(size_t), &size, NULL);
+            VX_PRINT(VX_ZONE_CONTEXT, "OPENCL: vxCopyThresholdRange: clGetMemObjectInfo(%p) => (%d)\n",
+                opencl_buf, cerr);
+            if (cerr != CL_SUCCESS)
+            {
+                return VX_ERROR_INVALID_PARAMETERS;
+            }
+            lower_value_ptr = (vx_pixel_value_t *)clEnqueueMapBuffer(threshold->base.context->opencl_command_queue,
+                opencl_buf, CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, 0, size,
+                0, NULL, NULL, &cerr);
+            VX_PRINT(VX_ZONE_CONTEXT, "OPENCL: vxCopyThresholdRange: clEnqueueMapBuffer(%p,%d) => %p (%d)\n",
+                opencl_buf, (int)size, lower_value_ptr, cerr);
+            if (cerr != CL_SUCCESS)
+            {
+                return VX_ERROR_INVALID_PARAMETERS;
+            }
+        }
+        if (upper_value_ptr)
+        {
+            size_t size = 0;
+            cl_mem opencl_buf = (cl_mem)upper_value_ptr;
+            cl_int cerr = clGetMemObjectInfo(opencl_buf, CL_MEM_SIZE, sizeof(size_t), &size, NULL);
+            VX_PRINT(VX_ZONE_CONTEXT, "OPENCL: vxCopyThresholdRange: clGetMemObjectInfo(%p) => (%d)\n",
+                opencl_buf, cerr);
+            if (cerr != CL_SUCCESS)
+            {
+                return VX_ERROR_INVALID_PARAMETERS;
+            }
+            upper_value_ptr = (vx_pixel_value_t *)clEnqueueMapBuffer(threshold->base.context->opencl_command_queue,
+                opencl_buf, CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, 0, size,
+                0, NULL, NULL, &cerr);
+            VX_PRINT(VX_ZONE_CONTEXT, "OPENCL: vxCopyThresholdRange: clEnqueueMapBuffer(%p,%d) => %p (%d)\n",
+                opencl_buf, (int)size, upper_value_ptr, cerr);
+            if (cerr != CL_SUCCESS)
+            {
+                return VX_ERROR_INVALID_PARAMETERS;
+            }
+        }
+        user_mem_type = VX_MEMORY_TYPE_HOST;
     }
 #endif
 
@@ -705,6 +815,24 @@ VX_API_ENTRY vx_status VX_API_CALL vxCopyThresholdRange(vx_threshold threshold,
         status = VX_ERROR_NO_MEMORY;
     }
 
+#ifdef OPENVX_USE_OPENCL_INTEROP
+    if (user_mem_type_given == VX_MEMORY_TYPE_OPENCL_BUFFER)
+    {
+        if (lower_value_ptr_given)
+        {
+            clEnqueueUnmapMemObject(threshold->base.context->opencl_command_queue,
+                (cl_mem)lower_value_ptr_given, lower_value_ptr, 0, NULL, NULL);
+            clFinish(threshold->base.context->opencl_command_queue);
+        }
+        if (upper_value_ptr_given)
+        {
+            clEnqueueUnmapMemObject(threshold->base.context->opencl_command_queue,
+                (cl_mem)upper_value_ptr_given, upper_value_ptr, 0, NULL, NULL);
+            clFinish(threshold->base.context->opencl_command_queue);
+        }
+    }
+#endif
+
     return status;
 }
 
@@ -735,9 +863,30 @@ VX_API_ENTRY vx_status VX_API_CALL vxCopyThresholdValue(vx_threshold threshold,
     }
 
 #ifdef OPENVX_USE_OPENCL_INTEROP
+    vx_pixel_value_t * value_ptr_given = value_ptr;
+    vx_enum user_mem_type_given = user_mem_type;
     if (user_mem_type == VX_MEMORY_TYPE_OPENCL_BUFFER)
     {
-        return VX_ERROR_INVALID_PARAMETERS;
+        // get ptr from OpenCL buffer for HOST
+        size_t size = 0;
+        cl_mem opencl_buf = (cl_mem)value_ptr;
+        cl_int cerr = clGetMemObjectInfo(opencl_buf, CL_MEM_SIZE, sizeof(size_t), &size, NULL);
+        VX_PRINT(VX_ZONE_CONTEXT, "OPENCL: vxCopyThresholdValue: clGetMemObjectInfo(%p) => (%d)\n",
+            opencl_buf, cerr);
+        if (cerr != CL_SUCCESS)
+        {
+            return VX_ERROR_INVALID_PARAMETERS;
+        }
+        value_ptr = (vx_pixel_value_t *)clEnqueueMapBuffer(threshold->base.context->opencl_command_queue,
+            opencl_buf, CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, 0, size,
+            0, NULL, NULL, &cerr);
+        VX_PRINT(VX_ZONE_CONTEXT, "OPENCL: vxCopyThresholdValue: clEnqueueMapBuffer(%p,%d) => %p (%d)\n",
+            opencl_buf, (int)size, value_ptr, cerr);
+        if (cerr != CL_SUCCESS)
+        {
+            return VX_ERROR_INVALID_PARAMETERS;
+        }
+        user_mem_type = VX_MEMORY_TYPE_HOST;
     }
 #endif
 
@@ -778,6 +927,15 @@ VX_API_ENTRY vx_status VX_API_CALL vxCopyThresholdValue(vx_threshold threshold,
         VX_PRINT(VX_ZONE_ERROR, "Failed to allocate threshold\n");
         status = VX_ERROR_NO_MEMORY;
     }
+
+#ifdef OPENVX_USE_OPENCL_INTEROP
+    if (user_mem_type_given == VX_MEMORY_TYPE_OPENCL_BUFFER)
+    {
+        clEnqueueUnmapMemObject(threshold->base.context->opencl_command_queue,
+            (cl_mem)value_ptr_given, value_ptr, 0, NULL, NULL);
+        clFinish(threshold->base.context->opencl_command_queue);
+    }
+#endif
 
     return status;
 }

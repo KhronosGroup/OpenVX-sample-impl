@@ -853,7 +853,7 @@ VX_API_ENTRY vx_image VX_API_CALL vxCreateImageFromHandle(vx_context context, vx
                 return (vx_image)ownGetErrorObject(context, VX_ERROR_INVALID_PARAMETERS);
             }
 #ifdef OPENVX_USE_OPENCL_INTEROP
-            if (context->opencl_context && ptrs[p])
+            if (context->opencl_context && memory_type == VX_MEMORY_TYPE_OPENCL_BUFFER && ptrs[p])
             {
                 vx_rectangle_t rect = { 0, 0, image->width, image->height };
                 vx_size size = vxComputeImagePatchSize(image, &rect, p);
@@ -2202,7 +2202,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxMapImagePatch(
         extra.image_data.plane_index = plane_index;
         extra.image_data.rect        = *rect;
 
-        if (VX_MEMORY_TYPE_HOST == image->memory_type && vx_true_e == ownMemoryMap(image->base.context, (vx_reference)image, 0, usage, mem_type, flags, &extra, (void**)&buf, map_id))
+        if (VX_MEMORY_TYPE_NONE != image->memory_type && vx_true_e == ownMemoryMap(image->base.context, (vx_reference)image, 0, usage, mem_type, flags, &extra, (void**)&buf, map_id))
         {
             /* use the addressing of the internal format */
             addr->dim_x    = end_x - start_x;
