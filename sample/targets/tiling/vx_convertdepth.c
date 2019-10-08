@@ -191,6 +191,7 @@ vx_tiling_kernel_t convertdepth_kernel =
 {
     "org.khronos.openvx.tiling_convertdepth",
     VX_KERNEL_CONVERTDEPTH_TILING,
+    NULL,
     ConvertDepth_image_tiling_flexible,
     ConvertDepth_image_tiling_fast,
     4,
@@ -201,6 +202,8 @@ vx_tiling_kernel_t convertdepth_kernel =
     NULL,
     vxConvertDepthInputValidator,
     vxConvertDepthOutputValidator,
+    NULL,
+    NULL,
     { 16, 16 },
     { -1, 1, -1, 1 },
     { VX_BORDER_MODE_UNDEFINED, 0 },

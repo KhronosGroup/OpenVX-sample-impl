@@ -64,10 +64,17 @@ VX_API_ENTRY vx_node VX_API_CALL vxChannelCombineNode(vx_graph graph,
        (vx_reference)plane3,
        (vx_reference)output,
     };
+#if defined(OPENVX_USE_TILING)
+    return vxCreateNodeByStructure(graph,
+                                   VX_KERNEL_CHANNEL_COMBINE_TILING,
+                                   params,
+                                   dimof(params));
+#else
     return vxCreateNodeByStructure(graph,
                                    VX_KERNEL_CHANNEL_COMBINE,
                                    params,
                                    dimof(params));
+#endif
 }
 
 VX_API_ENTRY vx_node VX_API_CALL vxSobel3x3Node(vx_graph graph, vx_image input, vx_image output_x, vx_image output_y)
@@ -140,10 +147,18 @@ VX_API_ENTRY vx_node VX_API_CALL vxScaleImageNode(vx_graph graph, vx_image src, 
         (vx_reference)dst,
         (vx_reference)stype,
     };
-    vx_node node = vxCreateNodeByStructure(graph,
-                                           VX_KERNEL_SCALE_IMAGE,
-                                           params,
-                                           dimof(params));
+    vx_node node;    
+    #if defined(OPENVX_USE_TILING)
+        node = vxCreateNodeByStructure(graph,
+            VX_KERNEL_SCALE_IMAGE_TILING,
+            params,
+            dimof(params));
+    #else
+        node = vxCreateNodeByStructure(graph,
+            VX_KERNEL_SCALE_IMAGE,
+            params,
+            dimof(params));
+    #endif
     vxReleaseScalar(&stype);
     return node;
 }
@@ -155,10 +170,17 @@ VX_API_ENTRY vx_node VX_API_CALL vxTableLookupNode(vx_graph graph, vx_image inpu
         (vx_reference)lut,
         (vx_reference)output,
     };
+#if defined(OPENVX_USE_TILING)
+    return vxCreateNodeByStructure(graph,
+                                   VX_KERNEL_TABLE_LOOKUP_TILING,
+                                   params,
+                                   dimof(params));
+#else
     return vxCreateNodeByStructure(graph,
                                    VX_KERNEL_TABLE_LOOKUP,
                                    params,
                                    dimof(params));
+#endif
 }
 
 VX_API_ENTRY vx_node VX_API_CALL vxHistogramNode(vx_graph graph, vx_image input, vx_distribution distribution)
@@ -839,10 +861,17 @@ VX_API_ENTRY vx_node VX_API_CALL vxFastCornersNode(vx_graph graph, vx_image inpu
             (vx_reference)corners,
             (vx_reference)num_corners,
     };
+#if defined(OPENVX_USE_TILING)
+    vx_node node = vxCreateNodeByStructure(graph,
+                                           VX_KERNEL_FAST_CORNERS_TILING,
+                                           params,
+                                           dimof(params));
+#else
     vx_node node = vxCreateNodeByStructure(graph,
                                            VX_KERNEL_FAST_CORNERS,
                                            params,
                                            dimof(params));
+#endif
     vxReleaseScalar(&nonmax);
     return node;
 }
@@ -856,10 +885,19 @@ VX_API_ENTRY vx_node VX_API_CALL vxNonMaxSuppressionNode(vx_graph graph, vx_imag
         (vx_reference)wsize,
         (vx_reference)output,
     };
-    vx_node node = vxCreateNodeByStructure(graph,
-        VX_KERNEL_NON_MAX_SUPPRESSION,
-        params,
-        dimof(params));
+vx_node node;                                           
+    #if defined(OPENVX_USE_TILING)
+        node = vxCreateNodeByStructure(graph,
+                                       VX_KERNEL_NON_MAX_SUPPRESSION_TILING,
+                                       params,
+                                       dimof(params));
+    #else
+        node = vxCreateNodeByStructure(graph,
+                                       VX_KERNEL_NON_MAX_SUPPRESSION,
+                                       params,
+                                       dimof(params));
+    #endif 
+
     vxReleaseScalar(&wsize);
     return node;
 }
@@ -944,10 +982,17 @@ VX_API_ENTRY vx_node VX_API_CALL vxHalfScaleGaussianNode(vx_graph graph, vx_imag
             (vx_reference)output,
             (vx_reference)ksize,
     };
+#if defined(OPENVX_USE_TILING)
+    vx_node node = vxCreateNodeByStructure(graph,
+                                           VX_KERNEL_HALFSCALE_GAUSSIAN_TILING,
+                                           params,
+                                           dimof(params));
+#else
     vx_node node = vxCreateNodeByStructure(graph,
                                            VX_KERNEL_HALFSCALE_GAUSSIAN,
                                            params,
                                            dimof(params));
+#endif
     vxReleaseScalar(&ksize);
     return node;
 }
@@ -1179,10 +1224,17 @@ VX_API_ENTRY vx_node VX_API_CALL vxLBPNode(vx_graph graph,
             (vx_reference)out,
     };
 
+#if defined(OPENVX_USE_TILING)
+    vx_node node = vxCreateNodeByStructure(graph,
+        VX_KERNEL_LBP_TILING,
+        params,
+        dimof(params));
+#else
     vx_node node = vxCreateNodeByStructure(graph,
         VX_KERNEL_LBP,
         params,
         dimof(params));
+#endif
 
     vxReleaseScalar(&sformat);
     vxReleaseScalar(&ksize);
@@ -1278,9 +1330,12 @@ vx_node VX_API_CALL vxHOGCellsNode(vx_graph graph, vx_image input, vx_int32 cell
         (vx_reference)magnitudes,
         (vx_reference)bins,
     };
-    vx_node node = vxCreateNodeByStructure(graph, VX_KERNEL_HOG_CELLS, params, dimof(params));
-
-    vxReleaseScalar(&cell_width_scalar);
+    #if defined(OPENVX_USE_TILING)
+        vx_node node = vxCreateNodeByStructure(graph, VX_KERNEL_HOG_CELLS_TILING, params, dimof(params));
+    #else
+        vx_node node = vxCreateNodeByStructure(graph, VX_KERNEL_HOG_CELLS, params, dimof(params));
+    #endif
+	vxReleaseScalar(&cell_width_scalar);
     vxReleaseScalar(&cell_height_scalar);
     vxReleaseScalar(&num_bins_scalar);
 
@@ -1302,7 +1357,11 @@ vx_node VX_API_CALL vxHOGFeaturesNode(vx_graph graph, vx_image input, vx_tensor 
         (vx_reference)hog_param_size_scalar,
         (vx_reference)features,
     };
+#if defined(OPENVX_USE_TILING)
+    vx_node node = vxCreateNodeByStructure(graph, VX_KERNEL_HOG_FEATURES_TILING, param, dimof(param));
+#else
     vx_node node = vxCreateNodeByStructure(graph, VX_KERNEL_HOG_FEATURES, param, dimof(param));
+#endif
 
     vxReleaseScalar(&hog_param_size_scalar);
     vxReleaseArray(&hog_param);

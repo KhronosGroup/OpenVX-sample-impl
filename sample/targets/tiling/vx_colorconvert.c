@@ -172,6 +172,7 @@ vx_tiling_kernel_t colorconvert_kernel =
 {
     "org.khronos.openvx.tiling_color_convert",
     VX_KERNEL_COLOR_CONVERT_TILING,
+    NULL,
     ConvertColor_image_tiling_flexible,
     ConvertColor_image_tiling_fast,
     2, 
@@ -180,6 +181,8 @@ vx_tiling_kernel_t colorconvert_kernel =
     NULL,
     vxColorConvertInputValidator,
     vxColorConvertOutputValidator,
+    NULL,
+    NULL,
     { 8, 8 },
     { -1, 1, -1, 1 },
     { VX_BORDER_MODE_UNDEFINED, 0 },

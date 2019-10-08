@@ -135,6 +135,7 @@ vx_tiling_kernel_t convolution_kernel =
 {
     "org.khronos.openvx.tiling_custom_convolution",
     VX_KERNEL_CUSTOM_CONVOLUTION_TILING,
+    NULL,
     Convolve_image_tiling_flexible,
     Convolve_image_tiling_fast,
     3,
@@ -144,6 +145,8 @@ vx_tiling_kernel_t convolution_kernel =
     NULL,
     vxConvolveInputValidator,
     vxConvolveOutputValidator,
+    NULL,
+    NULL,
     { 16, 16 },
     { -1, 1, -1, 1 },
     { VX_BORDER_MODE_UNDEFINED, 0 },

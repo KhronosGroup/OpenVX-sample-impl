@@ -120,6 +120,7 @@ vx_tiling_kernel_t threshold_kernel =
 {
     "org.khronos.openvx.tiling_threshold",
     VX_KERNEL_THRESHOLD_TILING,
+    NULL,
     Threshold_image_tiling_flexible,
     Threshold_image_tiling_fast,
     3, 
@@ -129,6 +130,8 @@ vx_tiling_kernel_t threshold_kernel =
     NULL,
     vxThresholdInputValidator,
     vxThresholdOutputValidator,
+    NULL,
+    NULL,
     { 16, 16 },
     { -1, 1, -1, 1 },
     { VX_BORDER_MODE_UNDEFINED, 0 },

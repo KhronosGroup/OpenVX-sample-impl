@@ -676,12 +676,15 @@ VX_API_ENTRY vx_kernel VX_API_CALL vxAddUserKernel(vx_context c,
 VX_API_ENTRY vx_kernel VX_API_CALL vxAddTilingKernel(vx_context c,
                             vx_char name[VX_MAX_KERNEL_NAME],
                             vx_enum enumeration,
+                            vx_kernel_f function,
                             vx_tiling_kernel_f flexible_func_ptr,
                             vx_tiling_kernel_f fast_func_ptr,
                             vx_uint32 num_params,
                             vx_kernel_validate_f validate,
                             vx_kernel_input_validate_f input,
-                            vx_kernel_output_validate_f output)
+                            vx_kernel_output_validate_f output,
+                            vx_kernel_initialize_f initialize,
+                            vx_kernel_deinitialize_f deinitialize)
 {
     vx_context_t *context = (vx_context_t *)c;
     vx_kernel kernel = 0;
@@ -695,8 +698,7 @@ VX_API_ENTRY vx_kernel VX_API_CALL vxAddTilingKernel(vx_context c,
         VX_PRINT(VX_ZONE_ERROR, "Invalid Context\n");
         return (vx_kernel)NULL;
     }
-    if ((flexible_func_ptr == NULL && fast_func_ptr == NULL) ||
-        ((validate == NULL) && (input == NULL || output == NULL)) ||
+    if  ( ((validate == NULL) && (input == NULL || output == NULL)) ||
         num_params > VX_INT_MAX_PARAMS || num_params == 0 ||
         name == NULL ||
         strncmp(name, "",  VX_MAX_KERNEL_NAME) == 0)
@@ -729,9 +731,9 @@ VX_API_ENTRY vx_kernel VX_API_CALL vxAddTilingKernel(vx_context c,
     }
     if (target && target->funcs.addtilingkernel)
     {
-        kernel = target->funcs.addtilingkernel(target, name, enumeration,
+        kernel = target->funcs.addtilingkernel(target, name, enumeration, function,
                                          flexible_func_ptr, fast_func_ptr, num_params, validate,  
-                                         input, output);
+                                         input, output, initialize, deinitialize);
         VX_PRINT(VX_ZONE_KERNEL,"Added Kernel %s to Target %s ("VX_FMT_REF")\n", name, target->name, kernel);
     }
     else
@@ -917,6 +919,9 @@ VX_API_ENTRY vx_status VX_API_CALL vxAddParameterToKernel(vx_kernel kernel,
                      (data_type != VX_TYPE_THRESHOLD) &&
                      (data_type != VX_TYPE_REMAP) &&
                      (data_type != VX_TYPE_CONVOLUTION) &&
+                     (data_type != VX_TYPE_TENSOR) &&
+                     (data_type != VX_TYPE_ARRAY) &&
+                     (data_type != VX_TYPE_LUT) &&
                      (data_type != VX_TYPE_MATRIX)) ||
                     (ownIsValidDirection(dir) == vx_false_e) ||
                     (ownIsValidState(state) == vx_false_e))

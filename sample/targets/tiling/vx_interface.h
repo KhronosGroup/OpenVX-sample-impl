@@ -48,6 +48,15 @@ extern vx_tiling_kernel_t absdiff_kernel;
 extern vx_tiling_kernel_t integral_image_kernel;
 extern vx_tiling_kernel_t remap_kernel;
 extern vx_tiling_kernel_t convolution_kernel;
+extern vx_tiling_kernel_t hogfeatures_kernel;
+extern vx_tiling_kernel_t fast9_kernel;
+extern vx_tiling_kernel_t lbp_kernel;
+extern vx_tiling_kernel_t scale_image_kernel;
+extern vx_tiling_kernel_t lut_kernel;
+extern vx_tiling_kernel_t channelcombine_kernel;
+extern vx_tiling_kernel_t halfscale_gaussian_kernel;
+extern vx_tiling_kernel_t nonmaxsuppression_kernel;
+extern vx_tiling_kernel_t hogcells_kernel;
 
 #endif
 

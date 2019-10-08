@@ -534,6 +534,7 @@ vx_tiling_kernel_t remap_kernel =
 { 
     "org.khronos.openvx.tiling_remap",
     VX_KERNEL_REMAP_TILING,
+    NULL,
     Remap_image_tiling_flexible,
     Remap_image_tiling_fast,
     4,
@@ -544,6 +545,8 @@ vx_tiling_kernel_t remap_kernel =
     NULL,
     vxRemapInputValidator,
     vxRemapOutputValidator,
+    NULL,
+    NULL,
     { 16, 16 },
     { -1, 1, -1, 1 },
     { VX_BORDER_MODE_UNDEFINED, 0 },

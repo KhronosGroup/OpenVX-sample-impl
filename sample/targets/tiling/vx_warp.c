@@ -158,6 +158,7 @@ vx_tiling_kernel_t warp_affine_kernel =
 {
     "org.khronos.openvx.tiling_warp_affine",
     VX_KERNEL_WARP_AFFINE_TILING,
+    NULL,
     WarpAffine_image_tiling_flexible,
     WarpAffine_image_tiling_fast,
     4,
@@ -168,6 +169,8 @@ vx_tiling_kernel_t warp_affine_kernel =
     NULL,
     vxWarpAffineInputValidator,
     vxWarpOutputValidator,
+    NULL,
+    NULL,
     { 16, 16 },
     { -1, 1, -1, 1 },
     { VX_BORDER_MODE_UNDEFINED, 0 },
@@ -178,6 +181,7 @@ vx_tiling_kernel_t warp_perspective_kernel =
 {
     "org.khronos.openvx.tiling_warp_perspective",
     VX_KERNEL_WARP_PERSPECTIVE_TILING,
+    NULL,
     WarpPerspective_image_tiling_flexible,
     WarpPerspective_image_tiling_fast,
     4,
@@ -188,6 +192,8 @@ vx_tiling_kernel_t warp_perspective_kernel =
     NULL,
     vxWarpPerspectiveInputValidator,
     vxWarpOutputValidator,
+    NULL,
+    NULL,
     { 16, 16 },
     { -1, 1, -1, 1 },
     { VX_BORDER_MODE_UNDEFINED, 0 },

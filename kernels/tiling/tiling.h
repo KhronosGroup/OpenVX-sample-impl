@@ -97,3 +97,27 @@ void IntegralImage_image_tiling_flexible(void * parameters[], void * tile_memory
 
 void Convolve_image_tiling_fast(void * parameters[], void * tile_memory, vx_size tile_memory_size);
 void Convolve_image_tiling_flexible(void * parameters[], void * tile_memory, vx_size tile_memory_size);
+
+void HogFeatures_image_tiling_fast(void * parameters[], void * tile_memory, vx_size tile_memory_size);
+void HogFeatures_image_tiling_flexible(void * parameters[], void * tile_memory, vx_size tile_memory_size);
+
+void Fast9Corners_image_tiling_fast(void * parameters[], void * tile_memory, vx_size tile_memory_size);
+void Fast9Corners_image_tiling_flexible(void * parameters[], void * tile_memory, vx_size tile_memory_size);
+
+void LBP_image_tiling_fast(void * parameters[], void * tile_memory, vx_size tile_memory_size);
+void LBP_image_tiling_flexible(void * parameters[], void * tile_memory, vx_size tile_memory_size);
+
+void ScaleImage_image_tiling_fast(void * parameters[], void * tile_memory, vx_size tile_memory_size);
+void ScaleImage_image_tiling_flexible(void * parameters[], void * tile_memory, vx_size tile_memory_size);
+
+void TableLookup_image_tiling_fast(void * parameters[], void * tile_memory, vx_size tile_memory_size);
+void TableLookup_image_tiling_flexible(void * parameters[], void * tile_memory, vx_size tile_memory_size);
+
+void ChannelCombine_image_tiling_fast(void * parameters[], void * tile_memory, vx_size tile_memory_size);
+void ChannelCombine_image_tiling_flexible(void * parameters[], void * tile_memory, vx_size tile_memory_size);
+
+void NonMaxSuppression_image_tiling_fast(void * parameters[], void * tile_memory, vx_size tile_memory_size);
+void NonMaxSuppression_image_tiling_flexible(void * parameters[], void * tile_memory, vx_size tile_memory_size);
+
+void HogCells_image_tiling_fast(void * parameters[], void * tile_memory, vx_size tile_memory_size);
+void HogCells_image_tiling_flexible(void * parameters[], void * tile_memory, vx_size tile_memory_size);

@@ -172,6 +172,7 @@ static vx_status VX_CALLBACK vxAddSubtractOutputValidator(vx_node node, vx_uint3
 vx_tiling_kernel_t add_kernel = {
     "org.khronos.openvx.tiling_add",
     VX_KERNEL_ADD_TILING,
+    NULL,
     Addition_image_tiling_flexible,
     Addition_image_tiling_fast,
     4,
@@ -182,6 +183,8 @@ vx_tiling_kernel_t add_kernel = {
     NULL,
     vxAddSubtractInputValidator,
     vxAddSubtractOutputValidator,
+    NULL,
+    NULL,
     { 16, 16 },
     { -1, 1, -1, 1 },
     { VX_BORDER_MODE_UNDEFINED, 0 },
@@ -190,6 +193,7 @@ vx_tiling_kernel_t add_kernel = {
 vx_tiling_kernel_t subtract_kernel = {
     "org.khronos.openvx.tiling_subtract",
     VX_KERNEL_SUBTRACT_TILING,
+    NULL,
     Subtraction_image_tiling_flexible,
     Subtraction_image_tiling_fast,
     4,
@@ -200,6 +204,8 @@ vx_tiling_kernel_t subtract_kernel = {
     NULL,
     vxAddSubtractInputValidator,
     vxAddSubtractOutputValidator,
+    NULL,
+    NULL,
     { 16, 16 },
     { -1, 1, -1, 1 },
     { VX_BORDER_MODE_UNDEFINED, 0 },

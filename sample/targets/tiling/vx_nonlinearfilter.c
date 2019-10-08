@@ -141,6 +141,7 @@ vx_tiling_kernel_t nonlinearfilter_kernel =
 {
     "org.khronos.openvx.tiling_non_linear_filter",
     VX_KERNEL_NON_LINEAR_FILTER_TILING,
+    NULL,
     NonLinearFilter_image_tiling_flexible,
     NonLinearFilter_image_tiling_fast,
     4,
@@ -151,6 +152,8 @@ vx_tiling_kernel_t nonlinearfilter_kernel =
     NULL,
     vxNonLinearFilterInputValidator,
     vxNonLinearFilterOutputValidator,
+    NULL,
+    NULL,
     { 16, 16 },
     { -1, 1, -1, 1 },
     { VX_BORDER_MODE_UNDEFINED, 0 },

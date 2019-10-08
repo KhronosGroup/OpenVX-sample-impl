@@ -76,6 +76,7 @@ vx_tiling_kernel_t integral_image_kernel =
 {
     "org.khronos.openvx.tiling_integral_image",
     VX_KERNEL_INTEGRAL_IMAGE_TILING,
+    NULL,
     IntegralImage_image_tiling_flexible,
     IntegralImage_image_tiling_fast,
     2,
@@ -84,6 +85,8 @@ vx_tiling_kernel_t integral_image_kernel =
     NULL,
     vxIntegralInputValidator,
     vxIntegralOutputValidator,
+    NULL,
+    NULL,
     { 16, 16 },
     { -1, 1, -1, 1 },
     { VX_BORDER_MODE_UNDEFINED, 0 },

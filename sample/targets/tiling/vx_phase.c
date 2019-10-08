@@ -114,6 +114,7 @@ vx_tiling_kernel_t phase_kernel =
 {
     "org.khronos.openvx.tiling_phase",
     VX_KERNEL_PHASE_TILING,
+    NULL,
     Phase_image_tiling_flexible,
     Phase_image_tiling_fast,
     3,
@@ -123,6 +124,8 @@ vx_tiling_kernel_t phase_kernel =
     NULL,
     vxPhaseInputValidator,
     vxPhaseOutputValidator,
+    NULL,
+    NULL,
     { 8, 8 },
     { -1, 1, -1, 1 },
     { VX_BORDER_MODE_UNDEFINED, 0 },

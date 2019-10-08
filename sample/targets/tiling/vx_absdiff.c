@@ -127,6 +127,7 @@ vx_tiling_kernel_t absdiff_kernel =
 {
     "org.khronos.openvx.tiling_absdiff",
     VX_KERNEL_ABSDIFF_TILING,
+    NULL,
     AbsDiff_image_tiling_flexible,
     AbsDiff_image_tiling_fast,
     3,
@@ -136,6 +137,8 @@ vx_tiling_kernel_t absdiff_kernel =
 	NULL,
     vxAbsDiffInputValidator,
     vxAbsDiffOutputValidator,
+    NULL,
+    NULL,
     { 16, 16 },
     { -1, 1, -1, 1 },
     { VX_BORDER_MODE_UNDEFINED, 0 },

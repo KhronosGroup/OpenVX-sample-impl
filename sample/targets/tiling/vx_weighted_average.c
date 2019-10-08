@@ -144,6 +144,7 @@ vx_tiling_kernel_t weightedaverage_kernel =
 {
     "org.khronos.openvx.tiling_weightedaverage",
     VX_KERNEL_WEIGHTED_AVERAGE_TILING,
+    NULL,
     WeightedAverage_image_tiling_flexible,
     WeightedAverage_image_tiling_fast,
     4,
@@ -154,6 +155,8 @@ vx_tiling_kernel_t weightedaverage_kernel =
 	NULL,
 	vxWeightedAverageInputValidator,
 	vxWeightedAverageOutputValidator,
+    NULL,
+    NULL,
     { 16, 16 },
     { -1, 1, -1, 1 },
     { VX_BORDER_MODE_UNDEFINED, 0 },

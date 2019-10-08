@@ -114,6 +114,7 @@ vx_tiling_kernel_t Max_kernel =
 {
     "org.khronos.openvx.tiling_max",
     VX_KERNEL_MAX_TILING,
+    NULL,
     Max_image_tiling_flexible,
     Max_image_tiling_fast,
     3,
@@ -123,6 +124,8 @@ vx_tiling_kernel_t Max_kernel =
     NULL,
     vxMinMaxInputValidator,
     vxMinMaxOutputValidator,
+    NULL,
+    NULL,
     { 16, 16 },
     { -1, 1, -1, 1 },
     { VX_BORDER_MODE_UNDEFINED, 0 },
@@ -131,6 +134,7 @@ vx_tiling_kernel_t Min_kernel =
 {
     "org.khronos.openvx.tiling_min",
     VX_KERNEL_MIN_TILING,
+    NULL,
     Min_image_tiling_flexible,
     Min_image_tiling_fast,
     3,
@@ -140,6 +144,8 @@ vx_tiling_kernel_t Min_kernel =
     NULL,
     vxMinMaxInputValidator,
     vxMinMaxOutputValidator,
+    NULL,
+    NULL,
     { 16, 16 },
     { -1, 1, -1, 1 },
     { VX_BORDER_MODE_UNDEFINED, 0 },

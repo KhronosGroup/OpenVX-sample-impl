@@ -99,6 +99,7 @@ vx_tiling_kernel_t Magnitude_kernel =
 {
     "org.khronos.openvx.tiling_magnitude",
     VX_KERNEL_MAGNITUDE_TILING,
+    NULL,
     Magnitude_image_tiling_flexible,
     Magnitude_image_tiling_fast,
     3,
@@ -108,6 +109,8 @@ vx_tiling_kernel_t Magnitude_kernel =
     NULL,
     vxMagnitudeInputValidator,
     vxMagnitudeOutputValidator,
+    NULL,
+    NULL,
     { 8, 8 },
     { -1, 1, -1, 1 },
     { VX_BORDER_MODE_UNDEFINED, 0 },

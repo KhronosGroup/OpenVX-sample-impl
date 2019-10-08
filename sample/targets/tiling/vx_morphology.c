@@ -82,6 +82,7 @@ vx_tiling_kernel_t erode3x3_kernel =
 {
     "org.khronos.openvx.tiling_erode_3x3",
     VX_KERNEL_ERODE_3x3_TILING,
+    NULL,
     Erode3x3_image_tiling_flexible,
     Erode3x3_image_tiling_fast,
     2,
@@ -90,6 +91,8 @@ vx_tiling_kernel_t erode3x3_kernel =
     NULL,
     vxMorphologyInputValidator,
     vxMorphologyOutputValidator,
+    NULL,
+    NULL,
     { 16, 16 },
     { -1, 1, -1, 1 },
     { VX_BORDER_MODE_UNDEFINED, 0 },
@@ -99,6 +102,7 @@ vx_tiling_kernel_t dilate3x3_kernel =
 {
     "org.khronos.openvx.tiling_dilate_3x3",
     VX_KERNEL_DILATE_3x3_TILING,
+    NULL,
     Dilate3x3_image_tiling_flexible,
     Dilate3x3_image_tiling_fast,
     2,
@@ -107,6 +111,8 @@ vx_tiling_kernel_t dilate3x3_kernel =
     NULL,
     vxMorphologyInputValidator,
     vxMorphologyOutputValidator,
+    NULL,
+    NULL,
     { 16, 16 },
     { -1, 1, -1, 1 },
     { VX_BORDER_MODE_UNDEFINED, 0 },

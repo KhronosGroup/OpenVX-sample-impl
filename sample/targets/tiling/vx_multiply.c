@@ -242,6 +242,7 @@ vx_tiling_kernel_t Multiply_kernel =
 {
     "org.khronos.openvx.tiling_multiply",
     VX_KERNEL_MULTIPLY_TILING,
+    NULL,
     Multiply_image_tiling_flexible,
     Multiply_image_tiling_fast,
     6,
@@ -254,6 +255,8 @@ vx_tiling_kernel_t Multiply_kernel =
     NULL,
     vxMultiplyInputValidator,
     vxMultiplyOutputValidator,
+    NULL,
+    NULL,
     { 16, 16 },
     { -1, 1, -1, 1 },
     { VX_BORDER_MODE_UNDEFINED, 0 },

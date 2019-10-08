@@ -106,6 +106,7 @@ vx_tiling_kernel_t sobel3x3_kernel =
 {
     "org.khronos.openvx.tiling_sobel_3x3",
     VX_KERNEL_SOBEL_3x3_TILING,
+    NULL,
     Sobel3x3_image_tiling_flexible,
     Sobel3x3_image_tiling_fast,
     3,
@@ -113,6 +114,8 @@ vx_tiling_kernel_t sobel3x3_kernel =
       { VX_OUTPUT, VX_TYPE_IMAGE, VX_PARAMETER_STATE_OPTIONAL },
       { VX_OUTPUT, VX_TYPE_IMAGE, VX_PARAMETER_STATE_OPTIONAL } },
     own_sobel3x3_validator,
+    NULL,
+    NULL,
     NULL,
     NULL,
     { 16, 16 },
