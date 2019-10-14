@@ -1019,6 +1019,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxSetKernelAttribute(vx_kernel k, vx_enum att
             {
                 status = VX_ERROR_INVALID_VALUE;
             }
+            break;
 #endif
         default:
             status = VX_ERROR_NOT_SUPPORTED;

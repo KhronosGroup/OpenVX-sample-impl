@@ -571,6 +571,16 @@ VX_API_ENTRY vx_status VX_API_CALL vxReleaseContext(vx_context *c)
     {
         if (ownDecrementReference(&context->base, VX_EXTERNAL) == 0)
         {
+#ifdef OPENVX_USE_OPENCL_INTEROP
+            if(context->opencl_command_queue) {
+                clReleaseCommandQueue(context->opencl_command_queue);
+                context->opencl_command_queue = NULL;
+            }
+            if(context->opencl_context) {
+                clReleaseContext(context->opencl_context);
+                context->opencl_context = NULL;
+            }
+#endif
             ownDestroyThreadpool(&context->workers);
             context->proc.running = vx_false_e;
             ownPopQueue(&context->proc.input);
@@ -1210,8 +1220,17 @@ VX_API_ENTRY vx_status VX_API_CALL vxSetImmediateModeTarget(vx_context context, 
 VX_API_ENTRY vx_context VX_API_CALL vxCreateContextFromCL(cl_context opencl_context, cl_command_queue opencl_command_queue)
 {
     vx_context context = vxCreateContext();
-    context->opencl_context = opencl_context;
-    context->opencl_command_queue = opencl_command_queue;
+    if(vxGetStatus((vx_reference)context) == VX_SUCCESS)
+    {
+        cl_int err1 = clRetainContext(opencl_context);
+        cl_int err2 = clRetainCommandQueue(opencl_command_queue);
+        if((err1 != CL_SUCCESS) || (err2 != CL_SUCCESS)) {
+            vxReleaseContext(&context);
+            return NULL;
+        }
+        context->opencl_context = opencl_context;
+        context->opencl_command_queue = opencl_command_queue;
+    }
     return context;
 }
 #endif
