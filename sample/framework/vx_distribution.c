@@ -261,6 +261,34 @@ VX_API_ENTRY vx_status VX_API_CALL vxCopyDistribution(vx_distribution distributi
     size = ownComputeMemorySize(&distribution->memory, 0);
     ownPrintMemory(&distribution->memory);
 
+#ifdef OPENVX_USE_OPENCL_INTEROP
+    void * user_ptr_given = user_ptr;
+    vx_enum mem_type_given = mem_type;
+    if (mem_type == VX_MEMORY_TYPE_OPENCL_BUFFER)
+    {
+        // get ptr from OpenCL buffer for HOST
+        size_t size = 0;
+        cl_mem opencl_buf = (cl_mem)user_ptr;
+        cl_int cerr = clGetMemObjectInfo(opencl_buf, CL_MEM_SIZE, sizeof(size_t), &size, NULL);
+        VX_PRINT(VX_ZONE_CONTEXT, "OPENCL: vxCopyDistribution: clGetMemObjectInfo(%p) => (%d)\n",
+            opencl_buf, cerr);
+        if (cerr != CL_SUCCESS)
+        {
+            return VX_ERROR_INVALID_PARAMETERS;
+        }
+        user_ptr = clEnqueueMapBuffer(distribution->base.context->opencl_command_queue,
+            opencl_buf, CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, 0, size,
+            0, NULL, NULL, &cerr);
+        VX_PRINT(VX_ZONE_CONTEXT, "OPENCL: vxCopyDistribution: clEnqueueMapBuffer(%p,%d) => %p (%d)\n",
+            opencl_buf, (int)size, user_ptr, cerr);
+        if (cerr != CL_SUCCESS)
+        {
+            return VX_ERROR_INVALID_PARAMETERS;
+        }
+        mem_type = VX_MEMORY_TYPE_HOST;
+    }
+#endif
+
     switch (usage)
     {
     case VX_READ_ONLY:
@@ -285,6 +313,15 @@ VX_API_ENTRY vx_status VX_API_CALL vxCopyDistribution(vx_distribution distributi
         break;
     }
 
+#ifdef OPENVX_USE_OPENCL_INTEROP
+    if (mem_type_given == VX_MEMORY_TYPE_OPENCL_BUFFER)
+    {
+        clEnqueueUnmapMemObject(distribution->base.context->opencl_command_queue,
+            (cl_mem)user_ptr_given, user_ptr, 0, NULL, NULL);
+        clFinish(distribution->base.context->opencl_command_queue);
+    }
+#endif
+
     return status;
 }
 
@@ -301,6 +338,14 @@ VX_API_ENTRY vx_status VX_API_CALL vxMapDistribution(vx_distribution distributio
         VX_PRINT(VX_ZONE_ERROR, "Not a valid distribution object!\n");
         return status;
     }
+
+#ifdef OPENVX_USE_OPENCL_INTEROP
+    vx_enum mem_type_requested = mem_type;
+    if (mem_type == VX_MEMORY_TYPE_OPENCL_BUFFER)
+    {
+        mem_type = VX_MEMORY_TYPE_HOST;
+    }
+#endif
 
     /* bad parameters */
     if (((usage != VX_READ_ONLY) && (usage != VX_READ_AND_WRITE) && (usage != VX_WRITE_ONLY)) ||
@@ -339,6 +384,30 @@ VX_API_ENTRY vx_status VX_API_CALL vxMapDistribution(vx_distribution distributio
             ownIncrementReference(&distribution->base, VX_EXTERNAL);
     }
 
+#ifdef OPENVX_USE_OPENCL_INTEROP
+    if ((status == VX_SUCCESS) && distribution->base.context->opencl_context &&
+        (mem_type_requested == VX_MEMORY_TYPE_OPENCL_BUFFER) &&
+        (size > 0) && ptr && *ptr)
+    {
+        /* create OpenCL buffer using the host allocated pointer */
+        cl_int cerr = 0;
+        cl_mem opencl_buf = clCreateBuffer(distribution->base.context->opencl_context,
+            CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR,
+            size, *ptr, &cerr);
+        VX_PRINT(VX_ZONE_CONTEXT, "OPENCL: vxMapDistribution: clCreateBuffer(%u) => %p (%d)\n",
+            (vx_uint32)size, opencl_buf, cerr);
+        if (cerr == CL_SUCCESS)
+        {
+            distribution->base.context->memory_maps[*map_id].opencl_buf = opencl_buf;
+            *ptr = opencl_buf;
+        }
+        else
+        {
+            status = VX_FAILURE;
+        }
+    }
+#endif
+
     return status;
 }
 
@@ -363,6 +432,22 @@ VX_API_ENTRY vx_status VX_API_CALL vxUnmapDistribution(vx_distribution distribut
         VX_PRINT(VX_ZONE_ERROR, "Invalid parameters to unmap distribution\n");
         return status;
     }
+
+#ifdef OPENVX_USE_OPENCL_INTEROP
+    if (distribution->base.context->opencl_context &&
+        distribution->base.context->memory_maps[map_id].opencl_buf &&
+        distribution->base.context->memory_maps[map_id].ptr)
+    {
+        clEnqueueUnmapMemObject(distribution->base.context->opencl_command_queue,
+            distribution->base.context->memory_maps[map_id].opencl_buf,
+            distribution->base.context->memory_maps[map_id].ptr, 0, NULL, NULL);
+        clFinish(distribution->base.context->opencl_command_queue);
+        cl_int cerr = clReleaseMemObject(distribution->base.context->memory_maps[map_id].opencl_buf);
+        VX_PRINT(VX_ZONE_CONTEXT, "OPENCL: vxUnmapDistribution: clReleaseMemObject(%p) => (%d)\n",
+            distribution->base.context->memory_maps[map_id].opencl_buf, cerr);
+        distribution->base.context->memory_maps[map_id].opencl_buf = NULL;
+    }
+#endif
 
     /* unmap data */
     size = ownComputeMemorySize(&distribution->memory, 0);

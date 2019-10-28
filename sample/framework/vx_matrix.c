@@ -326,6 +326,33 @@ vx_status VX_API_CALL vxCopyMatrix(vx_matrix matrix, void *ptr, vx_enum usage, v
     {
         if (ownAllocateMemory(matrix->base.context, &matrix->memory) == vx_true_e)
         {
+#ifdef OPENVX_USE_OPENCL_INTEROP
+            void * ptr_given = ptr;
+            vx_enum mem_type_given = mem_type;
+            if (mem_type == VX_MEMORY_TYPE_OPENCL_BUFFER)
+            {
+                // get ptr from OpenCL buffer for HOST
+                size_t size = 0;
+                cl_mem opencl_buf = (cl_mem)ptr;
+                cl_int cerr = clGetMemObjectInfo(opencl_buf, CL_MEM_SIZE, sizeof(size_t), &size, NULL);
+                VX_PRINT(VX_ZONE_CONTEXT, "OPENCL: vxCopyMatrix: clGetMemObjectInfo(%p) => (%d)\n",
+                    opencl_buf, cerr);
+                if (cerr != CL_SUCCESS)
+                {
+                    return VX_ERROR_INVALID_PARAMETERS;
+                }
+                ptr = clEnqueueMapBuffer(matrix->base.context->opencl_command_queue,
+                    opencl_buf, CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, 0, size,
+                    0, NULL, NULL, &cerr);
+                VX_PRINT(VX_ZONE_CONTEXT, "OPENCL: vxCopyMatrix: clEnqueueMapBuffer(%p,%d) => %p (%d)\n",
+                    opencl_buf, (int)size, ptr, cerr);
+                if (cerr != CL_SUCCESS)
+                {
+                    return VX_ERROR_INVALID_PARAMETERS;
+                }
+                mem_type = VX_MEMORY_TYPE_HOST;
+            }
+#endif
             if (usage == VX_READ_ONLY)
             {
                 ownSemWait(&matrix->base.lock);
@@ -357,6 +384,15 @@ vx_status VX_API_CALL vxCopyMatrix(vx_matrix matrix, void *ptr, vx_enum usage, v
                 VX_PRINT(VX_ZONE_ERROR, "Wrong parameters for matrix\n");
                 status = VX_ERROR_INVALID_PARAMETERS;
             }
+
+#ifdef OPENVX_USE_OPENCL_INTEROP
+            if (mem_type_given == VX_MEMORY_TYPE_OPENCL_BUFFER)
+            {
+                clEnqueueUnmapMemObject(matrix->base.context->opencl_command_queue,
+                    (cl_mem)ptr_given, ptr, 0, NULL, NULL);
+                clFinish(matrix->base.context->opencl_command_queue);
+            }
+#endif
         }
         else
         {

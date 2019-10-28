@@ -25,6 +25,10 @@ include_directories( BEFORE
                      ${CMAKE_SOURCE_DIR}/utils
                      ${CMAKE_SOURCE_DIR}/debug
                      ${LIBXML2_INCLUDE_DIR})
+
+if (OPENVX_USE_OPENCL_INTEROP)
+    include_directories (${OpenCL_INCLUDE_DIRS} ${OpenCL_INCLUDE_DIRS}/Headers)
+endif (OPENVX_USE_OPENCL_INTEROP)
 					 
 if ((WIN32) OR (CYGWIN))
    add_definitions( ${OPENVX_BUILDING_EXPORT_DEF} )
@@ -62,6 +66,10 @@ endif (NOT WIN32)
 if (OPENVX_USE_XML)
     list( APPEND LINK_ADDITIONAL ${LIBXML2_LIBRARIES} )
 endif (OPENVX_USE_XML)
+
+if (OPENVX_USE_OPENCL_INTEROP)
+    list( APPEND LINK_ADDITIONAL ${OpenCL_LIBRARIES})
+endif (OPENVX_USE_OPENCL_INTEROP)
 
 if (CYGWIN)
     set_target_properties( ${TARGET_NAME} PROPERTIES LINK_FLAGS ${CMAKE_CURRENT_SOURCE_DIR}/${DEF_FILE} )

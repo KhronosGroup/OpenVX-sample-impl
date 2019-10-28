@@ -79,7 +79,9 @@
 #if defined(OPENVX_USE_IX)
 #include <VX/vx_khr_ix.h>
 #endif
-
+#ifdef OPENVX_USE_OPENCL_INTEROP
+#include <VX/vx_khr_opencl_interop.h>
+#endif
 #define VX_MAX_TENSOR_DIMENSIONS 6
 #define Q78_FIXED_POINT_POSITION 8
 
@@ -658,6 +660,10 @@ typedef struct _vx_kernel_attr_t {
 #endif
     /*! \brief The reset valid rectangle flag */
     vx_bool       valid_rect_reset;
+
+#ifdef OPENVX_USE_OPENCL_INTEROP
+    vx_bool opencl_access;
+#endif
 } vx_kernel_attr_t;
 
 /*! \brief The internal representation of an abstract kernel.
@@ -919,6 +925,9 @@ typedef struct _vx_memory_map_t
     vx_uint32 flags;
     /*! \brief The mapping buffer pointer associated with the reference. */
     void* ptr;
+#ifdef OPENVX_USE_OPENCL_INTEROP
+    cl_mem opencl_buf;
+#endif
 } vx_memory_map_t;
 
 /*! \brief The top level context data for the entire OpenVX instance
@@ -988,6 +997,11 @@ typedef struct _vx_context {
     vx_enum             imm_target_enum;
     /*! \brief The immediate mode target string */
     vx_char             imm_target_string[VX_MAX_TARGET_NAME];
+#ifdef OPENVX_USE_OPENCL_INTEROP
+    cl_context opencl_context;
+    cl_command_queue opencl_command_queue;
+#endif
+
 } vx_context_t;
 
 /*! \brief A data structure used to track the various costs which could being optimized.
@@ -1128,6 +1142,10 @@ typedef struct _vx_memory_t {
     vx_uint32      offset[VX_PLANE_MAX];
     /*! \brief The array of pointers (one per plane for images) */
     vx_uint8*      ptrs[VX_PLANE_MAX];
+#ifdef OPENVX_USE_OPENCL_INTEROP
+    /*! \brief OpenCL buffer for handles */
+    cl_mem         opencl_buf[VX_PLANE_MAX];
+#endif
     /*! \brief The number of dimensions per ptr */
     vx_uint32       ndims;
     /*! \brief The dimensional values per ptr */

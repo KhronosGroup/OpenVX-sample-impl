@@ -40,6 +40,10 @@ const vx_char extensions[] =
 #endif
     " ";
 
+static vx_context_t *single_context = NULL;
+static vx_sem_t context_lock;
+static vx_sem_t global_lock;
+
 static vx_bool vxWorkerNode(vx_threadpool_worker_t *worker)
 {
     vx_bool ret = vx_true_e;
@@ -148,6 +152,13 @@ VX_INT_API vx_bool ownIsValidImport(vx_enum type)
         case VX_MEMORY_TYPE_HOST:
             ret = vx_true_e;
             break;
+#ifdef OPENVX_USE_OPENCL_INTEROP
+        case VX_MEMORY_TYPE_OPENCL_BUFFER:
+            if (single_context && single_context->opencl_context) {
+                ret = vx_true_e;
+            }
+            break;
+#endif
         case VX_MEMORY_TYPE_NONE:
         default:
             ret = vx_false_e;
@@ -400,10 +411,6 @@ VX_INT_API void ownMemoryUnmap(vx_context context, vx_uint32 map_id)
 /* PUBLIC API */
 /******************************************************************************/
 
-static vx_context_t *single_context = NULL;
-static vx_sem_t context_lock;
-static vx_sem_t global_lock;
-
 /* Note: context is an exception in term of error management since it
    returns 0 in case of error. This is due to the fact that error
    objects belong to the context in this implementation. But since
@@ -438,6 +445,10 @@ VX_API_ENTRY vx_context VX_API_CALL vxCreateContext(void)
         if (context)
         {
             vx_uint32 p = 0u, p2 = 0u, t = 0u, m = 0u;
+#ifdef OPENVX_USE_OPENCL_INTEROP
+            context->opencl_context = NULL;
+            context->opencl_command_queue = NULL;
+#endif
             context->p_global_lock = &global_lock;
             context->imm_border.mode = VX_BORDER_UNDEFINED;
             context->imm_border_policy = VX_BORDER_POLICY_DEFAULT_TO_UNDEFINED;
@@ -560,6 +571,16 @@ VX_API_ENTRY vx_status VX_API_CALL vxReleaseContext(vx_context *c)
     {
         if (ownDecrementReference(&context->base, VX_EXTERNAL) == 0)
         {
+#ifdef OPENVX_USE_OPENCL_INTEROP
+            if(context->opencl_command_queue) {
+                clReleaseCommandQueue(context->opencl_command_queue);
+                context->opencl_command_queue = NULL;
+            }
+            if(context->opencl_context) {
+                clReleaseContext(context->opencl_context);
+                context->opencl_context = NULL;
+            }
+#endif
             ownDestroyThreadpool(&context->workers);
             context->proc.running = vx_false_e;
             ownPopQueue(&context->proc.input);
@@ -921,6 +942,28 @@ VX_API_ENTRY vx_status VX_API_CALL vxQueryContext(vx_context context, vx_enum at
                     status = VX_ERROR_INVALID_PARAMETERS;
                 }
                 break;
+#ifdef OPENVX_USE_OPENCL_INTEROP
+            case VX_CONTEXT_CL_CONTEXT:
+                if (VX_CHECK_PARAM(ptr, size, cl_context, 0x3))
+                {
+                    *(cl_context *)ptr = context->opencl_context;
+                }
+                else
+                {
+                    status = VX_ERROR_INVALID_PARAMETERS;
+                }
+                break;
+            case VX_CONTEXT_CL_COMMAND_QUEUE:
+                if (VX_CHECK_PARAM(ptr, size, cl_command_queue, 0x3))
+                {
+                    *(cl_command_queue  *)ptr = context->opencl_command_queue;
+                }
+                else
+                {
+                    status = VX_ERROR_INVALID_PARAMETERS;
+                }
+                break;
+#endif
             default:
                 status = VX_ERROR_NOT_SUPPORTED;
                 break;
@@ -1173,4 +1216,21 @@ VX_API_ENTRY vx_status VX_API_CALL vxSetImmediateModeTarget(vx_context context, 
     return status;
 }
 
-
+#ifdef OPENVX_USE_OPENCL_INTEROP
+VX_API_ENTRY vx_context VX_API_CALL vxCreateContextFromCL(cl_context opencl_context, cl_command_queue opencl_command_queue)
+{
+    vx_context context = vxCreateContext();
+    if(vxGetStatus((vx_reference)context) == VX_SUCCESS)
+    {
+        cl_int err1 = clRetainContext(opencl_context);
+        cl_int err2 = clRetainCommandQueue(opencl_command_queue);
+        if((err1 != CL_SUCCESS) || (err2 != CL_SUCCESS)) {
+            vxReleaseContext(&context);
+            return NULL;
+        }
+        context->opencl_context = opencl_context;
+        context->opencl_command_queue = opencl_command_queue;
+    }
+    return context;
+}
+#endif
