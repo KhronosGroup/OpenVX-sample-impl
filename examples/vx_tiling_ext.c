@@ -220,7 +220,8 @@ static vx_status VX_CALLBACK vxAlphaOutputValidator(vx_node node, vx_uint32 inde
     return status;
 }
 
-
+//Move this struct into "include/VX/vx_khr_tiling.h"
+#if 0  
 /*! [publish_support] */
 typedef struct _vx_tiling_kernel_t {
     /*! kernel name */
@@ -246,6 +247,7 @@ typedef struct _vx_tiling_kernel_t {
     /*! border information. */
     vx_border_t border;
 } vx_tiling_kernel_t;
+#endif
 
 static vx_tiling_kernel_t tiling_kernels[] = {
         {"org.khronos.openvx.tiling_gaussian_3x3",
@@ -255,6 +257,7 @@ static vx_tiling_kernel_t tiling_kernels[] = {
           2,
           {{VX_INPUT, VX_TYPE_IMAGE, VX_PARAMETER_STATE_REQUIRED},
            {VX_OUTPUT, VX_TYPE_IMAGE, VX_PARAMETER_STATE_REQUIRED}},
+          NULL,
           vxFilterInputValidator,
           vxFilterOutputValidator,
           {1, 1},
@@ -269,6 +272,7 @@ static vx_tiling_kernel_t tiling_kernels[] = {
           {{VX_INPUT, VX_TYPE_IMAGE, VX_PARAMETER_STATE_REQUIRED},
            {VX_INPUT, VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
            {VX_OUTPUT, VX_TYPE_IMAGE, VX_PARAMETER_STATE_REQUIRED}},
+          NULL,
           vxAlphaInputValidator,
           vxAlphaOutputValidator,
           {1, 1},
@@ -282,6 +286,7 @@ static vx_tiling_kernel_t tiling_kernels[] = {
           2,
           {{VX_INPUT, VX_TYPE_IMAGE, VX_PARAMETER_STATE_REQUIRED},
            {VX_OUTPUT, VX_TYPE_IMAGE, VX_PARAMETER_STATE_REQUIRED}},
+          NULL,
           vxFilterInputValidator,
           vxFilterOutputValidator,
           {1, 1},
@@ -296,6 +301,7 @@ static vx_tiling_kernel_t tiling_kernels[] = {
           {{VX_INPUT, VX_TYPE_IMAGE, VX_PARAMETER_STATE_REQUIRED},
            {VX_INPUT, VX_TYPE_IMAGE, VX_PARAMETER_STATE_REQUIRED},
            {VX_OUTPUT, VX_TYPE_IMAGE, VX_PARAMETER_STATE_REQUIRED}},
+          NULL,
           vxAddInputValidator,
           vxAddOutputValidator,
           {1, 1},
@@ -319,6 +325,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxPublishKernels(vx_context context)
                 tiling_kernels[k].flexible_function,
                 tiling_kernels[k].fast_function,
                 tiling_kernels[k].num_params,
+                tiling_kernels[k].validate,
                 tiling_kernels[k].input_validator,
                 tiling_kernels[k].output_validator);
         if (kernel)

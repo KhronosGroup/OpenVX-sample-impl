@@ -16,3 +16,7 @@
 
 
 add_subdirectory( c_model )
+if (OPENVX_USE_TILING)
+    add_subdirectory( tiling )
+endif (OPENVX_USE_TILING)
+

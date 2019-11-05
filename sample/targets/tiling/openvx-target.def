@@ -1,0 +1,12 @@
+LIBRARY "openvx-tiling_chaining.dll"
+VERSION 1.0
+EXPORTS
+    vxTargetInit
+    vxTargetDeinit
+    vxTargetVerify
+    vxTargetProcess
+    vxTargetSupports
+    vxTargetAddKernel
+    vxTargetAddTilingKernel
+    vxPublishKernels
+    vxUnpublishKernels

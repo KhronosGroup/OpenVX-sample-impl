@@ -55,7 +55,7 @@ vx_kernel_t *ownAllocateKernel(vx_context context,
     if (vxGetStatus((vx_reference)kernel) == VX_SUCCESS && kernel->base.type == VX_TYPE_KERNEL)
     {
         /* setup the kernel meta-data */
-        strncpy(kernel->name, name, VX_MAX_KERNEL_NAME - 1);
+        strncpy(kernel->name, name, VX_MAX_KERNEL_NAME);
         kernel->enumeration = kenum;
         kernel->function = function;
         kernel->signature.num_parameters = numParams;
@@ -105,7 +105,7 @@ vx_status ownInitializeKernel(vx_context context,
         ownIncrementReference(&kernel->base, VX_INTERNAL);
 
         // setup the kernel meta-data
-        strncpy(kernel->name, name, VX_MAX_KERNEL_NAME - 1);
+        strncpy(kernel->name, name, VX_MAX_KERNEL_NAME);
         kernel->enumeration = kenum;
         kernel->function = function;
         kernel->signature.num_parameters = numParams;
@@ -241,7 +241,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxLoadKernels(vx_context context, const vx_ch
                     }
                     else
                     {
-                        strncpy(context->modules[m].name, name, VX_INT_MAX_PATH - 1);
+                        strncpy(context->modules[m].name, name, VX_INT_MAX_PATH);
                         context->modules[m].ref_count = 1;
                         context->num_modules++;
                     }
@@ -352,6 +352,18 @@ VX_API_ENTRY vx_kernel VX_API_CALL vxGetKernelByName(vx_context context, const v
         vx_size colons = strncount(string, VX_MAX_KERNEL_NAME, ':');
         vx_char targetName[VX_MAX_TARGET_NAME] = "default";
         vx_char kernelName[VX_MAX_KERNEL_NAME];
+#if defined(EXPERIMENTAL_USE_VARIANTS)
+        vx_char variantName[VX_MAX_VARIANT_NAME] = "default";
+#if defined(EXPERIMENTAL_USE_TARGET)
+        vx_char defaultTargets[][VX_MAX_TARGET_NAME] = {
+            "default",
+            "power",
+            "performance",
+            "memory",
+            "bandwidth",
+        };
+#endif
+#endif
 #if defined(_WIN32)
         vx_char *nameBuffer = _strdup(string);
 #else
@@ -359,23 +371,100 @@ VX_API_ENTRY vx_kernel VX_API_CALL vxGetKernelByName(vx_context context, const v
 #endif
 
         if (colons == 0) {
-            strncpy(kernelName, string, VX_MAX_KERNEL_NAME - 1);
+            strncpy(kernelName, string, VX_MAX_KERNEL_NAME);
+        }
+        else if (colons == 1)
+        {
+#if defined(EXPERIMENTAL_USE_TARGET) || defined(EXPERIMENTAL_USE_VARIANTS)
+            /* could be either target:kernel or kernel:variant" */
+            vx_char *front = strtok(nameBuffer, ":");
+            vx_char *back = strtok(NULL, ":");
+#if defined(EXPERIMENTAL_USE_TARGET) && defined(EXPERIMENTAL_USE_VARIANTS)
+            vx_bool isTarget = vx_false_e;
+            /* does front match any targets? */
+            for (t = 0u; t < context->num_targets; t++)
+            {
+                if (strncmp(front, context->targets[t].name, VX_MAX_TARGET_NAME) == 0)
+                {
+                    isTarget = vx_true_e;
+                    break;
+                }
+            }
+            if (isTarget == vx_false_e)
+            {
+                for (t = 0u; t < dimof(defaultTargets); t++)
+                {
+                    if (strncmp(front, defaultTargets[t], VX_MAX_TARGET_NAME) == 0)
+                    {
+                        isTarget = vx_true_e;
+                        break;
+                    }
+                }
+            }
+            if (isTarget == vx_true_e)
+            {
+                strncpy(targetName, front, VX_MAX_TARGET_NAME);
+                strncpy(kernelName, back, VX_MAX_KERNEL_NAME);
+            }
+            else
+            {
+                strncpy(kernelName, front, VX_MAX_KERNEL_NAME);
+                strncpy(variantName, back, VX_MAX_VARIANT_NAME);
+            }
+#elif defined(EXPERIMENTAL_USE_TARGET)
+            strncpy(targetName, front, VX_MAX_TARGET_NAME);
+            strncpy(kernelName, back, VX_MAX_KERNEL_NAME);
+#elif defined(EXPERIMENTAL_USE_VARIANTS)
+            strncpy(kernelName, front, VX_MAX_KERNEL_NAME);
+            strncpy(variantName, back, VX_MAX_VARIANT_NAME);
+#endif
+#else   /* defined(EXPERIMENTAL_USE_TARGET) || defined(EXPERIMENTAL_USE_VARIANTS) */
+            /* If both TARGET and VARIANT extensions are disabled, there should be no colon */
+            /* Doing nothing will leave kern = NULL, causing error condition below */
+            VX_PRINT(VX_ZONE_ERROR, "Kernel name should not contain any ':' in this implementation\n");
+#endif  /* defined(EXPERIMENTAL_USE_TARGET) || defined(EXPERIMENTAL_USE_VARIANTS) */
+        }
+        else if (colons == 2)
+        {
+#if defined(EXPERIMENTAL_USE_TARGET) && defined(EXPERIMENTAL_USE_VARIANTS)
+            /* target:kernel:variant */
+            vx_char *target = strtok(nameBuffer, ":");
+            vx_char *kernel = strtok(NULL, ":");
+            vx_char *variant = strtok(NULL,":");
+            strncpy(targetName, target, VX_MAX_TARGET_NAME);
+            strncpy(kernelName, kernel, VX_MAX_KERNEL_NAME);
+            strncpy(variantName, variant, VX_MAX_VARIANT_NAME);
+#else   /* defined(EXPERIMENTAL_USE_TARGET) && defined(EXPERIMENTAL_USE_VARIANTS) */
+            /* If both TARGET and VARIANT extensions are disabled, there should be no colon */
+            /* Doing nothing will leave kern = NULL, causing error condition below */
+            VX_PRINT(VX_ZONE_ERROR, "Kernel name should not contain two ':' in this implementation\n");
+#endif  /* defined(EXPERIMENTAL_USE_TARGET) && defined(EXPERIMENTAL_USE_VARIANTS) */
         }
         else
         {
-            /* There should be no colon */
+            /* no extension supports > 2 colons so far */
             /* Doing nothing will leave kern = NULL, causing error condition below */
-            VX_PRINT(VX_ZONE_ERROR, "Kernel name should not contain any ':' in this implementation\n");
+            VX_PRINT(VX_ZONE_ERROR, "Kernel name should not contain more than two ':' in this implementation\n");
         }
 
         free(nameBuffer);
 
+#if defined(EXPERIMENTAL_USE_VARIANTS)
+        VX_PRINT(VX_ZONE_KERNEL, "Scanning in set of %u kernels on %u targets.\n"
+            "Target: %s\nKernel: %s\nVariant: %s\n",
+            context->num_kernels, context->num_targets,
+            targetName, kernelName, variantName);
+#endif
         for (t = 0; t < context->num_targets && kern == NULL; t++)
         {
             vx_target_t *target = &context->targets[context->priority_targets[t]];
             if (target == NULL || target->enabled == vx_false_e)
                 continue;
+#if defined(EXPERIMENTAL_USE_VARIANTS)
+            if (target->funcs.supports(target, targetName, kernelName, variantName, &k) == VX_SUCCESS)
+#else
             if (target->funcs.supports(target, targetName, kernelName, &k) == VX_SUCCESS)
+#endif
             {
                 vx_kernel kernel = &target->kernels[k];
                 vxPrintKernel(kernel);
@@ -435,6 +524,10 @@ VX_API_ENTRY vx_kernel VX_API_CALL vxGetKernelByEnum(vx_context context, vx_enum
                     VX_PRINT(VX_ZONE_KERNEL,"Found Kernel[%u] enum:%d name:%s in target[%u]=%s\n", k, kernelenum, kernel->name, context->priority_targets[t], target->name);
                     break;
                 }
+            }
+            /* Acquire the highest priority target */
+            if (kernel != NULL) {
+                break;
             }
         }
         if (kernel == NULL) {
@@ -586,11 +679,15 @@ VX_API_ENTRY vx_kernel VX_API_CALL vxAddUserKernel(vx_context c,
 VX_API_ENTRY vx_kernel VX_API_CALL vxAddTilingKernel(vx_context c,
                             vx_char name[VX_MAX_KERNEL_NAME],
                             vx_enum enumeration,
+                            vx_kernel_f function,
                             vx_tiling_kernel_f flexible_func_ptr,
                             vx_tiling_kernel_f fast_func_ptr,
                             vx_uint32 num_params,
+                            vx_kernel_validate_f validate,
                             vx_kernel_input_validate_f input,
-                            vx_kernel_output_validate_f output)
+                            vx_kernel_output_validate_f output,
+                            vx_kernel_initialize_f initialize,
+                            vx_kernel_deinitialize_f deinitialize)
 {
     vx_context_t *context = (vx_context_t *)c;
     vx_kernel kernel = 0;
@@ -604,9 +701,7 @@ VX_API_ENTRY vx_kernel VX_API_CALL vxAddTilingKernel(vx_context c,
         VX_PRINT(VX_ZONE_ERROR, "Invalid Context\n");
         return (vx_kernel)NULL;
     }
-    if ((flexible_func_ptr == NULL && fast_func_ptr == NULL) ||
-        input == NULL ||
-        output == NULL ||
+    if  ( ((validate == NULL) && (input == NULL || output == NULL)) ||
         num_params > VX_INT_MAX_PARAMS || num_params == 0 ||
         name == NULL ||
         strncmp(name, "",  VX_MAX_KERNEL_NAME) == 0)
@@ -621,7 +716,7 @@ VX_API_ENTRY vx_kernel VX_API_CALL vxAddTilingKernel(vx_context c,
     index = strnindex(name, ':', VX_MAX_TARGET_NAME);
     if (index == VX_MAX_TARGET_NAME)
     {
-        strcpy(targetName,"khronos.any");
+        strcpy(targetName,"khronos.tiling");
     }
     else
     {
@@ -639,9 +734,9 @@ VX_API_ENTRY vx_kernel VX_API_CALL vxAddTilingKernel(vx_context c,
     }
     if (target && target->funcs.addtilingkernel)
     {
-        kernel = target->funcs.addtilingkernel(target, name, enumeration,
-                                         flexible_func_ptr, fast_func_ptr, num_params,
-                                         input, output);
+        kernel = target->funcs.addtilingkernel(target, name, enumeration, function,
+                                         flexible_func_ptr, fast_func_ptr, num_params, validate,  
+                                         input, output, initialize, deinitialize);
         VX_PRINT(VX_ZONE_KERNEL,"Added Kernel %s to Target %s ("VX_FMT_REF")\n", name, target->name, kernel);
     }
     else
@@ -747,6 +842,28 @@ VX_API_ENTRY vx_status VX_API_CALL vxQueryKernel(vx_kernel kern, vx_enum attribu
                     status = VX_ERROR_INVALID_PARAMETERS;
                 }
                 break;
+#ifdef OPENVX_KHR_NODE_MEMORY
+            case VX_KERNEL_GLOBAL_DATA_SIZE:
+                if (VX_CHECK_PARAM(ptr, size, vx_size, 0x3))
+                {
+                    *(vx_size *)ptr = kernel->attributes.globalDataSize;
+                }
+                else
+                {
+                    status = VX_ERROR_INVALID_PARAMETERS;
+                }
+                break;
+            case VX_KERNEL_GLOBAL_DATA_PTR:
+                if (VX_CHECK_PARAM(ptr, size, vx_ptr_t, 0x1))
+                {
+                    *(vx_ptr_t *)ptr = kernel->attributes.globalDataPtr;
+                }
+                else
+                {
+                    status = VX_ERROR_INVALID_PARAMETERS;
+                }
+                break;
+#endif
 #ifdef OPENVX_KHR_TILING
             case VX_KERNEL_INPUT_NEIGHBORHOOD:
                 if (VX_CHECK_PARAM(ptr, size, vx_neighborhood_size_t, 0x3))
@@ -810,10 +927,17 @@ VX_API_ENTRY vx_status VX_API_CALL vxAddParameterToKernel(vx_kernel kernel,
         if (index < kern->signature.num_parameters)
         {
 #ifdef OPENVX_KHR_TILING
-            if (kern->tiling_function)
+            if (kern->tilingfast_function)
             {
                 if (((data_type != VX_TYPE_IMAGE) &&
-                     (data_type != VX_TYPE_SCALAR)) ||
+                     (data_type != VX_TYPE_SCALAR) &&
+                     (data_type != VX_TYPE_THRESHOLD) &&
+                     (data_type != VX_TYPE_REMAP) &&
+                     (data_type != VX_TYPE_CONVOLUTION) &&
+                     (data_type != VX_TYPE_TENSOR) &&
+                     (data_type != VX_TYPE_ARRAY) &&
+                     (data_type != VX_TYPE_LUT) &&
+                     (data_type != VX_TYPE_MATRIX)) ||
                     (ownIsValidDirection(dir) == vx_false_e) ||
                     (ownIsValidState(state) == vx_false_e))
                 {
@@ -968,6 +1092,29 @@ VX_API_ENTRY vx_status VX_API_CALL vxSetKernelAttribute(vx_kernel k, vx_enum att
                 status = VX_ERROR_INVALID_PARAMETERS;
             }
             break;
+#ifdef EXPERIMENTAL_USE_NODE_MEMORY
+        case VX_KERNEL_GLOBAL_DATA_SIZE:
+            if (VX_CHECK_PARAM(ptr, size, vx_size, 0x3))
+            {
+                kernel->attributes.globalDataSize = *(vx_size *)ptr;
+                VX_PRINT(VX_ZONE_KERNEL, "Set Global Data Size to "VX_FMT_SIZE" bytes\n", kernel->attributes.globalDataSize);
+            }
+            else
+            {
+                status = VX_ERROR_INVALID_PARAMETERS;
+            }
+            break;
+        case VX_KERNEL_GLOBAL_DATA_PTR:
+            if (VX_CHECK_PARAM(ptr, size, vx_ptr_t, 0x1))
+            {
+                kernel->attributes.globalDataPtr = *(vx_ptr_t *)ptr;
+            }
+            else
+            {
+                status = VX_ERROR_INVALID_PARAMETERS;
+            }
+            break;
+#endif
 #ifdef OPENVX_KHR_TILING
         case VX_KERNEL_INPUT_NEIGHBORHOOD:
             if (VX_CHECK_PARAM(ptr, size, vx_neighborhood_size_t, 0x3))
