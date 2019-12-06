@@ -1,4 +1,4 @@
-/* 
+/*
 
  * Copyright (c) 2012-2017 The Khronos Group Inc.
  *
@@ -33,7 +33,8 @@ static vx_bool vxIsValidThresholdType(vx_enum thresh_type)
 static vx_bool vxIsValidThresholdDataType(vx_enum data_type)
 {
     vx_bool ret = vx_false_e;
-    if (data_type == VX_TYPE_INT8 ||
+    if (data_type == VX_TYPE_BOOL ||
+        data_type == VX_TYPE_INT8 ||
         data_type == VX_TYPE_UINT8 ||
         data_type == VX_TYPE_INT16 ||
         data_type == VX_TYPE_UINT16 ||
@@ -67,6 +68,10 @@ VX_API_ENTRY vx_threshold VX_API_CALL vxCreateThreshold(vx_context context, vx_e
                     threshold->data_type = data_type;
                     switch(data_type)
                     {
+                    case VX_TYPE_BOOL:
+                        threshold->true_value.U1 = VX_U1_THRESHOLD_TRUE_VALUE;
+                        threshold->false_value.U1 = VX_U1_THRESHOLD_FALSE_VALUE;
+                        break;
                     case VX_TYPE_INT8:
                         threshold->true_value.U8 = VX_DEFAULT_THRESHOLD_TRUE_VALUE;
                         threshold->false_value.U8 = VX_DEFAULT_THRESHOLD_FALSE_VALUE;
@@ -370,7 +375,8 @@ VX_API_ENTRY vx_status VX_API_CALL vxQueryThreshold(vx_threshold threshold, vx_e
 static vx_bool vxIsValidThresholdFormat(vx_df_image format)
 {
     vx_bool ret = vx_false_e;
-    if (format == VX_DF_IMAGE_U8  ||
+    if (format == VX_DF_IMAGE_U1  ||
+        format == VX_DF_IMAGE_U8  ||
         format == VX_DF_IMAGE_S16 ||
         format == VX_DF_IMAGE_U16 ||
         format == VX_DF_IMAGE_S32 ||
@@ -475,6 +481,13 @@ VX_API_ENTRY vx_threshold VX_API_CALL vxCreateThresholdForImage(vx_context conte
                 threshold->false_value.YUV[0] = VX_DEFAULT_THRESHOLD_FALSE_VALUE;
                 threshold->false_value.YUV[1] = VX_DEFAULT_THRESHOLD_FALSE_VALUE;
                 threshold->false_value.YUV[2] = VX_DEFAULT_THRESHOLD_FALSE_VALUE;
+                break;
+            }
+            case VX_DF_IMAGE_U1:
+            {
+                threshold->data_type = VX_TYPE_BOOL;
+                threshold->true_value.U1  = VX_U1_THRESHOLD_TRUE_VALUE;
+                threshold->false_value.U1 = VX_U1_THRESHOLD_FALSE_VALUE;
                 break;
             }
             case VX_DF_IMAGE_U8:

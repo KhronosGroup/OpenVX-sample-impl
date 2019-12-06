@@ -1,4 +1,4 @@
-/* 
+/*
 
  * Copyright (c) 2012-2017 The Khronos Group Inc.
  *
@@ -100,7 +100,6 @@ vx_type_name_t parameter_names[] = {
 vx_type_name_t direction_names[] = {
     {_STR2(VX_INPUT), VX_TYPE_ENUM, sizeof(vx_enum)},
     {_STR2(VX_OUTPUT), VX_TYPE_ENUM, sizeof(vx_enum)},
-    {_STR2(VX_BIDIRECTIONAL), VX_TYPE_ENUM, sizeof(vx_enum)},
 };
 
 static void vxPrintAllLog(vx_context context)

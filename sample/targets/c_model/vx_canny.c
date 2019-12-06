@@ -1,4 +1,4 @@
-/* 
+/*
 
  * Copyright (c) 2012-2017 The Khronos Group Inc.
  *
@@ -91,7 +91,7 @@ static vx_status VX_CALLBACK vxCannyEdgeInputValidator(vx_node node, vx_uint32 i
             {
                 vx_enum data_type = 0;
                 vxQueryThreshold(hyst, VX_THRESHOLD_DATA_TYPE, &data_type, sizeof(data_type));
-                if (data_type == VX_TYPE_UINT8 || data_type == VX_TYPE_INT16)
+                if (data_type == VX_TYPE_UINT8 || data_type == VX_TYPE_INT16 || data_type == VX_TYPE_BOOL)
                 {
                     status = VX_SUCCESS;
                 }
@@ -163,27 +163,39 @@ static vx_status VX_CALLBACK vxCannyEdgeOutputValidator(vx_node node, vx_uint32 
     vx_status status = VX_ERROR_INVALID_PARAMETERS;
     if (index == 4)
     {
+        vx_parameter dst_param = vxGetParameterByIndex(node, 4);
         vx_parameter src_param = vxGetParameterByIndex(node, 0);
-        if (vxGetStatus((vx_reference)src_param) == VX_SUCCESS)
+        if (vxGetStatus((vx_reference)src_param) == VX_SUCCESS && vxGetStatus((vx_reference)dst_param) == VX_SUCCESS)
         {
+            vx_image dst = 0;
             vx_image src = 0;
+            vxQueryParameter(dst_param, VX_PARAMETER_REF, &dst, sizeof(dst));
             vxQueryParameter(src_param, VX_PARAMETER_REF, &src, sizeof(src));
-            if (src)
+            if (src && dst)
             {
                 vx_uint32 width = 0, height = 0;
-                vx_df_image format = VX_DF_IMAGE_VIRT;
+                vx_df_image dst_format = VX_DF_IMAGE_VIRT;
+                vx_df_image src_format = VX_DF_IMAGE_VIRT;
 
                 vxQueryImage(src, VX_IMAGE_WIDTH, &width, sizeof(height));
                 vxQueryImage(src, VX_IMAGE_HEIGHT, &height, sizeof(height));
-                vxQueryImage(src, VX_IMAGE_FORMAT, &format, sizeof(format));
+                vxQueryImage(dst, VX_IMAGE_FORMAT, &dst_format, sizeof(dst_format));
+                vxQueryImage(src, VX_IMAGE_FORMAT, &src_format, sizeof(src_format));
                 /* fill in the meta data with the attributes so that the checker will pass */
                 ptr->type = VX_TYPE_IMAGE;
-                ptr->dim.image.format = format;
+                ptr->dim.image.format = dst_format;
                 ptr->dim.image.width = width;
                 ptr->dim.image.height = height;
-                status = VX_SUCCESS;
+                if (dst_format != VX_DF_IMAGE_U1 && dst_format != VX_DF_IMAGE_U8)
+                    status = VX_ERROR_INVALID_FORMAT;
+                if (dst_format == VX_DF_IMAGE_U1 && src_format != VX_DF_IMAGE_U8)
+                    status = VX_ERROR_INVALID_FORMAT;
+                else
+                    status = VX_SUCCESS;
+                vxReleaseImage(&dst);
                 vxReleaseImage(&src);
             }
+            vxReleaseParameter(&dst_param);
             vxReleaseParameter(&src_param);
         }
     }
@@ -234,6 +246,11 @@ static vx_status VX_CALLBACK vxCannyEdgeInitializer(vx_node node, const vx_refer
             vx_scalar    norm_type = (vx_scalar)parameters[3];
             vx_image     output = (vx_image)parameters[4];
 
+            vx_scalar sshift;
+            vx_df_image out_format = 0;
+            sshift = vxCreateScalar(context, VX_TYPE_INT32, (vx_int32)0);
+            vxQueryImage(output, VX_IMAGE_FORMAT, &out_format, sizeof(out_format));
+
             vx_image virts[] =
             {
                 vxCreateVirtualImage(subgraph, 0, 0, VX_DF_IMAGE_VIRT),  /* 0: Gx */
@@ -241,16 +258,23 @@ static vx_status VX_CALLBACK vxCannyEdgeInitializer(vx_node node, const vx_refer
                 vxCreateVirtualImage(subgraph, 0, 0, VX_DF_IMAGE_VIRT),  /* 2: Mag */
                 vxCreateVirtualImage(subgraph, 0, 0, VX_DF_IMAGE_VIRT),  /* 3: Phase */
                 vxCreateVirtualImage(subgraph, 0, 0, VX_DF_IMAGE_VIRT),  /* 4: Nonmax */
+                vxCreateVirtualImage(subgraph, 0, 0, VX_DF_IMAGE_VIRT),  /* 5: (U1 only) U8 intermediate output */
             };
 
-            vx_node nodes[] =
+            vx_node nodes[5], convert_node;
+            nodes[0] = vxSobelMxNNode(subgraph, input, gradient_size, virts[0], virts[1]);
+            nodes[1] = vxElementwiseNormNode(subgraph, virts[0], virts[1], norm_type, virts[2]);
+            nodes[2] = vxPhaseNode(subgraph, virts[0], virts[1], virts[3]);
+            nodes[3] = vxNonMaxSuppressionCannyNode(subgraph, virts[2], virts[3], virts[4]);
+            if (out_format == VX_DF_IMAGE_U1)
             {
-                vxSobelMxNNode(subgraph, input, gradient_size, virts[0], virts[1]),
-                vxElementwiseNormNode(subgraph, virts[0], virts[1], norm_type, virts[2]),
-                vxPhaseNode(subgraph, virts[0], virts[1], virts[3]),
-                vxNonMaxSuppressionCannyNode(subgraph, virts[2], virts[3], virts[4]),
-                vxEdgeTraceNode(subgraph, virts[4], hyst, output),
-            };
+                nodes[4] = vxEdgeTraceNode(subgraph, virts[4], hyst, virts[5]);
+                convert_node = vxConvertDepthNode(subgraph, virts[5], output, VX_CONVERT_POLICY_SATURATE, sshift);
+            }
+            else
+            {
+                nodes[4] = vxEdgeTraceNode(subgraph, virts[4], hyst, output);
+            }
 
             vx_border_t borders;
 
@@ -264,12 +288,22 @@ static vx_status VX_CALLBACK vxCannyEdgeInitializer(vx_node node, const vx_refer
             {
                 status |= vxSetNodeAttribute(nodes[i], VX_NODE_BORDER, &borders, sizeof(borders));
             }
+            if (out_format == VX_DF_IMAGE_U1)
+                status |= vxSetNodeAttribute(convert_node, VX_NODE_BORDER, &borders, sizeof(borders));
 
             status |= vxAddParameterToGraphByIndex(subgraph, nodes[0], 0); /* input image */
             status |= vxAddParameterToGraphByIndex(subgraph, nodes[4], 1); /* threshold */
             status |= vxAddParameterToGraphByIndex(subgraph, nodes[0], 1); /* gradient size */
             status |= vxAddParameterToGraphByIndex(subgraph, nodes[1], 2); /* norm type */
-            status |= vxAddParameterToGraphByIndex(subgraph, nodes[4], 2); /* output image */
+            if (out_format == VX_DF_IMAGE_U1)
+            {
+                status |= vxAddParameterToGraphByIndex(subgraph, convert_node, 1);  /* U1 output image */
+                vx_rectangle_t valid_rect;
+                status |= vxGetValidRegionImage(virts[5], &valid_rect);
+                status |= vxSetImageValidRectangle(output, &valid_rect);
+            }
+            else
+                status |= vxAddParameterToGraphByIndex(subgraph, nodes[4], 2);      /* U8 output image */
 
             status |= vxVerifyGraph(subgraph);
 
@@ -283,6 +317,11 @@ static vx_status VX_CALLBACK vxCannyEdgeInitializer(vx_node node, const vx_refer
             {
                 status |= vxReleaseNode(&nodes[i]);
             }
+
+            if (out_format == VX_DF_IMAGE_U1)
+                status |= vxReleaseNode(&convert_node);
+
+            status |= vxReleaseScalar(&sshift);
 
             status |= ownSetChildGraphOfNode(node, subgraph);
         }

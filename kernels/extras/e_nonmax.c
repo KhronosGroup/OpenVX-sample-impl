@@ -1,4 +1,4 @@
-/* 
+/*
 
  * Copyright (c) 2012-2017 The Khronos Group Inc.
  *
@@ -282,28 +282,28 @@ vx_status ownNonMaxSuppression(vx_image i_mag, vx_image i_ang, vx_image i_edge, 
             {
                 vx_uint8 mag[9];
                 vx_uint8* edge = vxFormatImagePatchAddress2d(edge_base, x, y, &edge_addr);
-                vxReadRectangle(mag_base, &mag_addr, borders, format, x, y, 1, 1, mag);
+                vxReadRectangle(mag_base, &mag_addr, borders, format, x, y, 1, 1, mag, 0);
                 *edge = mag[4] > mag[ni[0]] && mag[4] > mag[ni[1]] ? mag[4] : 0;
             }
             else if (format == VX_DF_IMAGE_S16)
             {
                 vx_int16 mag[9];
                 vx_int16* edge = vxFormatImagePatchAddress2d(edge_base, x, y, &edge_addr);
-                vxReadRectangle(mag_base, &mag_addr, borders, format, x, y, 1, 1, mag);
+                vxReadRectangle(mag_base, &mag_addr, borders, format, x, y, 1, 1, mag, 0);
                 *edge = mag[4] > mag[ni[0]] && mag[4] > mag[ni[1]] ? mag[4] : 0;
             }
             else if (format == VX_DF_IMAGE_U16)
             {
                 vx_uint16 mag[9];
                 vx_uint16* edge = vxFormatImagePatchAddress2d(edge_base, x, y, &edge_addr);
-                vxReadRectangle(mag_base, &mag_addr, borders, format, x, y, 1, 1, mag);
+                vxReadRectangle(mag_base, &mag_addr, borders, format, x, y, 1, 1, mag, 0);
                 *edge = mag[4] > mag[ni[0]] && mag[4] > mag[ni[1]] ? mag[4] : 0;
             }
             else if (format == VX_DF_IMAGE_F32)
             {
                 vx_float32 mag[9];
                 vx_float32* edge = vxFormatImagePatchAddress2d(edge_base, x, y, &edge_addr);
-                vxReadRectangle(mag_base, &mag_addr, borders, format, x, y, 1, 1, mag);
+                vxReadRectangle(mag_base, &mag_addr, borders, format, x, y, 1, 1, mag, 0);
                 *edge = mag[4] > mag[ni[0]] && mag[4] > mag[ni[1]] ? mag[4] : 0;
             }
         }

@@ -82,6 +82,10 @@
 #ifdef OPENVX_USE_OPENCL_INTEROP
 #include <VX/vx_khr_opencl_interop.h>
 #endif
+#if defined(EXPERIMENTAL_USE_OPENCL)
+#include <VX/vx_khr_opencl.h>
+#endif
+
 #define VX_MAX_TENSOR_DIMENSIONS 6
 #define Q78_FIXED_POINT_POSITION 8
 
@@ -193,6 +197,11 @@
  * \ingroup group_int_macros
  */
 #define VX_TYPE_IS_SCALAR(type) (VX_TYPE_INVALID < (type) && (type) < VX_TYPE_SCALAR_MAX)
+
+/*! \brief Used to determine scalar with size.
+ * \ingroup group_int_macros
+ */
+#define VX_TYPE_IS_SCALAR_WITH_SIZE(type) (VX_TYPE_INVALID < (type) && (type) <= VX_TYPE_VENDOR_STRUCT_END)
 
 /*! \brief Used to determine if a type is a struct.
  * \ingroup group_int_macros
@@ -316,13 +325,13 @@ typedef void * (*pthread_f )(void *);
 /*! A POSIX event type
  * \ingroup group_int_osal
  */
-typedef struct _vx_event_t {
+typedef struct _vx_internal_event_t {
     vx_bool             autoreset;   /*!< Indicates whether the event will auto-reset after signalling */
     vx_bool             set;         /*!< The current event value */
     pthread_cond_t     cond;        /*!< The PThread Condition */
     pthread_condattr_t attr;        /*!< The PThread Condition Attribute */
     pthread_mutex_t    mutex;       /*!< The PThread Mutex */
-} vx_event_t;
+} vx_internal_event_t;
 
 #define FILE_JOINER "/"
 #elif defined(_WIN32) || defined(UNDER_CE)
@@ -350,7 +359,7 @@ typedef HANDLE vx_thread_t;
 /*! A Windows specific event handle.
  * \ingroup group_int_osal
  */
-typedef HANDLE vx_event_t;
+typedef HANDLE vx_internal_event_t;
 
 #define FILE_JOINER "\\"
 #endif
@@ -372,8 +381,8 @@ typedef struct _vx_queue_t {
     vx_int32 start_index;
     vx_int32 end_index;
     vx_sem_t lock;
-    vx_event_t readEvent;
-    vx_event_t writeEvent;
+    vx_internal_event_t readEvent;
+    vx_internal_event_t writeEvent;
     vx_bool popped;
 } vx_queue_t;
 
@@ -443,7 +452,7 @@ typedef struct _vx_threadpool_t {
     /*! \brief The semaphore which protect access to the work queues */
     vx_sem_t sem;
     /*! \brief The event which indicates that all work is completed */
-    vx_event_t completed;
+    vx_internal_event_t completed;
 } vx_threadpool_t;
 
 /*! \brief The work item to distribute across the threadpools
@@ -520,6 +529,10 @@ typedef struct _vx_reference {
     vx_int32 delay_slot_index;
     /*! \brief This indicates that if the object is virtual whether it is accessible at the moment or not */
     vx_bool is_accessible;
+#if defined(EXPERIMENTAL_USE_OPENCL)
+    /*! \brief An OpenCL event that the framework can block upon for this object */
+    cl_event event;
+#endif
     /*! \brief The reference name */
     char name[VX_MAX_REFERENCE_NAME];
 } vx_reference_t;
@@ -580,6 +593,10 @@ typedef struct _vx_scalar {
         /*! \brief Boolean Values */
         vx_bool    boolean;
     } data;
+    /*! \brief Only used to scalar with size */
+    void *data_addr;
+    /*! \brief The length of pointer data_addr */
+    vx_size data_len;
 } vx_scalar_t;
 
 typedef struct _vx_tensor_t {
@@ -601,7 +618,7 @@ typedef struct _vx_tensor_t {
     /*! \brief A pointer to a parent md data object. */
     //vx_tensor  parent;
     struct _vx_tensor_t* parent;
-	vx_image  subimages[VX_INT_MAX_REF];
+    vx_image  subimages[VX_INT_MAX_REF];
 } vx_tensor_t;
 /*! \brief The internal representation of the attributes associated with a run-time parameter.
  * \ingroup group_int_kernel
@@ -615,6 +632,9 @@ typedef struct _vx_signature_t {
     vx_enum        states[VX_INT_MAX_PARAMS];
     /*! \brief The number of items in both \ref vx_signature_t::directions and \ref vx_signature_t::types. */
     vx_uint32      num_parameters;
+    /*! \brief The array of meta_formats (if applicable) */
+    vx_meta_format meta_formats[VX_INT_MAX_PARAMS];
+
 } vx_signature_t;
 
 /*! \brief The internal representation of a parameter.
@@ -700,7 +720,8 @@ typedef struct _vx_kernel {
     vx_uint32 affinity;
 #ifdef OPENVX_KHR_TILING
     /*! \brief The tiling function pointer interface */
-    vx_tiling_kernel_f tiling_function;
+    vx_tiling_kernel_f tilingfast_function;
+    vx_tiling_kernel_f tilingflexible_function;
 #endif
 } vx_kernel_t;
 
@@ -787,11 +808,15 @@ typedef vx_kernel (*vx_target_addkernel_f)(vx_target target,
 typedef vx_kernel (*vx_target_addtilingkernel_f)(vx_target target,
                                                   const vx_char name[VX_MAX_KERNEL_NAME],
                                                   vx_enum enumeration,
+                                                  vx_kernel_f function,
                                                   vx_tiling_kernel_f flexible_func_ptr,
                                                   vx_tiling_kernel_f fast_func_ptr,
                                                   vx_uint32 num_parameters,
+                                                  vx_kernel_validate_f validate,
                                                   vx_kernel_input_validate_f input,
-                                                  vx_kernel_output_validate_f output);
+                                                  vx_kernel_output_validate_f output,
+                                                  vx_kernel_initialize_f initialize,
+                                                  vx_kernel_deinitialize_f deinitialize);
 #endif
 
 /*! \brief The structure which holds all the target interface function pointers.
@@ -824,6 +849,18 @@ enum vx_ext_target_type_e {
  * \ingroup group_int_target
  */
 enum vx_target_priority_e {
+#if defined(EXPERIMENTAL_USE_OPENCL)
+    /*! \brief Defines the priority of the OpenCL Target */
+    VX_TARGET_PRIORITY_OPENCL,
+#endif
+#if defined(OPENVX_USE_TILING)
+    /*! \brief Defines the priority of the TILING Target */
+    VX_TARGET_PRIORITY_TILING,
+#endif
+    /*! \brief Defines the priority of the VENUM targets */
+#if defined(EXPERIMENTAL_USE_VENUM)
+    VX_TARGET_PRIORITY_VENUM,
+#endif
     /*! \brief Defines the priority of the C model target */
     VX_TARGET_PRIORITY_C_MODEL,
     /*! \brief Defines the maximum priority */
@@ -904,6 +941,13 @@ typedef union _vx_memory_map_extra
         vx_size start;
         vx_size end;
     } array_data;
+    struct
+    {
+        vx_size start[VX_MAX_TENSOR_DIMENSIONS];
+        vx_size end[VX_MAX_TENSOR_DIMENSIONS];
+        vx_size stride[VX_MAX_TENSOR_DIMENSIONS];
+        vx_size number_of_dims;
+    } tensor_data;
 } vx_memory_map_extra;
 
 /*! \brief The framework's mapping memory tracking structure.
@@ -985,6 +1029,19 @@ typedef struct _vx_context {
     } user_structs[VX_INT_MAX_USER_STRUCTS];
     /*! \brief The worker pool used to parallelize the graph*/
     vx_threadpool_t    *workers;
+#if defined(EXPERIMENTAL_USE_OPENCL)
+#define CL_MAX_PLATFORMS (1)
+#define CL_MAX_DEVICES   (2)
+#define CL_MAX_KERNELS   (50)
+    /*! \brief The array of platform ids */
+    cl_platform_id      platforms[CL_MAX_PLATFORMS];
+    /*! \brief The number of platform ids */
+    cl_uint             num_platforms;
+    cl_device_id        devices[CL_MAX_PLATFORMS][CL_MAX_DEVICES];
+    cl_uint             num_devices[CL_MAX_PLATFORMS];
+    cl_context          global[CL_MAX_PLATFORMS];
+    cl_command_queue    queues[CL_MAX_PLATFORMS][CL_MAX_DEVICES];
+#endif
     /*! \brief The immediate mode border */
     vx_border_t         imm_border;
     /*! \brief The unsupported border mode policy for immediate mode functions */
@@ -1147,15 +1204,26 @@ typedef struct _vx_memory_t {
     cl_mem         opencl_buf[VX_PLANE_MAX];
 #endif
     /*! \brief The number of dimensions per ptr */
-    vx_uint32       ndims;
+    vx_uint32      ndims;
     /*! \brief The dimensional values per ptr */
-    vx_uint32       dims[VX_PLANE_MAX][VX_DIM_MAX];
+    vx_uint32      dims[VX_PLANE_MAX][VX_DIM_MAX];
     /*! \brief The per ptr stride values per dimension */
     vx_int32       strides[VX_PLANE_MAX][VX_DIM_MAX];
+    /*! \brief The per ptr stride values in bits in the x-dimension. Used when
+     * the image data type is not a whole number of bytes (e.g. U1). */
+    vx_uint16      stride_x_bits[VX_PLANE_MAX];
     /*! \brief The write locks. Used by Access/Commit pairs on usages which have
      * VX_WRITE_ONLY or VX_READ_AND_WRITE flag parts. Only single writers are permitted.
      */
     vx_sem_t locks[VX_PLANE_MAX];
+#if defined(EXPERIMENTAL_USE_OPENCL)
+    /*! \brief This contains the OpenCL memory references */
+    cl_mem hdls[VX_PLANE_MAX];
+    /*! \brief This describes the type of memory allocated with OpenCL */
+    cl_mem_object_type cl_type;
+    /*! \brief This describes the image format (if it is an image) */
+    cl_image_format cl_format;
+#endif
 } vx_memory_t;
 
 /*! \brief The internal representation of a \ref vx_image
@@ -1192,6 +1260,10 @@ typedef struct _vx_image {
     vx_rectangle_t region;
     /*! \brief The memory type */
     vx_enum        memory_type;
+#if defined(EXPERIMENTAL_USE_OPENCL)
+    /*! \brief This describes the type of OpenCL Image that maps to this image (if applicable). */
+    cl_image_format cl_format;
+#endif
 } vx_image_t;
 
 /*! \brief The internal representation of a \ref vx_array
@@ -1302,6 +1374,8 @@ typedef struct _vx_distribution {
 #define VX_DEFAULT_THRESHOLD_FALSE_VALUE 0
 #define VX_DEFAULT_THRESHOLD_TRUE_VALUE  255
 
+#define VX_U1_THRESHOLD_FALSE_VALUE vx_false_e
+#define VX_U1_THRESHOLD_TRUE_VALUE vx_true_e
 #define VX_S16_THRESHOLD_FALSE_VALUE 0
 #define VX_S16_THRESHOLD_TRUE_VALUE  (-1)
 #define VX_U16_THRESHOLD_FALSE_VALUE 0
@@ -1518,7 +1592,7 @@ extern "C" {
 #include <vx_inlines.c>
 
 #if !DISABLE_ICD_COMPATIBILITY
-	VX_API_ENTRY vx_context VX_API_CALL vxCreateContextFromPlatform(struct _vx_platform * platform);
+    VX_API_ENTRY vx_context VX_API_CALL vxCreateContextFromPlatform(struct _vx_platform * platform);
 #endif
 
 #ifdef __cplusplus

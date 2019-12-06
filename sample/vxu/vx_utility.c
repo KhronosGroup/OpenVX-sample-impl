@@ -776,6 +776,29 @@ VX_API_ENTRY vx_status VX_API_CALL vxuMinMaxLoc(vx_context context, vx_image inp
     return status;
 }
 
+VX_API_ENTRY vx_status VX_API_CALL vxuWeightedAverage(vx_context context, vx_image img1, vx_scalar alpha, vx_image img2, vx_image output)
+{
+    vx_status status = VX_FAILURE;
+    vx_graph graph = vxCreateGraph(context);
+    if (vxGetStatus((vx_reference)graph) == VX_SUCCESS)
+    {
+        vx_node node = vxWeightedAverageNode(graph, img1, alpha, img2, output);
+        if (vxGetStatus((vx_reference)node) == VX_SUCCESS)
+        {
+            status = setNodeTarget(node);
+            if (status == VX_SUCCESS)
+                status = vxVerifyGraph(graph);
+            if (status == VX_SUCCESS)
+            {
+                status = vxProcessGraph(graph);
+            }
+            vxReleaseNode(&node);
+        }
+        vxReleaseGraph(&graph);
+    }
+    return status;
+}
+
 VX_API_ENTRY vx_status VX_API_CALL vxuConvertDepth(vx_context context, vx_image input, vx_image output, vx_enum policy, vx_int32 shift_val)
 {
     vx_status status = VX_FAILURE;
@@ -1452,13 +1475,17 @@ VX_API_ENTRY vx_status VX_API_CALL vxuBilateralFilter(vx_context context, vx_ten
 {
     vx_status status = VX_FAILURE;
     vx_graph graph = vxCreateGraph(context);
-    if(graph)
+    if (vxGetStatus((vx_reference)graph) == VX_SUCCESS)
     {
         vx_node node = vxBilateralFilterNode(graph, src, diameter, sigmaSpace, sigmaValues, dst);
-        if(node)
+        if (vxGetStatus((vx_reference)node)==VX_SUCCESS)
         {
-            status = vxVerifyGraph(graph);
-            if(status == VX_SUCCESS)
+            status = vx_useImmediateBorderMode(context, node, border_modes_3, dimof(border_modes_3));
+            if (status == VX_SUCCESS)
+                status = setNodeTarget(node);
+            if (status == VX_SUCCESS)
+                status = vxVerifyGraph(graph);
+            if (status == VX_SUCCESS)
             {
                 status = vxProcessGraph(graph);
             }

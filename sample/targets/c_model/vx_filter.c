@@ -1,4 +1,4 @@
-/* 
+/*
 
  * Copyright (c) 2012-2017 The Khronos Group Inc.
  *
@@ -92,7 +92,7 @@ static vx_status VX_CALLBACK vxFilterInputValidator(vx_node node, vx_uint32 inde
         {
             vx_df_image format = 0;
             vxQueryImage(input, VX_IMAGE_FORMAT, &format, sizeof(format));
-            if (format == VX_DF_IMAGE_U8)
+            if (format == VX_DF_IMAGE_U1 || format == VX_DF_IMAGE_U8)
             {
                 status = VX_SUCCESS;
             }
@@ -115,11 +115,13 @@ static vx_status VX_CALLBACK vxFilterOutputValidator(vx_node node, vx_uint32 ind
             vxQueryParameter(param, VX_PARAMETER_REF, &input, sizeof(input));
             if (input)
             {
+                vx_df_image format = 0;
                 vx_uint32 width = 0, height = 0;
                 vxQueryImage(input, VX_IMAGE_WIDTH, &width, sizeof(width));
                 vxQueryImage(input, VX_IMAGE_HEIGHT, &height, sizeof(height));
+                vxQueryImage(input, VX_IMAGE_FORMAT, &format, sizeof(format));
                 ptr->type = VX_TYPE_IMAGE;
-                ptr->dim.image.format = VX_DF_IMAGE_U8;
+                ptr->dim.image.format = format;
                 ptr->dim.image.width = width;
                 ptr->dim.image.height = height;
                 status = VX_SUCCESS;

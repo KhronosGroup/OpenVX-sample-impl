@@ -1,4 +1,4 @@
-/* 
+/*
 
  * Copyright (c) 2012-2017 The Khronos Group Inc.
  *
@@ -58,10 +58,30 @@ vx_bool ownAllocateMemory(vx_context context, vx_memory_t *memory)
             /* channel is a declared size, don't assume */
             if (memory->strides[p][VX_DIM_C] != 0)
                 size = (size_t)abs(memory->strides[p][VX_DIM_C]);
-            for (d = 0; d < memory->ndims; d++)
+            else if (memory->stride_x_bits[p] != 0)
             {
-                memory->strides[p][d] = (vx_int32)size;
-                size *= (vx_size)memory->dims[p][d];
+                /* data type is not whole number of bytes */
+                size = 0ul;
+            }
+            if (size == 0ul)
+            {
+                memory->strides[p][VX_DIM_X] = 0;
+                /* the size of each row in the x-dimension, in integer number of bytes (rounded up from bits) */
+                size = ((size_t)abs(memory->stride_x_bits[p]) * (vx_size)memory->dims[p][VX_DIM_X] + 7ul) / 8ul;
+                for (d = 2; d < memory->ndims; d++)
+                {
+                    memory->strides[p][d] = (vx_int32)size;
+                    size *= (vx_size)memory->dims[p][d];
+                }
+            }
+            else
+            {
+                /* default behavior */
+                for (d = 0; d < memory->ndims; d++)
+                {
+                    memory->strides[p][d] = (vx_int32)size;
+                    size *= (vx_size)memory->dims[p][d];
+                }
             }
             /* don't presume that memory should be zeroed */
             memory->ptrs[p] = malloc(size);
@@ -99,8 +119,8 @@ void ownPrintMemory(vx_memory_t *mem)
         vx_bool gotlock = ownSemTryWait(&mem->locks[p]);
         if (gotlock == vx_true_e)
             ownSemPost(&mem->locks[p]);
-        VX_PRINT(VX_ZONE_INFO, "ptr[%u]=%p %s\n", p, mem->ptrs[p],
-                (gotlock==vx_true_e?"UNLOCKED":"LOCKED"));
+        VX_PRINT(VX_ZONE_INFO, "ptr[%u]=%p %s stride_x_bits[%u]=%u\n", p, mem->ptrs[p],
+                (gotlock==vx_true_e?"UNLOCKED":"LOCKED"), p, mem->stride_x_bits[p]);
         for (d = 0; d < mem->ndims; d++)
         {
             VX_PRINT(VX_ZONE_INFO, "\tdim[%u][%u]=%d strides[%u][%u]=%d\n", p, d, mem->dims[p][d], p, d, mem->strides[p][d]);

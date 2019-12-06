@@ -39,7 +39,7 @@ static vx_reference vxLocateBaseLocation(vx_reference ref, vx_size* start, vx_si
 			end[i] = ((vx_tensor)ref)->dimensions[i];
 		}
 	}
-	while ((ref->type == VX_TYPE_IMAGE && ((vx_image)ref)->parent && ((vx_image)ref)->parent != ((vx_image)ref)) 
+	while ((ref->type == VX_TYPE_IMAGE && ((vx_image)ref)->parent && ((vx_image)ref)->parent != ((vx_image)ref))
 		||
 		(ref->type == VX_TYPE_TENSOR && ((vx_tensor)ref)->parent && ((vx_tensor)ref)->parent != ((vx_tensor)ref))
 		)

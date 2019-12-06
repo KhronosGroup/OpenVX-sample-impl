@@ -48,6 +48,7 @@ extern vx_kernel_description_t accumulate_kernel;
 extern vx_kernel_description_t accumulate_weighted_kernel;
 extern vx_kernel_description_t accumulate_square_kernel;
 extern vx_kernel_description_t minmaxloc_kernel;
+extern vx_kernel_description_t weightedaverage_kernel;
 extern vx_kernel_description_t convertdepth_kernel;
 extern vx_kernel_description_t canny_kernel;
 extern vx_kernel_description_t scharr3x3_kernel;

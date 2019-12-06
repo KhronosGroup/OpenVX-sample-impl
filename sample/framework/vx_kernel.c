@@ -1,4 +1,4 @@
-/* 
+/*
 
  * Copyright (c) 2012-2017 The Khronos Group Inc.
  *
@@ -69,6 +69,8 @@ vx_kernel_t *ownAllocateKernel(vx_context context,
                 {
                     kernel->signature.directions[p] = parameters[p].direction;
                     kernel->signature.types[p] = parameters[p].data_type;
+                    /* Initialize to NULL, kernel import function can create meta format for each param if it is called */
+                    kernel->signature.meta_formats[p] = NULL;
                 }
             }
         }
@@ -131,6 +133,8 @@ vx_status ownInitializeKernel(vx_context context,
                     kernel->signature.directions[p] = parameters[p].direction;
                     kernel->signature.types[p] = parameters[p].data_type;
                     kernel->signature.states[p] = parameters[p].state;
+                    /* Initialize to NULL, kernel import function can create meta format for each param if it is called */
+                    kernel->signature.meta_formats[p] = NULL;
                 }
                 return VX_SUCCESS;
             } else {
@@ -436,7 +440,11 @@ VX_API_ENTRY vx_kernel VX_API_CALL vxGetKernelByEnum(vx_context context, vx_enum
                     break;
                 }
             }
+            /* Acquire the highest priority target */
+            if (kernel != NULL)
+                break;
         }
+       
         if (kernel == NULL) {
             VX_PRINT(VX_ZONE_KERNEL, "Kernel enum %x not found.\n", kernelenum);
             vxAddLogEntry(&context->base, VX_ERROR_INVALID_PARAMETERS, "Kernel enum %x not found.\n", kernelenum);
@@ -606,7 +614,7 @@ VX_API_ENTRY vx_kernel VX_API_CALL vxAddTilingKernel(vx_context c,
     }
     if ((flexible_func_ptr == NULL && fast_func_ptr == NULL) ||
         input == NULL ||
-        output == NULL ||
+        output == NULL ||	
         num_params > VX_INT_MAX_PARAMS || num_params == 0 ||
         name == NULL ||
         strncmp(name, "",  VX_MAX_KERNEL_NAME) == 0)
@@ -621,7 +629,7 @@ VX_API_ENTRY vx_kernel VX_API_CALL vxAddTilingKernel(vx_context c,
     index = strnindex(name, ':', VX_MAX_TARGET_NAME);
     if (index == VX_MAX_TARGET_NAME)
     {
-        strcpy(targetName,"khronos.any");
+        strcpy(targetName,"khronos.tiling");
     }
     else
     {
@@ -639,9 +647,9 @@ VX_API_ENTRY vx_kernel VX_API_CALL vxAddTilingKernel(vx_context c,
     }
     if (target && target->funcs.addtilingkernel)
     {
-        kernel = target->funcs.addtilingkernel(target, name, enumeration,
-                                         flexible_func_ptr, fast_func_ptr, num_params,
-                                         input, output);
+        kernel = target->funcs.addtilingkernel(target, name, enumeration, NULL,
+                                         flexible_func_ptr, fast_func_ptr, num_params, NULL,
+                                         input, output, NULL, NULL);
         VX_PRINT(VX_ZONE_KERNEL,"Added Kernel %s to Target %s ("VX_FMT_REF")\n", name, target->name, kernel);
     }
     else
@@ -810,10 +818,17 @@ VX_API_ENTRY vx_status VX_API_CALL vxAddParameterToKernel(vx_kernel kernel,
         if (index < kern->signature.num_parameters)
         {
 #ifdef OPENVX_KHR_TILING
-            if (kern->tiling_function)
+            if (kern->tilingfast_function)
             {
                 if (((data_type != VX_TYPE_IMAGE) &&
-                     (data_type != VX_TYPE_SCALAR)) ||
+                     (data_type != VX_TYPE_SCALAR) &&
+                     (data_type != VX_TYPE_THRESHOLD) &&
+                     (data_type != VX_TYPE_REMAP) &&
+                     (data_type != VX_TYPE_CONVOLUTION) &&
+                     (data_type != VX_TYPE_TENSOR) &&
+                     (data_type != VX_TYPE_ARRAY) &&
+                     (data_type != VX_TYPE_LUT) &&
+                     (data_type != VX_TYPE_MATRIX)) ||
                     (ownIsValidDirection(dir) == vx_false_e) ||
                     (ownIsValidState(state) == vx_false_e))
                 {

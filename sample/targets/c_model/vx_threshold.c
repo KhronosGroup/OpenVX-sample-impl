@@ -1,4 +1,4 @@
-/* 
+/*
 
  * Copyright (c) 2012-2017 The Khronos Group Inc.
  *
@@ -70,21 +70,31 @@ static vx_status VX_CALLBACK vxThresholdInputValidator(vx_node node, vx_uint32 i
     }
     else if (index == 1)
     {
-        vx_parameter param = vxGetParameterByIndex(node, index);
-        if (vxGetStatus((vx_reference)param) == VX_SUCCESS)
+        vx_parameter thr_param = vxGetParameterByIndex(node, index);
+        vx_parameter img_param = vxGetParameterByIndex(node, 2);
+        if ((vxGetStatus((vx_reference)thr_param) == VX_SUCCESS) &&
+            (vxGetStatus((vx_reference)img_param) == VX_SUCCESS))
         {
             vx_threshold threshold = 0;
-            vxQueryParameter(param, VX_PARAMETER_REF, &threshold, sizeof(threshold));
-            if (threshold)
+            vx_image     output = 0;
+            vxQueryParameter(thr_param, VX_PARAMETER_REF, &threshold, sizeof(threshold));
+            vxQueryParameter(img_param, VX_PARAMETER_REF, &output,    sizeof(output));
+            if (threshold && output)
             {
                 vx_enum type = 0;
                 vxQueryThreshold(threshold, VX_THRESHOLD_TYPE, &type, sizeof(type));
                 if ((type == VX_THRESHOLD_TYPE_BINARY) ||
-                     (type == VX_THRESHOLD_TYPE_RANGE))
+                    (type == VX_THRESHOLD_TYPE_RANGE))
                 {
-                    vx_enum data_type = 0;
+                    vx_enum     data_type = 0;
+                    vx_df_image format = 0;
                     vxQueryThreshold(threshold, VX_THRESHOLD_DATA_TYPE, &data_type, sizeof(data_type));
-                    if (data_type == VX_TYPE_UINT8)
+                    vxQueryImage(output,        VX_IMAGE_FORMAT,        &format,    sizeof(format));
+                    if (data_type == VX_TYPE_UINT8 && format == VX_DF_IMAGE_U8)
+                    {
+                        status = VX_SUCCESS;
+                    }
+                    else if (data_type == VX_TYPE_BOOL && format == VX_DF_IMAGE_U1)
                     {
                         status = VX_SUCCESS;
                     }
@@ -98,8 +108,10 @@ static vx_status VX_CALLBACK vxThresholdInputValidator(vx_node node, vx_uint32 i
                     status = VX_ERROR_INVALID_TYPE;
                 }
                 vxReleaseThreshold(&threshold);
+                vxReleaseImage(&output);
             }
-            vxReleaseParameter(&param);
+            vxReleaseParameter(&thr_param);
+            vxReleaseParameter(&img_param);
         }
     }
     return status;
@@ -111,26 +123,44 @@ static vx_status VX_CALLBACK vxThresholdOutputValidator(vx_node node, vx_uint32 
     if (index == 2)
     {
         vx_parameter src_param = vxGetParameterByIndex(node, 0);
-        if (vxGetStatus((vx_reference)src_param) == VX_SUCCESS)
+        vx_parameter dst_param = vxGetParameterByIndex(node, 2);
+        if ((vxGetStatus((vx_reference)src_param) == VX_SUCCESS) &&
+            (vxGetStatus((vx_reference)dst_param) == VX_SUCCESS))
         {
-            vx_image src = 0;
+            vx_image src = 0, dst = 0;
             vxQueryParameter(src_param, VX_PARAMETER_REF, &src, sizeof(src));
-            if (src)
+            vxQueryParameter(dst_param, VX_PARAMETER_REF, &dst, sizeof(dst));
+            if (src && dst)
             {
+                vx_df_image in_format = 0, out_format = 0;
                 vx_uint32 width = 0, height = 0;
 
-                vxQueryImage(src, VX_IMAGE_WIDTH, &width, sizeof(height));
-                vxQueryImage(src, VX_IMAGE_HEIGHT, &height, sizeof(height));
+                vxQueryImage(src, VX_IMAGE_WIDTH,  &width,      sizeof(height));
+                vxQueryImage(src, VX_IMAGE_HEIGHT, &height,     sizeof(height));
+                vxQueryImage(src, VX_IMAGE_FORMAT, &in_format,  sizeof(in_format));
+                vxQueryImage(dst, VX_IMAGE_FORMAT, &out_format, sizeof(out_format));
 
                 /* fill in the meta data with the attributes so that the checker will pass */
                 ptr->type = VX_TYPE_IMAGE;
-                ptr->dim.image.format = VX_DF_IMAGE_U8;
-                ptr->dim.image.width = width;
+                ptr->dim.image.format = out_format;
+                ptr->dim.image.width  = width;
                 ptr->dim.image.height = height;
-                status = VX_SUCCESS;
+
+                if ((out_format == VX_DF_IMAGE_U1 && in_format == VX_DF_IMAGE_U8) ||
+                    (out_format == VX_DF_IMAGE_U8))
+                {
+                    status = VX_SUCCESS;
+                }
+                else
+                {
+                    status = VX_ERROR_INVALID_FORMAT;
+                }
+
                 vxReleaseImage(&src);
+                vxReleaseImage(&dst);
             }
             vxReleaseParameter(&src_param);
+            vxReleaseParameter(&dst_param);
         }
     }
     return status;

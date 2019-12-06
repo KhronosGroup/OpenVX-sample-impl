@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#ifdef OPENVX_CONFORMANCE_NEURAL_NETWORKS
 #ifdef OPENVX_USE_NN
 
 #include <VX/vx.h>
@@ -2078,3 +2079,4 @@ vx_kernel_description_t nn_deconvolution_kernel = {
 };
 
 #endif
+#endif//OPENVX_CONFORMANCE_NEURAL_NETWORKS

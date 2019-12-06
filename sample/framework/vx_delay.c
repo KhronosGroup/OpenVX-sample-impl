@@ -265,6 +265,7 @@ VX_API_ENTRY vx_delay VX_API_CALL vxCreateDelay(vx_context context,
         VX_PRINT(VX_ZONE_DELAY, "Creating Delay of %u objects of type %x!\n", count, exemplar->type);
         for (i = 0; i < count; i++)
         {
+            vx_bool ref_bool = vx_true_e;
             switch (exemplar->type)
             {
                 case VX_TYPE_IMAGE:
@@ -329,16 +330,27 @@ VX_API_ENTRY vx_delay VX_API_CALL vxCreateDelay(vx_context context,
                     delay->refs[i] = (vx_reference)vxCreateScalar(context, scalar->data_type, NULL);
                     break;
                 }
+                case VX_TYPE_TENSOR:
+                {
+                    vx_tensor tensor = (vx_tensor )exemplar;
+                    delay->refs[i] = (vx_reference)vxCreateTensor(context, tensor->number_of_dimensions, tensor->dimensions, tensor->data_type,
+                                                                  tensor->fixed_point_position);
+                    break;
+                }
                 default:
+                    ref_bool = vx_false_e;
                     break;
             }
-            /* set the object as a delay element */
-            ownInitReferenceForDelay(delay->refs[i], delay, (vx_int32)i);
-            /* change the counting from external to internal */
-            ownIncrementReference(delay->refs[i], VX_INTERNAL);
-            ownDecrementReference(delay->refs[i], VX_EXTERNAL);
-            /* set the scope to the delay */
-            ((vx_reference )delay->refs[i])->scope = (vx_reference )delay;
+            if (ref_bool)
+            {
+                /* set the object as a delay element */
+                ownInitReferenceForDelay(delay->refs[i], delay, (vx_int32)i);
+                /* change the counting from external to internal */
+                ownIncrementReference(delay->refs[i], VX_INTERNAL);
+                ownDecrementReference(delay->refs[i], VX_EXTERNAL);
+                /* set the scope to the delay */
+                ((vx_reference)delay->refs[i])->scope = (vx_reference)delay;
+            }
         }
 
         if (exemplar->type == VX_TYPE_PYRAMID)
@@ -368,6 +380,31 @@ VX_API_ENTRY vx_delay VX_API_CALL vxCreateDelay(vx_context context,
                         ownDecrementReference(pyrdelay->refs[i], VX_EXTERNAL);
                     }
                 }
+            }
+        }
+
+        if (exemplar->type == VX_TYPE_OBJECT_ARRAY)
+        {
+            vx_object_array objarray = (vx_object_array )exemplar;
+            if (objarray->num_items != 0)
+            {
+                for (i = 0; i < count; i++)
+                {
+                    delay->refs[i] = (vx_reference)vxCreateObjectArray(context,
+                                                                       objarray->items[0],
+                                                                       objarray->num_items);
+                    /* set the object as a delay element */
+                    ownInitReferenceForDelay(delay->refs[i], delay, (vx_int32)i);
+                    /* change the counting from external to internal */
+                    ownIncrementReference(delay->refs[i], VX_INTERNAL);
+                    ownDecrementReference(delay->refs[i], VX_EXTERNAL);
+                    /* set the scope to the delay */
+                    ((vx_reference )delay->refs[i])->scope = (vx_reference )delay;
+                }
+            }
+            else
+            {
+                vxReleaseDelay(&delay);
             }
         }
     }

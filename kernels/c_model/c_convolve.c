@@ -1,4 +1,4 @@
-/* 
+/*
 
  * Copyright (c) 2012-2017 The Khronos Group Inc.
  *
@@ -74,7 +74,7 @@ vx_status vxConvolve(vx_image src, vx_convolution conv, vx_image dst, vx_border_
             {
                 vx_uint8 slice[C_MAX_CONVOLUTION_DIM * C_MAX_CONVOLUTION_DIM] = {0};
 
-                vxReadRectangle(src_base, &src_addr, bordermode, src_format, x, y, conv_radius_x, conv_radius_y, slice);
+                vxReadRectangle(src_base, &src_addr, bordermode, src_format, x, y, conv_radius_x, conv_radius_y, slice, 0);
 
                 for (i = 0; i < (vx_int32)(conv_width * conv_height); ++i)
                     sum += conv_mat[conv_width * conv_height - 1 - i] * slice[i];
@@ -83,7 +83,7 @@ vx_status vxConvolve(vx_image src, vx_convolution conv, vx_image dst, vx_border_
             {
                 vx_int16 slice[C_MAX_CONVOLUTION_DIM * C_MAX_CONVOLUTION_DIM] = {0};
 
-                vxReadRectangle(src_base, &src_addr, bordermode, src_format, x, y, conv_radius_x, conv_radius_y, slice);
+                vxReadRectangle(src_base, &src_addr, bordermode, src_format, x, y, conv_radius_x, conv_radius_y, slice, 0);
 
                 for (i = 0; i < (vx_int32)(conv_width * conv_height); ++i)
                     sum += conv_mat[conv_width * conv_height - 1 - i] * slice[i];

@@ -42,7 +42,7 @@ vx_destructor_t destructors[] = {
         {VX_TYPE_IMAGE,         &ownDestructImage},
         {VX_TYPE_LUT,           &ownDestructArray},
         {VX_TYPE_MATRIX,        &ownDestructMatrix},
-        {VX_TYPE_SCALAR,        NULL},
+        {VX_TYPE_SCALAR,        &ownDestructScalar},
         {VX_TYPE_PYRAMID,       &ownDestructPyramid},
         {VX_TYPE_REMAP,         &ownDestructRemap},
         {VX_TYPE_THRESHOLD,     NULL},

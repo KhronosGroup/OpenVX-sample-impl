@@ -19,7 +19,7 @@ include_directories( BEFORE
                      ${CMAKE_SOURCE_DIR}/utils
                      ${VX_HEADER_DIR}
                      )
-	
+
 # set target name
 set( TARGET_NAME cnn_network )
 
@@ -42,7 +42,7 @@ add_definitions( ${OPENVX_BUILDING_EXPORT_DEF} )
 target_link_libraries( ${TARGET_NAME} openvx vxu half  )
 
 
-install ( TARGETS ${TARGET_NAME} 
+install ( TARGETS ${TARGET_NAME}
           RUNTIME DESTINATION bin
           ARCHIVE DESTINATION lib
           LIBRARY DESTINATION bin )

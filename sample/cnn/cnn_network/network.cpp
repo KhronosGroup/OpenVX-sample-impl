@@ -18,6 +18,7 @@
 
 #include <VX/vx.h>
 #include <VX/vxu.h> //TODO(ruv): this is depracated, must the sample here use it?
+#include "VX/vx_compatibility.h"
 #include <VX/vx_khr_nn.h>
 #include "half/sip_ml_fp16.hpp"
 
@@ -89,7 +90,7 @@ typedef SSIZE_T ssize_t;
 
 size_t CopyToFromTensor(vx_context context, vx_tensor tensor, int16_t *buffer,
         ssize_t bufSize, vx_accessor_e accesor);
-// Convert from Q1.7.8 fixed point decimal into regular decimal 
+// Convert from Q1.7.8 fixed point decimal into regular decimal
 float short2float(int16_t val) {
     int16_t sign = (val & 0x8000) >> 15;
 
@@ -215,7 +216,7 @@ void preprocessImageNetQ78(vx_context context, uint8_t *pinput, vx_uint32 size,
         vx_rectangle_t rect = { 0, 0, width, height };
         vx_imagepatch_addressing_t addr;
 
-        status |= vxCopyImagePatch(image, &rect, 0, &addr, pinput, VX_WRITE_ONLY, VX_MEMORY_TYPE_HOST); 
+        status |= vxCopyImagePatch(image, &rect, 0, &addr, pinput, VX_WRITE_ONLY, VX_MEMORY_TYPE_HOST);
     }
 
     vx_float32 scale = 1.0 / (256 * 256);
@@ -342,7 +343,7 @@ void preprocessOrigImageAlexnet(vx_context context, uint8_t *pinput,
         vx_rectangle_t rect = { 0, 0, width, height };
         vx_imagepatch_addressing_t addr;
 
-        status |= vxCopyImagePatch(image, &rect, 0, &addr, pinput, VX_WRITE_ONLY, VX_MEMORY_TYPE_HOST); 
+        status |= vxCopyImagePatch(image, &rect, 0, &addr, pinput, VX_WRITE_ONLY, VX_MEMORY_TYPE_HOST);
     }
 
     vx_image img_avgr = vxCreateImage(context, avg_dim, avg_dim, VX_DF_IMAGE_S16);
@@ -352,9 +353,9 @@ void preprocessOrigImageAlexnet(vx_context context, uint8_t *pinput,
         vx_rectangle_t rect = { 0, 0, avg_dim, avg_dim };
         vx_imagepatch_addressing_t addr;
 
-        status |= vxCopyImagePatch(img_avgr, &rect, 0, &addr, pavgr, VX_WRITE_ONLY, VX_MEMORY_TYPE_HOST); 
-        status |= vxCopyImagePatch(img_avgg, &rect, 0, &addr, pavgg, VX_WRITE_ONLY, VX_MEMORY_TYPE_HOST); 
-        status |= vxCopyImagePatch(img_avgb, &rect, 0, &addr, pavgb, VX_WRITE_ONLY, VX_MEMORY_TYPE_HOST); 
+        status |= vxCopyImagePatch(img_avgr, &rect, 0, &addr, pavgr, VX_WRITE_ONLY, VX_MEMORY_TYPE_HOST);
+        status |= vxCopyImagePatch(img_avgg, &rect, 0, &addr, pavgg, VX_WRITE_ONLY, VX_MEMORY_TYPE_HOST);
+        status |= vxCopyImagePatch(img_avgb, &rect, 0, &addr, pavgb, VX_WRITE_ONLY, VX_MEMORY_TYPE_HOST);
     }
 
     // shifting 7 bits instead of 8 so we don't lose input's msb
@@ -576,8 +577,8 @@ int Overfeat(int16_t** ppdata, vx_enum format, vx_int8 fp_pos, bool raw,
         if (out_dim > 0) {
             out_data[i] = vxCreateTensor(context, out_dim, out_dims[i],
                     format, fp_pos);
-            //			out_data[i] = vxCreateVirtualTensor(graph, out_dim, out_dims[i],
-            //					format, fp_pos);
+            //          out_data[i] = vxCreateVirtualTensor(graph, out_dim, out_dims[i],
+            //                  format, fp_pos);
         }
     }
 
@@ -630,7 +631,7 @@ int Overfeat(int16_t** ppdata, vx_enum format, vx_int8 fp_pos, bool raw,
 
                 // Layer (8) - FullyConnected 4096 --> 1000
                 vxFullyConnectedLayer(graph, out_data[16], wt_data[7],
-                          bs_data[7], VX_CONVERT_POLICY_WRAP, VX_ROUND_POLICY_TO_ZERO,	out_data[17]),
+                          bs_data[7], VX_CONVERT_POLICY_WRAP, VX_ROUND_POLICY_TO_ZERO,  out_data[17]),
                 // Softmax
                 vxSoftmaxLayer(graph, out_data[17], out), };
 
@@ -888,43 +889,43 @@ int Alexnet(int16_t** ppdata, bool raw, int16_t *output) {
 
     for (int p = 0; p < 1; p++) {
         //Nodes
-        		if (graph) {
-        			vx_node cnn_nodes[] = {
-        					// Layer (1) - Conv + Relu, Norm + Pool
-        					// Convolution - 3X227X227 --> 96X27X27
+                if (graph) {
+                    vx_node cnn_nodes[] = {
+                            // Layer (1) - Conv + Relu, Norm + Pool
+                            // Convolution - 3X227X227 --> 96X27X27
 
-        					vxConvolutionLayer(graph, in, wt_data[0][0], bs_data[0][0], &conv_params[0], sizeof(vx_nn_convolution_params_t), out_data[0]),
-        					vxActivationLayer(graph, out_data[0], relu_params.function, relu_params.a, relu_params.b,out_data[1]),
-                            vxNormalizationLayer(graph, out_data[1], norm_params.type, norm_params.normalization_size, norm_params.alpha, norm_params.beta,
-                                    out_data[2]),
-        					vxPoolingLayer(graph, out_data[2], VX_NN_POOLING_MAX, pool_params.pooling_size_x, pool_params.pooling_size_y, pool_params.pooling_padding_x,
-        					        pool_params.pooling_padding_y, pool_params.rounding, out_data[3]),
+                            vxConvolutionLayer(graph, in, wt_data[0][0], bs_data[0][0], &conv_params[0], sizeof(vx_nn_convolution_params_t), out_data[0]),
+                            vxActivationLayer(graph, out_data[0], relu_params.function, relu_params.a, relu_params.b,out_data[1]),
+                            vxLocalResponseNormalizationLayer(graph, out_data[1], norm_params.type, norm_params.normalization_size, norm_params.alpha, norm_params.beta,
+                                    1.0f, out_data[2]),
+                            vxPoolingLayer(graph, out_data[2], VX_NN_POOLING_MAX, pool_params.pooling_size_x, pool_params.pooling_size_y, pool_params.pooling_padding_x,
+                                    pool_params.pooling_padding_y, pool_params.rounding, out_data[3]),
 
-        					// Layer (2) - Conv + Relu, Norm + Pool
-        					// Convolution - 96*27*27 --> 256*13*13
+                            // Layer (2) - Conv + Relu, Norm + Pool
+                            // Convolution - 96*27*27 --> 256*13*13
                             vxConvolutionLayer(graph, sub_out_data[3][0], wt_data[4][0], bs_data[4][0], &conv_params[1], sizeof(vx_nn_convolution_params_t), sub_out_data[4][0]),
                             vxActivationLayer(graph, sub_out_data[4][0], relu_params.function, relu_params.a, relu_params.b,sub_out_data[5][0]),
                             vxConvolutionLayer(graph, sub_out_data[3][1], wt_data[4][1], bs_data[4][1], &conv_params[1], sizeof(vx_nn_convolution_params_t), sub_out_data[4][1]),
                             vxActivationLayer(graph, sub_out_data[4][1], relu_params.function, relu_params.a, relu_params.b,sub_out_data[5][1]),
-                            vxNormalizationLayer(graph, out_data[5], norm_params.type, norm_params.normalization_size, norm_params.alpha, norm_params.beta,
-                                    out_data[6]),
+                            vxLocalResponseNormalizationLayer(graph, out_data[5], norm_params.type, norm_params.normalization_size, norm_params.alpha, norm_params.beta,
+                                    1.0f, out_data[6]),
                             vxPoolingLayer(graph, out_data[6], VX_NN_POOLING_MAX, pool_params.pooling_size_x, pool_params.pooling_size_y, pool_params.pooling_padding_x,
                                     pool_params.pooling_padding_y, pool_params.rounding, out_data[7]),
 
-        					// Layer (3) - Conv + Relu
-        					// Convolution - 256X13X13 -> 384X13X13
+                            // Layer (3) - Conv + Relu
+                            // Convolution - 256X13X13 -> 384X13X13
                             vxConvolutionLayer(graph, out_data[7], wt_data[8][0], bs_data[8][0], &conv_params[2], sizeof(vx_nn_convolution_params_t), out_data[8]),
                             vxActivationLayer(graph, out_data[8], relu_params.function, relu_params.a, relu_params.b,out_data[9]),
 
-        					// Layer (4) - Conv + Relu
-        					// Convolution - 384X13X13 -> 384X13X13
+                            // Layer (4) - Conv + Relu
+                            // Convolution - 384X13X13 -> 384X13X13
                             vxConvolutionLayer(graph, sub_out_data[9][0], wt_data[10][0], bs_data[10][0], &conv_params[2], sizeof(vx_nn_convolution_params_t), sub_out_data[10][0]),
                             vxActivationLayer(graph, sub_out_data[10][0], relu_params.function, relu_params.a, relu_params.b,sub_out_data[11][0]),
                             vxConvolutionLayer(graph, sub_out_data[9][1], wt_data[10][1], bs_data[10][1], &conv_params[2], sizeof(vx_nn_convolution_params_t), sub_out_data[10][1]),
                             vxActivationLayer(graph, sub_out_data[10][1], relu_params.function, relu_params.a, relu_params.b,sub_out_data[11][1]),
 
-        											// Layer (5) - Conv + Relu + MAX
-        											// Convolution - 384X13X13 --> 256*6*6
+                                                    // Layer (5) - Conv + Relu + MAX
+                                                    // Convolution - 384X13X13 --> 256*6*6
                             vxConvolutionLayer(graph, sub_out_data[11][0], wt_data[12][0], bs_data[12][0], &conv_params[2], sizeof(vx_nn_convolution_params_t), sub_out_data[12][0]),
                             vxActivationLayer(graph, sub_out_data[12][0], relu_params.function, relu_params.a, relu_params.b,sub_out_data[13][0]),
                             vxPoolingLayer(graph, sub_out_data[13][0], VX_NN_POOLING_MAX, pool_params.pooling_size_x, pool_params.pooling_size_y, pool_params.pooling_padding_x,
@@ -934,36 +935,36 @@ int Alexnet(int16_t** ppdata, bool raw, int16_t *output) {
                             vxPoolingLayer(graph, sub_out_data[13][1], VX_NN_POOLING_MAX, pool_params.pooling_size_x, pool_params.pooling_size_y, pool_params.pooling_padding_x,
                                     pool_params.pooling_padding_y, pool_params.rounding, sub_out_data[14][1]),
 
-        					// Layer (6) - FullyConnected
-        					// Convolution - 256*6*6 --> 4096
+                            // Layer (6) - FullyConnected
+                            // Convolution - 256*6*6 --> 4096
                             vxFullyConnectedLayer(graph, out_data[14], wt_data[15][0], bs_data[15][0], VX_CONVERT_POLICY_WRAP, VX_ROUND_POLICY_TO_ZERO, out_data[15]),
                             vxActivationLayer(graph, out_data[15], relu_params.function, relu_params.a, relu_params.b, out_data[16]),
 
-        					// Layer (7) - FullyConnected 4096 --> 4096
+                            // Layer (7) - FullyConnected 4096 --> 4096
                             vxFullyConnectedLayer(graph, out_data[16], wt_data[17][0], bs_data[17][0], VX_CONVERT_POLICY_WRAP, VX_ROUND_POLICY_TO_ZERO, out_data[17]),
                             vxActivationLayer(graph, out_data[17], relu_params.function, relu_params.a, relu_params.b, out_data[18]),
 
-        					// Layer (8) - FullyConnected 4096 --> 1000
-        					vxFullyConnectedLayer(graph, out_data[18], wt_data[19][0],
-        							bs_data[19][0], VX_CONVERT_POLICY_WRAP, VX_ROUND_POLICY_TO_ZERO, out_data[19]),
-        					vxTensorMultiplyNode(graph, out_data[19], upscale, mul_scalar, overflowPolicy, roundingPolicy, out_data[20]),
+                            // Layer (8) - FullyConnected 4096 --> 1000
+                            vxFullyConnectedLayer(graph, out_data[18], wt_data[19][0],
+                                    bs_data[19][0], VX_CONVERT_POLICY_WRAP, VX_ROUND_POLICY_TO_ZERO, out_data[19]),
+                            vxTensorMultiplyNode(graph, out_data[19], upscale, mul_scalar, overflowPolicy, roundingPolicy, out_data[20]),
 
-        					vxSoftmaxLayer(graph, out_data[20], out) };
+                            vxSoftmaxLayer(graph, out_data[20], out) };
 
-        			status = vxVerifyGraph(graph);
-        			if (status == VX_SUCCESS) {
-        				status = vxProcessGraph(graph);
-        			}
-        			else
-        			{
-        			    printf ("Graph validation failed!\n");
-        			}
+                    status = vxVerifyGraph(graph);
+                    if (status == VX_SUCCESS) {
+                        status = vxProcessGraph(graph);
+                    }
+                    else
+                    {
+                        printf ("Graph validation failed!\n");
+                    }
 
-        			if (status == VX_SUCCESS) {
-        				for (int i = 0; i < NUM_OF_LAYERS_ALEXNET; i++)
-        					if (dump)
-        					{
-        						dumpToFile(out_data[i], i, "output");
+                    if (status == VX_SUCCESS) {
+                        for (int i = 0; i < NUM_OF_LAYERS_ALEXNET; i++)
+                            if (dump)
+                            {
+                                dumpToFile(out_data[i], i, "output");
                                 dumpToFile(wt_data[i][0], i, "weights0");
                                 dumpToFile(wt_data[i][1], i, "weights1");
                                 dumpToFile(bs_data[i][0], i, "biases0");
@@ -972,24 +973,24 @@ int Alexnet(int16_t** ppdata, bool raw, int16_t *output) {
                                 dumpToFile(sub_out_data[i][1], i, "sub_out_data1");
 
 
-        					}
+                            }
 
-        				if (dump)
-        				{
-        					dumpToFile(out, NUM_OF_LAYERS_ALEXNET, "output");
+                        if (dump)
+                        {
+                            dumpToFile(out, NUM_OF_LAYERS_ALEXNET, "output");
                             dumpToFile(in, 0, "input");
 
-        				}
+                        }
 
-        				CopyToFromTensor(context, out, output, -1, VX_READ_ONLY);
-        			}
+                        CopyToFromTensor(context, out, output, -1, VX_READ_ONLY);
+                    }
 
-        			for (int n = 0; n < sizeof(cnn_nodes) / sizeof(cnn_nodes[0]); n++) {
-        				vxReleaseNode(&cnn_nodes[n]);
-        			}
+                    for (int n = 0; n < sizeof(cnn_nodes) / sizeof(cnn_nodes[0]); n++) {
+                        vxReleaseNode(&cnn_nodes[n]);
+                    }
 
-        			vxReleaseGraph(&graph);
-        		}
+                    vxReleaseGraph(&graph);
+                }
     }
     if (mul_scalar)
         vxReleaseScalar(&mul_scalar);
@@ -1018,612 +1019,612 @@ int Alexnet(int16_t** ppdata, bool raw, int16_t *output) {
 }
 
 /*vx_status inceptionLayerFF(vx_context context, vx_tensor in, vx_enum format,
-		vx_uint8 fp_pos, vx_uint32 ifms, vx_uint32 ofm1_11, vx_uint32 ofm2_33t,
-		vx_uint32 ofm2_33, vx_uint32 ofm3_33t, vx_uint32 ofm3_33,
-		vx_uint32 ofm4, vx_enum pool_type, vx_uint32 stride, vx_tensor out,
-		int16_t *pInt16Params, vx_uint32 *offset, int id) {
-	vx_bool dump = vx_false_e;
-	vx_status status = VX_SUCCESS;
-	vx_uint8 dim_max = 0;
-	vxQueryContext(context, VX_CONTEXT_MAX_TENSOR_DIMENSIONS, &dim_max,
-			sizeof(dim_max));
-	vx_size dims[dim_max], dims2[dim_max];
-	vx_size outdims[dim_max], indims[dim_max];
-	vx_tensor outtmp[4] = { 0 };
-	vx_tensor outviews[4] = { 0 };
-	vx_tensor weights[8];
-	vx_tensor biases[8];
-	vx_size i = 0, j = 0, k = 0, num_out_dims;
-	vx_uint32 conv_params[4][4] = { { stride, stride, 0, 0 }, { stride, stride,
-			1, 1 }, { 1, 1, 0, 0 }, { 1, 1, 1, 1 } };
+        vx_uint8 fp_pos, vx_uint32 ifms, vx_uint32 ofm1_11, vx_uint32 ofm2_33t,
+        vx_uint32 ofm2_33, vx_uint32 ofm3_33t, vx_uint32 ofm3_33,
+        vx_uint32 ofm4, vx_enum pool_type, vx_uint32 stride, vx_tensor out,
+        int16_t *pInt16Params, vx_uint32 *offset, int id) {
+    vx_bool dump = vx_false_e;
+    vx_status status = VX_SUCCESS;
+    vx_uint8 dim_max = 0;
+    vxQueryContext(context, VX_CONTEXT_MAX_TENSOR_DIMENSIONS, &dim_max,
+            sizeof(dim_max));
+    vx_size dims[dim_max], dims2[dim_max];
+    vx_size outdims[dim_max], indims[dim_max];
+    vx_tensor outtmp[4] = { 0 };
+    vx_tensor outviews[4] = { 0 };
+    vx_tensor weights[8];
+    vx_tensor biases[8];
+    vx_size i = 0, j = 0, k = 0, num_out_dims;
+    vx_uint32 conv_params[4][4] = { { stride, stride, 0, 0 }, { stride, stride,
+            1, 1 }, { 1, 1, 0, 0 }, { 1, 1, 1, 1 } };
 
-	vx_array conv_params_array[4] = { vxCreateArray(context, VX_TYPE_UINT32, 4),
-			vxCreateArray(context, VX_TYPE_UINT32, 4), vxCreateArray(context,
-					VX_TYPE_UINT32, 4), vxCreateArray(context, VX_TYPE_UINT32,
-							4) };
+    vx_array conv_params_array[4] = { vxCreateArray(context, VX_TYPE_UINT32, 4),
+            vxCreateArray(context, VX_TYPE_UINT32, 4), vxCreateArray(context,
+                    VX_TYPE_UINT32, 4), vxCreateArray(context, VX_TYPE_UINT32,
+                            4) };
 
-	vxAddArrayItems(conv_params_array[0], 4, conv_params[0], 0);
-	vxAddArrayItems(conv_params_array[1], 4, conv_params[1], 0);
-	vxAddArrayItems(conv_params_array[2], 4, conv_params[2], 0);
-	vxAddArrayItems(conv_params_array[3], 4, conv_params[3], 0);
+    vxAddArrayItems(conv_params_array[0], 4, conv_params[0], 0);
+    vxAddArrayItems(conv_params_array[1], 4, conv_params[1], 0);
+    vxAddArrayItems(conv_params_array[2], 4, conv_params[2], 0);
+    vxAddArrayItems(conv_params_array[3], 4, conv_params[3], 0);
 
-	status |= vxQueryTensor(in, VX_TENSOR_DIMENSIONS, &indims, sizeof(indims));
-	status |= vxQueryTensor(out, VX_TENSOR_NUMBER_OF_DIMENSIONS, &num_out_dims,
-			sizeof(num_out_dims));
-	status |= vxQueryTensor(out, VX_TENSOR_DIMENSIONS, &outdims, sizeof(outdims));
+    status |= vxQueryTensor(in, VX_TENSOR_DIMENSIONS, &indims, sizeof(indims));
+    status |= vxQueryTensor(out, VX_TENSOR_NUMBER_OF_DIMENSIONS, &num_out_dims,
+            sizeof(num_out_dims));
+    status |= vxQueryTensor(out, VX_TENSOR_DIMENSIONS, &outdims, sizeof(outdims));
 
-	vx_tensor out_inception = vxCreateTensor(context, num_out_dims, outdims,
-			format, fp_pos);
+    vx_tensor out_inception = vxCreateTensor(context, num_out_dims, outdims,
+            format, fp_pos);
 
-	vx_size start[num_out_dims], end[num_out_dims];
-	// output is divided to views along the first dimension
-	for (vx_uint32 l = 0; l < num_out_dims; l++) {
-		start[l] = 0;
-		end[l] = outdims[l];
-	}
+    vx_size start[num_out_dims], end[num_out_dims];
+    // output is divided to views along the first dimension
+    for (vx_uint32 l = 0; l < num_out_dims; l++) {
+        start[l] = 0;
+        end[l] = outdims[l];
+    }
 
-	end[2] = 0;
+    end[2] = 0;
 
-	if (ofm1_11 > 0) {
-		dims[3] = ofm1_11;
-		dims[2] = ifms;
-		dims[1] = 1;
-		dims[0] = 1;
-		end[2] = ofm1_11;
-		outviews[j] = vxCreateTensorFromView(out_inception, num_out_dims, start, end);
-		weights[i] = vxCreateTensor(context, 4, dims, format, fp_pos);
+    if (ofm1_11 > 0) {
+        dims[3] = ofm1_11;
+        dims[2] = ifms;
+        dims[1] = 1;
+        dims[0] = 1;
+        end[2] = ofm1_11;
+        outviews[j] = vxCreateTensorFromView(out_inception, num_out_dims, start, end);
+        weights[i] = vxCreateTensor(context, 4, dims, format, fp_pos);
  *offset += CopyToFromTensor(context, weights[i], pInt16Params + *offset,
-				dims[0] * dims[1] * dims[2] * dims[3], VX_WRITE_ONLY);
-		biases[i] = vxCreateTensor(context, 1, &dims[3], format, fp_pos);
+                dims[0] * dims[1] * dims[2] * dims[3], VX_WRITE_ONLY);
+        biases[i] = vxCreateTensor(context, 1, &dims[3], format, fp_pos);
  *offset += CopyToFromTensor(context, biases[i], pInt16Params + *offset,
-				dims[3], VX_WRITE_ONLY);
-		status |= vxuIntelCNNConvNonlinearNode(context, in, weights[i],
-				biases[i], conv_params_array[0],
-				VX_NN_ACTIVATION_RELU,
-				NULL, outviews[j]);
-		if (dump)
-			dumpToFile(weights[i], id, "inc_ofm1_weights");
-		if (dump)
-			dumpToFile(biases[i], id, "inc_ofm1_biases");
-		if (dump)
-			dumpToFile(outviews[j], id, "inc_ofm1_out");
-		i++;
-		j++;
-	}
+                dims[3], VX_WRITE_ONLY);
+        status |= vxuIntelCNNConvNonlinearNode(context, in, weights[i],
+                biases[i], conv_params_array[0],
+                VX_NN_ACTIVATION_RELU,
+                NULL, outviews[j]);
+        if (dump)
+            dumpToFile(weights[i], id, "inc_ofm1_weights");
+        if (dump)
+            dumpToFile(biases[i], id, "inc_ofm1_biases");
+        if (dump)
+            dumpToFile(outviews[j], id, "inc_ofm1_out");
+        i++;
+        j++;
+    }
 
-	if ((ofm2_33t > 0) && (ofm2_33 > 0)) {
-		dims[3] = ofm2_33t;
-		dims[2] = ifms;
-		dims[1] = 1;
-		dims[0] = 1;
-		weights[i] = vxCreateTensor(context, 4, dims, format, fp_pos);
+    if ((ofm2_33t > 0) && (ofm2_33 > 0)) {
+        dims[3] = ofm2_33t;
+        dims[2] = ifms;
+        dims[1] = 1;
+        dims[0] = 1;
+        weights[i] = vxCreateTensor(context, 4, dims, format, fp_pos);
  *offset += CopyToFromTensor(context, weights[i], pInt16Params + *offset,
-				dims[0] * dims[1] * dims[2] * dims[3], VX_WRITE_ONLY);
-		biases[i] = vxCreateTensor(context, 1, &dims[3], format, fp_pos);
+                dims[0] * dims[1] * dims[2] * dims[3], VX_WRITE_ONLY);
+        biases[i] = vxCreateTensor(context, 1, &dims[3], format, fp_pos);
  *offset += CopyToFromTensor(context, biases[i], pInt16Params + *offset,
-				dims[3], VX_WRITE_ONLY);
-		dims[2] = ofm2_33t;
-		dims[1] = (indims[1] - dims[1]) + 1;
-		dims[0] = (indims[0] - dims[0]) + 1;
-		outtmp[k] = vxCreateTensor(context, 3, dims, format, fp_pos);
-		status |= vxuIntelCNNConvNonlinearNode(context, in, weights[i],
-				biases[i], conv_params_array[2],
-				VX_NN_ACTIVATION_RELU,
-				NULL, outtmp[k]);
-		if (dump)
-			dumpToFile(weights[i], id, "inc_ofm2a_weights");
-		if (dump)
-			dumpToFile(biases[i], id, "inc_ofm2a_biases");
-		if (dump)
-			dumpToFile(outtmp[k], id, "inc_ofm2a_out");
-		i++;
-		k++;
+                dims[3], VX_WRITE_ONLY);
+        dims[2] = ofm2_33t;
+        dims[1] = (indims[1] - dims[1]) + 1;
+        dims[0] = (indims[0] - dims[0]) + 1;
+        outtmp[k] = vxCreateTensor(context, 3, dims, format, fp_pos);
+        status |= vxuIntelCNNConvNonlinearNode(context, in, weights[i],
+                biases[i], conv_params_array[2],
+                VX_NN_ACTIVATION_RELU,
+                NULL, outtmp[k]);
+        if (dump)
+            dumpToFile(weights[i], id, "inc_ofm2a_weights");
+        if (dump)
+            dumpToFile(biases[i], id, "inc_ofm2a_biases");
+        if (dump)
+            dumpToFile(outtmp[k], id, "inc_ofm2a_out");
+        i++;
+        k++;
 
-		dims[3] = ofm2_33;
-		dims[2] = ofm2_33t;
-		dims[1] = 3;
-		dims[0] = 3;
-		start[2] = end[2];
-		end[2] = start[2] + ofm2_33;
-		outviews[j] = vxCreateTensorFromView(out_inception, num_out_dims, start, end);
-		weights[i] = vxCreateTensor(context, 4, dims, format, fp_pos);
+        dims[3] = ofm2_33;
+        dims[2] = ofm2_33t;
+        dims[1] = 3;
+        dims[0] = 3;
+        start[2] = end[2];
+        end[2] = start[2] + ofm2_33;
+        outviews[j] = vxCreateTensorFromView(out_inception, num_out_dims, start, end);
+        weights[i] = vxCreateTensor(context, 4, dims, format, fp_pos);
  *offset += CopyToFromTensor(context, weights[i], pInt16Params + *offset,
-				dims[0] * dims[1] * dims[2] * dims[3], VX_WRITE_ONLY);
-		biases[i] = vxCreateTensor(context, 1, &dims[3], format, fp_pos);
+                dims[0] * dims[1] * dims[2] * dims[3], VX_WRITE_ONLY);
+        biases[i] = vxCreateTensor(context, 1, &dims[3], format, fp_pos);
  *offset += CopyToFromTensor(context, biases[i], pInt16Params + *offset,
-				dims[3], VX_WRITE_ONLY);
-		status |= vxuIntelCNNConvNonlinearNode(context, outtmp[k - 1],
-				weights[i], biases[i], conv_params_array[1],
-				VX_NN_ACTIVATION_RELU, NULL, outviews[j]);
-		if (dump)
-			dumpToFile(weights[i], id, "inc_ofm2_weights");
-		if (dump)
-			dumpToFile(biases[i], id, "inc_ofm2_biases");
-		if (dump)
-			dumpToFile(outviews[j], id, "inc_ofm2_out");
-		i++;
-		j++;
-	}
+                dims[3], VX_WRITE_ONLY);
+        status |= vxuIntelCNNConvNonlinearNode(context, outtmp[k - 1],
+                weights[i], biases[i], conv_params_array[1],
+                VX_NN_ACTIVATION_RELU, NULL, outviews[j]);
+        if (dump)
+            dumpToFile(weights[i], id, "inc_ofm2_weights");
+        if (dump)
+            dumpToFile(biases[i], id, "inc_ofm2_biases");
+        if (dump)
+            dumpToFile(outviews[j], id, "inc_ofm2_out");
+        i++;
+        j++;
+    }
 
-	if ((ofm3_33t > 0) && (ofm3_33 > 0)) {
-		dims[3] = ofm3_33t;
-		dims[2] = ifms;
-		dims[1] = 1;
-		dims[0] = 1;
-		weights[i] = vxCreateTensor(context, 4, dims, format, fp_pos);
+    if ((ofm3_33t > 0) && (ofm3_33 > 0)) {
+        dims[3] = ofm3_33t;
+        dims[2] = ifms;
+        dims[1] = 1;
+        dims[0] = 1;
+        weights[i] = vxCreateTensor(context, 4, dims, format, fp_pos);
  *offset += CopyToFromTensor(context, weights[i], pInt16Params + *offset,
-				dims[0] * dims[1] * dims[2] * dims[3], VX_WRITE_ONLY);
-		biases[i] = vxCreateTensor(context, 1, &dims[3], format, fp_pos);
+                dims[0] * dims[1] * dims[2] * dims[3], VX_WRITE_ONLY);
+        biases[i] = vxCreateTensor(context, 1, &dims[3], format, fp_pos);
  *offset += CopyToFromTensor(context, biases[i], pInt16Params + *offset,
-				dims[3], VX_WRITE_ONLY);
-		dims2[2] = ofm3_33t;
-		dims2[1] = (indims[1] - dims[1]) + 1;
-		dims2[0] = (indims[0] - dims[0]) + 1;
-		outtmp[k] = vxCreateTensor(context, 3, dims2, format, fp_pos);
-		status |= vxuIntelCNNConvNonlinearNode(context, in, weights[i],
-				biases[i], conv_params_array[2],
-				VX_NN_ACTIVATION_RELU,
-				NULL, outtmp[k]);
-		if (dump)
-			dumpToFile(weights[i], id, "inc_ofm3a_weights");
-		if (dump)
-			dumpToFile(biases[i], id, "inc_ofm3a_biases");
-		if (dump)
-			dumpToFile(outtmp[k], id, "inc_ofm3a_out");
-		i++;
-		k++;
+                dims[3], VX_WRITE_ONLY);
+        dims2[2] = ofm3_33t;
+        dims2[1] = (indims[1] - dims[1]) + 1;
+        dims2[0] = (indims[0] - dims[0]) + 1;
+        outtmp[k] = vxCreateTensor(context, 3, dims2, format, fp_pos);
+        status |= vxuIntelCNNConvNonlinearNode(context, in, weights[i],
+                biases[i], conv_params_array[2],
+                VX_NN_ACTIVATION_RELU,
+                NULL, outtmp[k]);
+        if (dump)
+            dumpToFile(weights[i], id, "inc_ofm3a_weights");
+        if (dump)
+            dumpToFile(biases[i], id, "inc_ofm3a_biases");
+        if (dump)
+            dumpToFile(outtmp[k], id, "inc_ofm3a_out");
+        i++;
+        k++;
 
-		dims[3] = ofm3_33t;
-		dims[2] = ofm3_33t;
-		dims[1] = 3;
-		dims[0] = 3;
-		weights[i] = vxCreateTensor(context, 4, dims, format, fp_pos);
+        dims[3] = ofm3_33t;
+        dims[2] = ofm3_33t;
+        dims[1] = 3;
+        dims[0] = 3;
+        weights[i] = vxCreateTensor(context, 4, dims, format, fp_pos);
  *offset += CopyToFromTensor(context, weights[i], pInt16Params + *offset,
-				dims[0] * dims[1] * dims[2] * dims[3], VX_WRITE_ONLY);
-		biases[i] = vxCreateTensor(context, 1, &dims[3], format, fp_pos);
+                dims[0] * dims[1] * dims[2] * dims[3], VX_WRITE_ONLY);
+        biases[i] = vxCreateTensor(context, 1, &dims[3], format, fp_pos);
  *offset += CopyToFromTensor(context, biases[i], pInt16Params + *offset,
-				dims[3], VX_WRITE_ONLY);
-		dims[2] = ofm3_33t;
-		dims[1] = (dims2[1] + 2 - dims[1]) + 1;
-		dims[0] = (dims2[0] + 2 - dims[0]) + 1;
-		outtmp[k] = vxCreateTensor(context, 3, dims, format, fp_pos);
-		status |= vxuIntelCNNConvNonlinearNode(context, outtmp[k - 1],
-				weights[i], biases[i], conv_params_array[3],
-				VX_NN_ACTIVATION_RELU, NULL, outtmp[k]);
-		if (dump)
-			dumpToFile(weights[i], id, "inc_ofm3b_weights");
-		if (dump)
-			dumpToFile(biases[i], id, "inc_ofm3b_biases");
-		if (dump)
-			dumpToFile(outtmp[k], id, "inc_ofm3b_out");
-		i++;
-		k++;
+                dims[3], VX_WRITE_ONLY);
+        dims[2] = ofm3_33t;
+        dims[1] = (dims2[1] + 2 - dims[1]) + 1;
+        dims[0] = (dims2[0] + 2 - dims[0]) + 1;
+        outtmp[k] = vxCreateTensor(context, 3, dims, format, fp_pos);
+        status |= vxuIntelCNNConvNonlinearNode(context, outtmp[k - 1],
+                weights[i], biases[i], conv_params_array[3],
+                VX_NN_ACTIVATION_RELU, NULL, outtmp[k]);
+        if (dump)
+            dumpToFile(weights[i], id, "inc_ofm3b_weights");
+        if (dump)
+            dumpToFile(biases[i], id, "inc_ofm3b_biases");
+        if (dump)
+            dumpToFile(outtmp[k], id, "inc_ofm3b_out");
+        i++;
+        k++;
 
-		dims[3] = ofm3_33;
-		dims[2] = ofm3_33t;
-		dims[1] = 3;
-		dims[0] = 3;
-		start[2] = end[2];
-		end[2] = start[2] + ofm3_33;
-		outviews[j] = vxCreateTensorFromView(out_inception, num_out_dims, start, end);
-		weights[i] = vxCreateTensor(context, 4, dims, format, fp_pos);
+        dims[3] = ofm3_33;
+        dims[2] = ofm3_33t;
+        dims[1] = 3;
+        dims[0] = 3;
+        start[2] = end[2];
+        end[2] = start[2] + ofm3_33;
+        outviews[j] = vxCreateTensorFromView(out_inception, num_out_dims, start, end);
+        weights[i] = vxCreateTensor(context, 4, dims, format, fp_pos);
  *offset += CopyToFromTensor(context, weights[i], pInt16Params + *offset,
-				dims[0] * dims[1] * dims[2] * dims[3], VX_WRITE_ONLY);
-		biases[i] = vxCreateTensor(context, 1, &dims[3], format, fp_pos);
+                dims[0] * dims[1] * dims[2] * dims[3], VX_WRITE_ONLY);
+        biases[i] = vxCreateTensor(context, 1, &dims[3], format, fp_pos);
  *offset += CopyToFromTensor(context, biases[i], pInt16Params + *offset,
-				dims[3], VX_WRITE_ONLY);
-		status |= vxuIntelCNNConvNonlinearNode(context, outtmp[k - 1],
-				weights[i], biases[i], conv_params_array[1],
-				VX_NN_ACTIVATION_RELU, NULL, outviews[j]);
-		if (dump)
-			dumpToFile(weights[i], id, "inc_ofm3_weights");
-		if (dump)
-			dumpToFile(biases[i], id, "inc_ofm3_biases");
-		if (dump)
-			dumpToFile(outviews[j], id, "inc_ofm3_out");
-		i++;
-		j++;
-	}
+                dims[3], VX_WRITE_ONLY);
+        status |= vxuIntelCNNConvNonlinearNode(context, outtmp[k - 1],
+                weights[i], biases[i], conv_params_array[1],
+                VX_NN_ACTIVATION_RELU, NULL, outviews[j]);
+        if (dump)
+            dumpToFile(weights[i], id, "inc_ofm3_weights");
+        if (dump)
+            dumpToFile(biases[i], id, "inc_ofm3_biases");
+        if (dump)
+            dumpToFile(outviews[j], id, "inc_ofm3_out");
+        i++;
+        j++;
+    }
 
-	vx_size pool_params[6] = { 3, 3, 1, 1, stride, stride };
-	vx_array pool_params_array = vxCreateArray(context, VX_TYPE_SIZE, 6);
-	vxAddArrayItems(pool_params_array, 6, pool_params, 0);
+    vx_size pool_params[6] = { 3, 3, 1, 1, stride, stride };
+    vx_array pool_params_array = vxCreateArray(context, VX_TYPE_SIZE, 6);
+    vxAddArrayItems(pool_params_array, 6, pool_params, 0);
 
-	if (ofm4 > 0) {
-		dims[2] = ifms;
-		dims[1] = (indims[1] + 2 * 1 - dims[1]) / stride + 1;
-		dims[0] = (indims[0] + 2 * 1 - dims[0]) / stride + 1;
-		outtmp[k] = vxCreateTensor(context, 3, dims, format, fp_pos);
-		status |= vxuIntelCNNPoolingNode(context, in, pool_type,
-				pool_params_array, outtmp[k]);
-		k++;
+    if (ofm4 > 0) {
+        dims[2] = ifms;
+        dims[1] = (indims[1] + 2 * 1 - dims[1]) / stride + 1;
+        dims[0] = (indims[0] + 2 * 1 - dims[0]) / stride + 1;
+        outtmp[k] = vxCreateTensor(context, 3, dims, format, fp_pos);
+        status |= vxuIntelCNNPoolingNode(context, in, pool_type,
+                pool_params_array, outtmp[k]);
+        k++;
 
-		dims[3] = ofm4;
-		dims[2] = ifms;
-		dims[1] = 1;
-		dims[0] = 1;
-		start[2] = end[2];
-		end[2] = start[2] + ofm4;
-		outviews[j] = vxCreateTensorFromView(out_inception, num_out_dims, start, end);
-		weights[i] = vxCreateTensor(context, 4, dims, format, fp_pos);
+        dims[3] = ofm4;
+        dims[2] = ifms;
+        dims[1] = 1;
+        dims[0] = 1;
+        start[2] = end[2];
+        end[2] = start[2] + ofm4;
+        outviews[j] = vxCreateTensorFromView(out_inception, num_out_dims, start, end);
+        weights[i] = vxCreateTensor(context, 4, dims, format, fp_pos);
  *offset += CopyToFromTensor(context, weights[i], pInt16Params + *offset,
-				dims[0] * dims[1] * dims[2] * dims[3], VX_WRITE_ONLY);
-		biases[i] = vxCreateTensor(context, 1, &dims[3], format, fp_pos);
+                dims[0] * dims[1] * dims[2] * dims[3], VX_WRITE_ONLY);
+        biases[i] = vxCreateTensor(context, 1, &dims[3], format, fp_pos);
  *offset += CopyToFromTensor(context, biases[i], pInt16Params + *offset,
-				dims[3], VX_WRITE_ONLY);
-		status |= vxuIntelCNNConvNonlinearNode(context, outtmp[k - 1],
-				weights[i], biases[i], conv_params_array[2],
-				VX_NN_ACTIVATION_RELU, NULL, outviews[j]);
-		if (dump)
-			dumpToFile(weights[i], id, "inc_ofm4_weights");
-		if (dump)
-			dumpToFile(biases[i], id, "inc_ofm4_biases");
-		if (dump)
-			dumpToFile(outviews[j], id, "inc_ofm4_out");
-		i++;
-		j++;
-	} else {
-		start[2] = end[2];
-		end[2] = start[2] + ifms;
-		outviews[j] = vxCreateTensorFromView(out_inception, num_out_dims, start, end);
-		status |= vxuIntelCNNPoolingNode(context, in, pool_type,
-				pool_params_array, outviews[j]);
-		j++;
-	}
+                dims[3], VX_WRITE_ONLY);
+        status |= vxuIntelCNNConvNonlinearNode(context, outtmp[k - 1],
+                weights[i], biases[i], conv_params_array[2],
+                VX_NN_ACTIVATION_RELU, NULL, outviews[j]);
+        if (dump)
+            dumpToFile(weights[i], id, "inc_ofm4_weights");
+        if (dump)
+            dumpToFile(biases[i], id, "inc_ofm4_biases");
+        if (dump)
+            dumpToFile(outviews[j], id, "inc_ofm4_out");
+        i++;
+        j++;
+    } else {
+        start[2] = end[2];
+        end[2] = start[2] + ifms;
+        outviews[j] = vxCreateTensorFromView(out_inception, num_out_dims, start, end);
+        status |= vxuIntelCNNPoolingNode(context, in, pool_type,
+                pool_params_array, outviews[j]);
+        j++;
+    }
 
-	status |= vxuIntelCNNNonlinearNode(context, out_inception,
-			VX_NN_ACTIVATION_RELU, NULL, out);
+    status |= vxuIntelCNNNonlinearNode(context, out_inception,
+            VX_NN_ACTIVATION_RELU, NULL, out);
 
-	if (conv_params_array[0])
-		vxReleaseArray(&conv_params_array[0]);
-	if (conv_params_array[1])
-		vxReleaseArray(&conv_params_array[1]);
-	if (conv_params_array[2])
-		vxReleaseArray(&conv_params_array[2]);
-	if (conv_params_array[3])
-		vxReleaseArray(&conv_params_array[3]);
-	if (pool_params_array)
-		vxReleaseArray(&pool_params_array);
+    if (conv_params_array[0])
+        vxReleaseArray(&conv_params_array[0]);
+    if (conv_params_array[1])
+        vxReleaseArray(&conv_params_array[1]);
+    if (conv_params_array[2])
+        vxReleaseArray(&conv_params_array[2]);
+    if (conv_params_array[3])
+        vxReleaseArray(&conv_params_array[3]);
+    if (pool_params_array)
+        vxReleaseArray(&pool_params_array);
 
-	for (vx_uint32 ii = 0; ii < i; ii++) {
-		if (weights[ii] != 0) {
-			vxReleaseTensor(&weights[ii]);
-		}
-		if (biases[ii] != 0) {
-			vxReleaseTensor(&biases[ii]);
-		}
-	}
+    for (vx_uint32 ii = 0; ii < i; ii++) {
+        if (weights[ii] != 0) {
+            vxReleaseTensor(&weights[ii]);
+        }
+        if (biases[ii] != 0) {
+            vxReleaseTensor(&biases[ii]);
+        }
+    }
 
-	for (vx_uint32 jj = 0; jj < j; jj++) {
-		if (outviews[jj] != 0) {
-			vxReleaseTensor(&outviews[jj]);
-		}
-	}
+    for (vx_uint32 jj = 0; jj < j; jj++) {
+        if (outviews[jj] != 0) {
+            vxReleaseTensor(&outviews[jj]);
+        }
+    }
 
-	for (vx_uint32 kk = 0; kk < k; kk++) {
-		if (outtmp[kk] != 0) {
-			vxReleaseTensor(&outtmp[kk]);
-		}
-	}
+    for (vx_uint32 kk = 0; kk < k; kk++) {
+        if (outtmp[kk] != 0) {
+            vxReleaseTensor(&outtmp[kk]);
+        }
+    }
 
-	vxReleaseTensor(&out_inception);
+    vxReleaseTensor(&out_inception);
 
-	return status;
+    return status;
 }*/
 
 int Googlenet2(int16_t** ppdata, vx_enum format, vx_uint8 fp_pos, bool raw,
         bool immediate, int16_t *output) {
-    /*	vx_bool dump = vx_false_e;
+    /*  vx_bool dump = vx_false_e;
 
-	vx_size wt_dims[NUM_OF_LAYERS_GOOGLENET2][6] = { { 7, 7, 3, 64, 0, 0 }, { 3,
-			3, 64, 192, 0, 0 },
-			// Inception layers here
-			{ 0, 0, 0, 0, 0, 0 }, { 0, 0, 0, 0, 0, 0 }, { 0, 0, 0, 0, 0, 0 }, {
-					0, 0, 0, 0, 0, 0 }, { 0, 0, 0, 0, 0, 0 },
-					{ 0, 0, 0, 0, 0, 0 }, { 0, 0, 0, 0, 0, 0 }, { 0, 0, 0, 0, 0, 0 }, {
-							0, 0, 0, 0, 0, 0 }, { 0, 0, 0, 0, 0, 0 }, { 1, 1, 1024,
-									1000, 0, 0 } };
+    vx_size wt_dims[NUM_OF_LAYERS_GOOGLENET2][6] = { { 7, 7, 3, 64, 0, 0 }, { 3,
+            3, 64, 192, 0, 0 },
+            // Inception layers here
+            { 0, 0, 0, 0, 0, 0 }, { 0, 0, 0, 0, 0, 0 }, { 0, 0, 0, 0, 0, 0 }, {
+                    0, 0, 0, 0, 0, 0 }, { 0, 0, 0, 0, 0, 0 },
+                    { 0, 0, 0, 0, 0, 0 }, { 0, 0, 0, 0, 0, 0 }, { 0, 0, 0, 0, 0, 0 }, {
+                            0, 0, 0, 0, 0, 0 }, { 0, 0, 0, 0, 0, 0 }, { 1, 1, 1024,
+                                    1000, 0, 0 } };
 
-	vx_size out_dims[NUM_OF_LAYERS_GOOGLENET2][6] = { { 56, 56, 64, 0, 0, 0 }, {
-			28, 28, 192, 0, 0, 0 }, { 28, 28, 256, 0, 0, 0 }, { 28, 28, 320, 0,
-					0, 0 }, { 14, 14, 576, 0, 0, 0 }, { 14, 14, 576, 0, 0, 0 }, { 14,
-							14, 576, 0, 0, 0 }, { 14, 14, 576, 0, 0, 0 },
-							{ 14, 14, 576, 0, 0, 0 }, { 7, 7, 1024, 0, 0, 0 }, { 7, 7, 1024, 0,
-									0, 0 }, { 7, 7, 1024, 0, 0, 0 }, { 1000, 0, 0, 0, 0, 0 }, };
+    vx_size out_dims[NUM_OF_LAYERS_GOOGLENET2][6] = { { 56, 56, 64, 0, 0, 0 }, {
+            28, 28, 192, 0, 0, 0 }, { 28, 28, 256, 0, 0, 0 }, { 28, 28, 320, 0,
+                    0, 0 }, { 14, 14, 576, 0, 0, 0 }, { 14, 14, 576, 0, 0, 0 }, { 14,
+                            14, 576, 0, 0, 0 }, { 14, 14, 576, 0, 0, 0 },
+                            { 14, 14, 576, 0, 0, 0 }, { 7, 7, 1024, 0, 0, 0 }, { 7, 7, 1024, 0,
+                                    0, 0 }, { 7, 7, 1024, 0, 0, 0 }, { 1000, 0, 0, 0, 0, 0 }, };
 
-	vx_tensor wt_data[NUM_OF_LAYERS_GOOGLENET2] = { 0 };
-	vx_tensor bs_data[NUM_OF_LAYERS_GOOGLENET2] = { 0 };
-	vx_tensor out_data[NUM_OF_LAYERS_GOOGLENET2] = { 0 };
+    vx_tensor wt_data[NUM_OF_LAYERS_GOOGLENET2] = { 0 };
+    vx_tensor bs_data[NUM_OF_LAYERS_GOOGLENET2] = { 0 };
+    vx_tensor out_data[NUM_OF_LAYERS_GOOGLENET2] = { 0 };
 
-	// Get input
-	uint8_t *pInput = *(uint8_t**) ppdata;
+    // Get input
+    uint8_t *pInput = *(uint8_t**) ppdata;
 
-	// Get weights
-	int16_t *pInt16Params = (int16_t *) *(ppdata + 1);
+    // Get weights
+    int16_t *pInt16Params = (int16_t *) *(ppdata + 1);
 
-	vx_uint32 offset = 0;
+    vx_uint32 offset = 0;
 
-	// Building googlenet2 network
-	// Edges
-	vx_status status = VX_SUCCESS;
-	vx_context context = vxCreateContext();
-	vx_uint8 dim_max = 0;
-	vxQueryContext(context, VX_CONTEXT_MAX_TENSOR_DIMENSIONS, &dim_max,
-			sizeof(dim_max));
-	vx_graph graph;
-	if (!immediate) {
-		graph = vxCreateGraph(context);
-	}
+    // Building googlenet2 network
+    // Edges
+    vx_status status = VX_SUCCESS;
+    vx_context context = vxCreateContext();
+    vx_uint8 dim_max = 0;
+    vxQueryContext(context, VX_CONTEXT_MAX_TENSOR_DIMENSIONS, &dim_max,
+            sizeof(dim_max));
+    vx_graph graph;
+    if (!immediate) {
+        graph = vxCreateGraph(context);
+    }
 
-	void *ptr = NULL;
+    void *ptr = NULL;
 
-	printf("Building MD Datas!\n");
+    printf("Building MD Datas!\n");
 
-	vx_size sizes[3] = { 224, 224, 3 };
-	vx_tensor in = vxCreateTensor(context, 3, sizes, format, fp_pos);
-	if (raw) {
-		// if patch was not preprocessed yet - preprocess it
-		if (format == VX_TYPE_FLOAT16) {
-			preprocessImageNetF16(context, pInput, in);
-		} else {
-			vx_rectangle_t rect = { 0, 0, 224, 224 };
-			vx_object_array inImgs = vxCreateImageObjectArrayFromTensor(in,
-					rect, 3, 1, VX_DF_IMAGE_S16);
-			preprocessImageNetQ78(context, pInput, 224, inImgs);
-			vxReleaseObjectArray(&inImgs);
-		}
-	} else {
-		status |= CopyToFromTensor(context, in, (int16_t*) pInput, -1,
-				VX_WRITE_ONLY);
-	}
+    vx_size sizes[3] = { 224, 224, 3 };
+    vx_tensor in = vxCreateTensor(context, 3, sizes, format, fp_pos);
+    if (raw) {
+        // if patch was not preprocessed yet - preprocess it
+        if (format == VX_TYPE_FLOAT16) {
+            preprocessImageNetF16(context, pInput, in);
+        } else {
+            vx_rectangle_t rect = { 0, 0, 224, 224 };
+            vx_object_array inImgs = vxCreateImageObjectArrayFromTensor(in,
+                    rect, 3, 1, VX_DF_IMAGE_S16);
+            preprocessImageNetQ78(context, pInput, 224, inImgs);
+            vxReleaseObjectArray(&inImgs);
+        }
+    } else {
+        status |= CopyToFromTensor(context, in, (int16_t*) pInput, -1,
+                VX_WRITE_ONLY);
+    }
 
-	vx_size start[3], end[3];
+    vx_size start[3], end[3];
 
-	start[0] = 0;    // 16;
-	end[0] = 224;    // 240;
-	start[1] = 0;    // 16;
-	end[1] = 224;    // 240;
-	start[2] = 0;
-	end[2] = 3; // A single RGB image => 3 vx_image
+    start[0] = 0;    // 16;
+    end[0] = 224;    // 240;
+    start[1] = 0;    // 16;
+    end[1] = 224;    // 240;
+    start[2] = 0;
+    end[2] = 3; // A single RGB image => 3 vx_image
 
-	vx_tensor patch = vxCreateTensorFromView(in, 3, start, end);
+    vx_tensor patch = vxCreateTensorFromView(in, 3, start, end);
 
-	printf("MD Datas ready\n");
-	printf("Building and processing graph. Immediate=%d\n", immediate);
+    printf("MD Datas ready\n");
+    printf("Building and processing graph. Immediate=%d\n", immediate);
 
-	vx_size i = 0;
-	vx_size num_of_dims = 0;
+    vx_size i = 0;
+    vx_size num_of_dims = 0;
 
-	for (i = 0; i < NUM_OF_LAYERS_GOOGLENET2 - 1; i++) {
-		num_of_dims = 0;
-		out_data[i] = vxCreateTensor(context, 3, out_dims[i], format, fp_pos);
+    for (i = 0; i < NUM_OF_LAYERS_GOOGLENET2 - 1; i++) {
+        num_of_dims = 0;
+        out_data[i] = vxCreateTensor(context, 3, out_dims[i], format, fp_pos);
 
-		if (wt_dims[i][0] > 0) {
-			int wt_size = 1;
-			for (int j = 0; j < dim_max; j++) {
-				if (wt_dims[i][j] > 0) {
-					num_of_dims++;
-					wt_size *= wt_dims[i][j];
-				}
-			}
+        if (wt_dims[i][0] > 0) {
+            int wt_size = 1;
+            for (int j = 0; j < dim_max; j++) {
+                if (wt_dims[i][j] > 0) {
+                    num_of_dims++;
+                    wt_size *= wt_dims[i][j];
+                }
+            }
 
-			wt_data[i] = vxCreateTensor(context, 4, wt_dims[i], format, fp_pos);
-			offset += CopyToFromTensor(context, wt_data[i],
-					pInt16Params + offset, wt_size, VX_WRITE_ONLY);
-			bs_data[i] = vxCreateTensor(context, 1,
-					&wt_dims[i][num_of_dims - 1], format, fp_pos);
-			offset += CopyToFromTensor(context, bs_data[i],
-					pInt16Params + offset, wt_dims[i][3], VX_WRITE_ONLY);
-		}
-	}
+            wt_data[i] = vxCreateTensor(context, 4, wt_dims[i], format, fp_pos);
+            offset += CopyToFromTensor(context, wt_data[i],
+                    pInt16Params + offset, wt_size, VX_WRITE_ONLY);
+            bs_data[i] = vxCreateTensor(context, 1,
+                    &wt_dims[i][num_of_dims - 1], format, fp_pos);
+            offset += CopyToFromTensor(context, bs_data[i],
+                    pInt16Params + offset, wt_dims[i][3], VX_WRITE_ONLY);
+        }
+    }
 
-	i = 0;
+    i = 0;
 
-	vx_uint32 conv_params[3][4] = { { 2, 2, 3, 3 }, { 1, 1, 1, 1 },
-			{ 1, 1, 0, 0 } };
+    vx_uint32 conv_params[3][4] = { { 2, 2, 3, 3 }, { 1, 1, 1, 1 },
+            { 1, 1, 0, 0 } };
 
-	vx_array conv_params_array[3] = { vxCreateArray(context, VX_TYPE_UINT32, 4),
-			vxCreateArray(context, VX_TYPE_UINT32, 4), vxCreateArray(context,
-					VX_TYPE_UINT32, 4) };
+    vx_array conv_params_array[3] = { vxCreateArray(context, VX_TYPE_UINT32, 4),
+            vxCreateArray(context, VX_TYPE_UINT32, 4), vxCreateArray(context,
+                    VX_TYPE_UINT32, 4) };
 
-	vxAddArrayItems(conv_params_array[0], 4, conv_params[0], 0);
-	vxAddArrayItems(conv_params_array[1], 4, conv_params[1], 0);
-	vxAddArrayItems(conv_params_array[2], 4, conv_params[2], 0);
+    vxAddArrayItems(conv_params_array[0], 4, conv_params[0], 0);
+    vxAddArrayItems(conv_params_array[1], 4, conv_params[1], 0);
+    vxAddArrayItems(conv_params_array[2], 4, conv_params[2], 0);
 
-	vx_size pool_params[2][6] = { { 3, 3, 0, 0, 2, 2 }, { 7, 7, 0, 0, 1, 1 } };
-	vx_array pool_params_array[2] = { vxCreateArray(context, VX_TYPE_SIZE, 6),
-			vxCreateArray(context, VX_TYPE_SIZE, 6) };
+    vx_size pool_params[2][6] = { { 3, 3, 0, 0, 2, 2 }, { 7, 7, 0, 0, 1, 1 } };
+    vx_array pool_params_array[2] = { vxCreateArray(context, VX_TYPE_SIZE, 6),
+            vxCreateArray(context, VX_TYPE_SIZE, 6) };
 
-	vxAddArrayItems(pool_params_array[0], 6, pool_params[0], 0);
-	vxAddArrayItems(pool_params_array[1], 6, pool_params[1], 0);
+    vxAddArrayItems(pool_params_array[0], 6, pool_params[0], 0);
+    vxAddArrayItems(pool_params_array[1], 6, pool_params[1], 0);
 
-	if (dump)
-		dumpToFile(in, 0, "in");
+    if (dump)
+        dumpToFile(in, 0, "in");
 
-	// (1) 3X224X224 --> 64X56X56
-	status |= vxuIntelCNNConvNonlinearPoolingNode(context, patch, wt_data[i],
-			bs_data[i], conv_params_array[0],
-			VX_NN_ACTIVATION_RELU, NULL,
-			VX_NN_POOLING_MAX, pool_params_array[0],
-			out_data[i]);
-	;
-	if (dump) {
-		dumpToFile(wt_data[i], i, "weights");
-		dumpToFile(bs_data[i], i, "biases");
-		dumpToFile(out_data[i], i, "out");
-	}
-	printf("Layer %d completed, status=%d\n", ++i, status);
+    // (1) 3X224X224 --> 64X56X56
+    status |= vxuIntelCNNConvNonlinearPoolingNode(context, patch, wt_data[i],
+            bs_data[i], conv_params_array[0],
+            VX_NN_ACTIVATION_RELU, NULL,
+            VX_NN_POOLING_MAX, pool_params_array[0],
+            out_data[i]);
+    ;
+    if (dump) {
+        dumpToFile(wt_data[i], i, "weights");
+        dumpToFile(bs_data[i], i, "biases");
+        dumpToFile(out_data[i], i, "out");
+    }
+    printf("Layer %d completed, status=%d\n", ++i, status);
 
-	// (2) 64X56X56 --> 192x28x28
-	status |= vxuIntelCNNConvNonlinearPoolingNode(context, out_data[i - 1],
-			wt_data[i], bs_data[i], conv_params_array[1],
-			VX_NN_ACTIVATION_RELU, NULL,
-			VX_NN_POOLING_MAX, pool_params_array[0],
-			out_data[i]);
-	;
-	if (dump) {
-		dumpToFile(wt_data[i], i, "weights");
-		dumpToFile(bs_data[i], i, "biases");
-		dumpToFile(out_data[i], i, "out");
-	}
-	printf("Layer %d completed, status=%d\n", ++i, status);
+    // (2) 64X56X56 --> 192x28x28
+    status |= vxuIntelCNNConvNonlinearPoolingNode(context, out_data[i - 1],
+            wt_data[i], bs_data[i], conv_params_array[1],
+            VX_NN_ACTIVATION_RELU, NULL,
+            VX_NN_POOLING_MAX, pool_params_array[0],
+            out_data[i]);
+    ;
+    if (dump) {
+        dumpToFile(wt_data[i], i, "weights");
+        dumpToFile(bs_data[i], i, "biases");
+        dumpToFile(out_data[i], i, "out");
+    }
+    printf("Layer %d completed, status=%d\n", ++i, status);
 
-	// (3a) 192x28x28 -> 256x28x28
-	status |= inceptionLayerFF(context, out_data[i - 1], format, fp_pos, 192, 64, 64,
-			64, 64, 96, 32, VX_NN_POOLING_AVG, 1,
-			out_data[i], pInt16Params, &offset, i);
-	if (dump)
-		dumpToFile(out_data[i], i, "out");
-	printf("Layer %d completed, status=%d\n", ++i, status);
+    // (3a) 192x28x28 -> 256x28x28
+    status |= inceptionLayerFF(context, out_data[i - 1], format, fp_pos, 192, 64, 64,
+            64, 64, 96, 32, VX_NN_POOLING_AVG, 1,
+            out_data[i], pInt16Params, &offset, i);
+    if (dump)
+        dumpToFile(out_data[i], i, "out");
+    printf("Layer %d completed, status=%d\n", ++i, status);
 
-	// (3b) 256x28x28 -> 320x28x28
-	status |= inceptionLayerFF(context, out_data[i - 1], format, fp_pos, 256, 64, 64,
-			96, 64, 96, 64, VX_NN_POOLING_AVG, 1,
-			out_data[i], pInt16Params, &offset, i);
-	if (dump)
-		dumpToFile(out_data[i], i, "out");
-	printf("Layer %d completed, status=%d\n", ++i, status);
+    // (3b) 256x28x28 -> 320x28x28
+    status |= inceptionLayerFF(context, out_data[i - 1], format, fp_pos, 256, 64, 64,
+            96, 64, 96, 64, VX_NN_POOLING_AVG, 1,
+            out_data[i], pInt16Params, &offset, i);
+    if (dump)
+        dumpToFile(out_data[i], i, "out");
+    printf("Layer %d completed, status=%d\n", ++i, status);
 
-	// (3c) 320x28x28 -> 576x14x14
-	status |= inceptionLayerFF(context, out_data[i - 1], format, fp_pos, 320, 0, 128,
-			160, 64, 96, 0, VX_NN_POOLING_MAX, 2,
-			out_data[i], pInt16Params, &offset, i);
-	if (dump)
-		dumpToFile(out_data[i], i, "out");
-	printf("Layer %d completed, status=%d\n", ++i, status);
+    // (3c) 320x28x28 -> 576x14x14
+    status |= inceptionLayerFF(context, out_data[i - 1], format, fp_pos, 320, 0, 128,
+            160, 64, 96, 0, VX_NN_POOLING_MAX, 2,
+            out_data[i], pInt16Params, &offset, i);
+    if (dump)
+        dumpToFile(out_data[i], i, "out");
+    printf("Layer %d completed, status=%d\n", ++i, status);
 
-	// (4a) 576x14x14 -> 576x14x14
-	status |= inceptionLayerFF(context, out_data[i - 1], format, fp_pos, 576, 224, 64,
-			96, 96, 128, 128, VX_NN_POOLING_AVG, 1,
-			out_data[i], pInt16Params, &offset, i);
-	if (dump)
-		dumpToFile(out_data[i], i, "out");
-	printf("Layer %d completed, status=%d\n", ++i, status);
+    // (4a) 576x14x14 -> 576x14x14
+    status |= inceptionLayerFF(context, out_data[i - 1], format, fp_pos, 576, 224, 64,
+            96, 96, 128, 128, VX_NN_POOLING_AVG, 1,
+            out_data[i], pInt16Params, &offset, i);
+    if (dump)
+        dumpToFile(out_data[i], i, "out");
+    printf("Layer %d completed, status=%d\n", ++i, status);
 
-	// (4b) 576x14x14 -> 576x14x14
-	status |= inceptionLayerFF(context, out_data[i - 1], format, fp_pos, 576, 192, 96,
-			128, 96, 128, 128, VX_NN_POOLING_AVG, 1,
-			out_data[i], pInt16Params, &offset, i);
-	if (dump)
-		dumpToFile(out_data[i], i, "out");
-	printf("Layer %d completed, status=%d\n", ++i, status);
+    // (4b) 576x14x14 -> 576x14x14
+    status |= inceptionLayerFF(context, out_data[i - 1], format, fp_pos, 576, 192, 96,
+            128, 96, 128, 128, VX_NN_POOLING_AVG, 1,
+            out_data[i], pInt16Params, &offset, i);
+    if (dump)
+        dumpToFile(out_data[i], i, "out");
+    printf("Layer %d completed, status=%d\n", ++i, status);
 
-	// (4c) 576x14x14 -> 576x14x14
-	status |= inceptionLayerFF(context, out_data[i - 1], format, fp_pos, 576, 160, 128,
-			160, 128, 160, 96, VX_NN_POOLING_AVG, 1,
-			out_data[i], pInt16Params, &offset, i);
-	if (dump)
-		dumpToFile(out_data[i], i, "out");
-	printf("Layer %d completed, status=%d\n", ++i, status);
+    // (4c) 576x14x14 -> 576x14x14
+    status |= inceptionLayerFF(context, out_data[i - 1], format, fp_pos, 576, 160, 128,
+            160, 128, 160, 96, VX_NN_POOLING_AVG, 1,
+            out_data[i], pInt16Params, &offset, i);
+    if (dump)
+        dumpToFile(out_data[i], i, "out");
+    printf("Layer %d completed, status=%d\n", ++i, status);
 
-	// (4d) 576x14x14 -> 576x14x14
-	status |= inceptionLayerFF(context, out_data[i - 1], format, fp_pos, 576, 96, 128,
-			192, 160, 192, 96, VX_NN_POOLING_AVG, 1,
-			out_data[i], pInt16Params, &offset, i);
-	if (dump)
-		dumpToFile(out_data[i], i, "out");
-	printf("Layer %d completed, status=%d\n", ++i, status);
+    // (4d) 576x14x14 -> 576x14x14
+    status |= inceptionLayerFF(context, out_data[i - 1], format, fp_pos, 576, 96, 128,
+            192, 160, 192, 96, VX_NN_POOLING_AVG, 1,
+            out_data[i], pInt16Params, &offset, i);
+    if (dump)
+        dumpToFile(out_data[i], i, "out");
+    printf("Layer %d completed, status=%d\n", ++i, status);
 
-	// (4e) 576x14x14 -> 1024x7x7
-	status |= inceptionLayerFF(context, out_data[i - 1], format, fp_pos, 576, 0, 128,
-			192, 192, 256, 0, VX_NN_POOLING_MAX, 2,
-			out_data[i], pInt16Params, &offset, i);
-	if (dump)
-		dumpToFile(out_data[i], i, "out");
-	printf("Layer %d completed, status=%d\n", ++i, status);
+    // (4e) 576x14x14 -> 1024x7x7
+    status |= inceptionLayerFF(context, out_data[i - 1], format, fp_pos, 576, 0, 128,
+            192, 192, 256, 0, VX_NN_POOLING_MAX, 2,
+            out_data[i], pInt16Params, &offset, i);
+    if (dump)
+        dumpToFile(out_data[i], i, "out");
+    printf("Layer %d completed, status=%d\n", ++i, status);
 
-	// (5a) 1024x7x7 -> 1024x7x7
-	status |= inceptionLayerFF(context, out_data[i - 1], format, fp_pos, 1024, 352, 192,
-			320, 160, 224, 128, VX_NN_POOLING_AVG, 1,
-			out_data[i], pInt16Params, &offset, i);
-	if (dump)
-		dumpToFile(out_data[i], i, "out");
-	printf("Layer %d completed, status=%d\n", ++i, status);
+    // (5a) 1024x7x7 -> 1024x7x7
+    status |= inceptionLayerFF(context, out_data[i - 1], format, fp_pos, 1024, 352, 192,
+            320, 160, 224, 128, VX_NN_POOLING_AVG, 1,
+            out_data[i], pInt16Params, &offset, i);
+    if (dump)
+        dumpToFile(out_data[i], i, "out");
+    printf("Layer %d completed, status=%d\n", ++i, status);
 
-	// (5b) 1024x7x7 -> 1024x7x7
-	status |= inceptionLayerFF(context, out_data[i - 1], format, fp_pos, 1024, 352, 192,
-			320, 192, 224, 128, VX_NN_POOLING_MAX, 1,
-			out_data[i], pInt16Params, &offset, i);
-	if (dump)
-		dumpToFile(out_data[i], i, "out");
-	printf("Layer %d completed, status=%d\n", ++i, status);
+    // (5b) 1024x7x7 -> 1024x7x7
+    status |= inceptionLayerFF(context, out_data[i - 1], format, fp_pos, 1024, 352, 192,
+            320, 192, 224, 128, VX_NN_POOLING_MAX, 1,
+            out_data[i], pInt16Params, &offset, i);
+    if (dump)
+        dumpToFile(out_data[i], i, "out");
+    printf("Layer %d completed, status=%d\n", ++i, status);
 
-	out_data[NUM_OF_LAYERS_GOOGLENET2 - 1] = vxCreateTensor(context, 1,
-			out_dims[NUM_OF_LAYERS_GOOGLENET2 - 1], format, fp_pos);
+    out_data[NUM_OF_LAYERS_GOOGLENET2 - 1] = vxCreateTensor(context, 1,
+            out_dims[NUM_OF_LAYERS_GOOGLENET2 - 1], format, fp_pos);
 
-	int wt_size = 1;
-	num_of_dims = 0;
-	for (int j = 0; j < dim_max; j++) {
-		if (wt_dims[NUM_OF_LAYERS_GOOGLENET2 - 1][j] > 0) {
-			num_of_dims++;
-			wt_size *= wt_dims[NUM_OF_LAYERS_GOOGLENET2 - 1][j];
-		}
-	}
+    int wt_size = 1;
+    num_of_dims = 0;
+    for (int j = 0; j < dim_max; j++) {
+        if (wt_dims[NUM_OF_LAYERS_GOOGLENET2 - 1][j] > 0) {
+            num_of_dims++;
+            wt_size *= wt_dims[NUM_OF_LAYERS_GOOGLENET2 - 1][j];
+        }
+    }
 
-	wt_data[NUM_OF_LAYERS_GOOGLENET2 - 1] = vxCreateTensor(context, 4,
-			wt_dims[NUM_OF_LAYERS_GOOGLENET2 - 1], format, fp_pos);
-	offset += CopyToFromTensor(context, wt_data[NUM_OF_LAYERS_GOOGLENET2 - 1],
-			pInt16Params + offset, wt_size, VX_WRITE_ONLY);
+    wt_data[NUM_OF_LAYERS_GOOGLENET2 - 1] = vxCreateTensor(context, 4,
+            wt_dims[NUM_OF_LAYERS_GOOGLENET2 - 1], format, fp_pos);
+    offset += CopyToFromTensor(context, wt_data[NUM_OF_LAYERS_GOOGLENET2 - 1],
+            pInt16Params + offset, wt_size, VX_WRITE_ONLY);
 
-	bs_data[NUM_OF_LAYERS_GOOGLENET2 - 1] = vxCreateTensor(context, 1,
-			&wt_dims[NUM_OF_LAYERS_GOOGLENET2 - 1][num_of_dims - 1], format,
-			fp_pos);
-	offset += CopyToFromTensor(context, bs_data[NUM_OF_LAYERS_GOOGLENET2 - 1],
-			pInt16Params + offset,
-			wt_dims[NUM_OF_LAYERS_GOOGLENET2 - 1][num_of_dims - 1],
-			VX_WRITE_ONLY);
+    bs_data[NUM_OF_LAYERS_GOOGLENET2 - 1] = vxCreateTensor(context, 1,
+            &wt_dims[NUM_OF_LAYERS_GOOGLENET2 - 1][num_of_dims - 1], format,
+            fp_pos);
+    offset += CopyToFromTensor(context, bs_data[NUM_OF_LAYERS_GOOGLENET2 - 1],
+            pInt16Params + offset,
+            wt_dims[NUM_OF_LAYERS_GOOGLENET2 - 1][num_of_dims - 1],
+            VX_WRITE_ONLY);
 
-	out_data[NUM_OF_LAYERS_GOOGLENET2 - 1] = vxCreateTensor(context, 1,
-			out_dims[NUM_OF_LAYERS_GOOGLENET2 - 1], format, fp_pos);
-	vx_tensor out = vxCreateTensor(context, 1,
-			out_dims[NUM_OF_LAYERS_GOOGLENET2 - 1], format, fp_pos);
+    out_data[NUM_OF_LAYERS_GOOGLENET2 - 1] = vxCreateTensor(context, 1,
+            out_dims[NUM_OF_LAYERS_GOOGLENET2 - 1], format, fp_pos);
+    vx_tensor out = vxCreateTensor(context, 1,
+            out_dims[NUM_OF_LAYERS_GOOGLENET2 - 1], format, fp_pos);
 
-	// (6) 1024X7X7 --> 1000X1X1
-	status |= vxuIntelCNNConvPoolingNode(context, out_data[i - 1], wt_data[i],
-			bs_data[i], conv_params_array[2],
-			VX_NN_POOLING_AVG, pool_params_array[1],
-			out_data[i]);
-	;
-	if (dump) {
-		dumpToFile(wt_data[i], i, "weights");
-		dumpToFile(bs_data[i], i, "biases");
-		dumpToFile(out_data[i], i, "out");
-	}
-	printf("Layer %d completed, status=%d\n", ++i, status);
+    // (6) 1024X7X7 --> 1000X1X1
+    status |= vxuIntelCNNConvPoolingNode(context, out_data[i - 1], wt_data[i],
+            bs_data[i], conv_params_array[2],
+            VX_NN_POOLING_AVG, pool_params_array[1],
+            out_data[i]);
+    ;
+    if (dump) {
+        dumpToFile(wt_data[i], i, "weights");
+        dumpToFile(bs_data[i], i, "biases");
+        dumpToFile(out_data[i], i, "out");
+    }
+    printf("Layer %d completed, status=%d\n", ++i, status);
 
-	status |= vxuIntelCNNSoftmaxNode(context, out_data[i - 1], out);
-	if (dump)
-		dumpToFile(out, i);
-	CopyToFromTensor(context, out, output, -1, VX_READ_ONLY);
+    status |= vxuIntelCNNSoftmaxNode(context, out_data[i - 1], out);
+    if (dump)
+        dumpToFile(out, i);
+    CopyToFromTensor(context, out, output, -1, VX_READ_ONLY);
 
-	if (in)
-		vxReleaseTensor(&in);
-	if (out)
-		vxReleaseTensor(&out);
-	for (int i = 0; i < NUM_OF_LAYERS_GOOGLENET2; i++) {
-		if (wt_data[i])
-			vxReleaseTensor(&wt_data[i]);
-		if (bs_data[i])
-			vxReleaseTensor(&bs_data[i]);
-		if (out_data[i])
-			vxReleaseTensor(&out_data[i]);
-	}
+    if (in)
+        vxReleaseTensor(&in);
+    if (out)
+        vxReleaseTensor(&out);
+    for (int i = 0; i < NUM_OF_LAYERS_GOOGLENET2; i++) {
+        if (wt_data[i])
+            vxReleaseTensor(&wt_data[i]);
+        if (bs_data[i])
+            vxReleaseTensor(&bs_data[i]);
+        if (out_data[i])
+            vxReleaseTensor(&out_data[i]);
+    }
 
-	if (conv_params_array[0])
-		vxReleaseArray(&conv_params_array[0]);
-	if (conv_params_array[1])
-		vxReleaseArray(&conv_params_array[1]);
-	if (conv_params_array[2])
-		vxReleaseArray(&conv_params_array[2]);
-	if (pool_params_array[0])
-		vxReleaseArray(&pool_params_array[0]);
-	if (pool_params_array[1])
-		vxReleaseArray(&pool_params_array[1]);
+    if (conv_params_array[0])
+        vxReleaseArray(&conv_params_array[0]);
+    if (conv_params_array[1])
+        vxReleaseArray(&conv_params_array[1]);
+    if (conv_params_array[2])
+        vxReleaseArray(&conv_params_array[2]);
+    if (pool_params_array[0])
+        vxReleaseArray(&pool_params_array[0]);
+    if (pool_params_array[1])
+        vxReleaseArray(&pool_params_array[1]);
 
-	if (status == VX_SUCCESS)
-		return 0;
-	else
-		return -1;*/
+    if (status == VX_SUCCESS)
+        return 0;
+    else
+        return -1;*/
     return -1;
 }
 

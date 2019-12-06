@@ -44,6 +44,263 @@ vx_meta_format ownCreateMetaFormat(vx_context context)
 // PUBLIC
 /******************************************************************************/
 
+VX_API_ENTRY vx_status VX_API_CALL vxQueryMetaFormatAttribute(vx_meta_format meta, vx_enum attribute, void *ptr, vx_size size)
+{
+    vx_status status = VX_SUCCESS;
+    if (ownIsValidSpecificReference(&meta->base, VX_TYPE_META_FORMAT) == vx_false_e)
+        return VX_ERROR_INVALID_REFERENCE;
+
+    if (VX_TYPE(attribute) != (vx_uint32)meta->type &&
+        attribute != VX_VALID_RECT_CALLBACK)
+    {
+        return VX_ERROR_INVALID_TYPE;
+    }
+
+    switch(attribute)
+    {
+        /**********************************************************************/
+        case VX_IMAGE_FORMAT:
+            if (VX_CHECK_PARAM(ptr, size, vx_df_image, 0x3)) {
+                *(vx_df_image *)ptr = meta->dim.image.format;
+            } else {
+                status = VX_ERROR_INVALID_PARAMETERS;
+            }
+            break;
+        case VX_IMAGE_HEIGHT:
+            if (VX_CHECK_PARAM(ptr, size, vx_uint32, 0x3)) {
+                *(vx_uint32 *)ptr = meta->dim.image.height;
+            } else {
+                status = VX_ERROR_INVALID_PARAMETERS;
+            }
+            break;
+        case VX_IMAGE_WIDTH:
+            if (VX_CHECK_PARAM(ptr, size, vx_uint32, 0x3)) {
+                *(vx_uint32 *)ptr = meta->dim.image.width;
+            } else {
+                status = VX_ERROR_INVALID_PARAMETERS;
+            }
+            break;
+        /**********************************************************************/
+        case VX_ARRAY_CAPACITY:
+            if (VX_CHECK_PARAM(ptr, size, vx_size, 0x3)) {
+                *(vx_size *)ptr = meta->dim.array.capacity;
+            } else {
+                status = VX_ERROR_INVALID_PARAMETERS;
+            }
+            break;
+        case VX_ARRAY_ITEMTYPE:
+            if (VX_CHECK_PARAM(ptr, size, vx_enum, 0x3)) {
+                *(vx_enum *)ptr = meta->dim.array.item_type;
+            } else {
+                status = VX_ERROR_INVALID_PARAMETERS;
+            }
+            break;
+        /**********************************************************************/
+        case VX_PYRAMID_FORMAT:
+            if (VX_CHECK_PARAM(ptr, size, vx_df_image, 0x3)) {
+                *(vx_df_image *)ptr = meta->dim.pyramid.format;
+            } else {
+                status = VX_ERROR_INVALID_PARAMETERS;
+            }
+            break;
+        case VX_PYRAMID_HEIGHT:
+            if (VX_CHECK_PARAM(ptr, size, vx_uint32, 0x3)) {
+                *(vx_uint32 *)ptr = meta->dim.pyramid.height;
+            } else {
+                status = VX_ERROR_INVALID_PARAMETERS;
+            }
+            break;
+        case VX_PYRAMID_WIDTH:
+            if (VX_CHECK_PARAM(ptr, size, vx_uint32, 0x3)) {
+                *(vx_uint32 *)ptr = meta->dim.pyramid.width;
+            } else {
+                status = VX_ERROR_INVALID_PARAMETERS;
+            }
+            break;
+        case VX_PYRAMID_LEVELS:
+            if (VX_CHECK_PARAM(ptr, size, vx_size, 0x3)) {
+                *(vx_size *)ptr = meta->dim.pyramid.levels;
+            } else {
+                status = VX_ERROR_INVALID_PARAMETERS;
+            }
+            break;
+        case VX_PYRAMID_SCALE:
+            if (VX_CHECK_PARAM(ptr, size, vx_float32, 0x3)) {
+                *(vx_float32 *)ptr = meta->dim.pyramid.scale;
+            } else {
+                status = VX_ERROR_INVALID_PARAMETERS;
+            }
+            break;
+        /**********************************************************************/
+        case VX_SCALAR_TYPE:
+            if (VX_CHECK_PARAM(ptr, size, vx_enum, 0x3)) {
+                *(vx_enum *)ptr = meta->dim.scalar.type;
+            } else {
+                status = VX_ERROR_INVALID_PARAMETERS;
+            }
+            break;
+        /**********************************************************************/
+        case VX_MATRIX_TYPE:
+            if (VX_CHECK_PARAM(ptr, size, vx_enum, 0x3)) {
+                *(vx_enum *)ptr = meta->dim.matrix.type;
+            } else {
+                status = VX_ERROR_INVALID_PARAMETERS;
+            }
+            break;
+        case VX_MATRIX_ROWS:
+            if (VX_CHECK_PARAM(ptr, size, vx_size, 0x3)) {
+                *(vx_size *)ptr = meta->dim.matrix.rows;
+            } else {
+                status = VX_ERROR_INVALID_PARAMETERS;
+            }
+            break;
+        case VX_MATRIX_COLUMNS:
+            if (VX_CHECK_PARAM(ptr, size, vx_size, 0x3)) {
+                *(vx_size *)ptr = meta->dim.matrix.cols;
+            } else {
+                status = VX_ERROR_INVALID_PARAMETERS;
+            }
+            break;
+        /**********************************************************************/
+        case VX_DISTRIBUTION_BINS:
+            if (VX_CHECK_PARAM(ptr, size, vx_size, 0x3)) {
+                *(vx_size *)ptr = meta->dim.distribution.bins;
+            } else {
+                status = VX_ERROR_INVALID_PARAMETERS;
+            }
+            break;
+        case VX_DISTRIBUTION_RANGE:
+            if (VX_CHECK_PARAM(ptr, size, vx_uint32, 0x3)) {
+                *(vx_uint32 *)ptr = meta->dim.distribution.range;
+            } else {
+                status = VX_ERROR_INVALID_PARAMETERS;
+            }
+            break;
+        case VX_DISTRIBUTION_OFFSET:
+            if (VX_CHECK_PARAM(ptr, size, vx_int32, 0x3)) {
+                *(vx_int32 *)ptr = meta->dim.distribution.offset;
+            } else {
+                status = VX_ERROR_INVALID_PARAMETERS;
+            }
+            break;
+        /**********************************************************************/
+        case VX_REMAP_SOURCE_WIDTH:
+            if (VX_CHECK_PARAM(ptr, size, vx_uint32, 0x3)) {
+                *(vx_uint32 *)ptr = meta->dim.remap.src_width;
+            } else {
+                status = VX_ERROR_INVALID_PARAMETERS;
+            }
+            break;
+        case VX_REMAP_SOURCE_HEIGHT:
+            if (VX_CHECK_PARAM(ptr, size, vx_uint32, 0x3)) {
+                *(vx_uint32 *)ptr = meta->dim.remap.src_height;
+            } else {
+                status = VX_ERROR_INVALID_PARAMETERS;
+            }
+            break;
+        case VX_REMAP_DESTINATION_WIDTH:
+            if (VX_CHECK_PARAM(ptr, size, vx_uint32, 0x3)) {
+                *(vx_uint32 *)ptr = meta->dim.remap.dst_width;
+            } else {
+                status = VX_ERROR_INVALID_PARAMETERS;
+            }
+            break;
+        case VX_REMAP_DESTINATION_HEIGHT:
+            if (VX_CHECK_PARAM(ptr, size, vx_uint32, 0x3)) {
+                *(vx_uint32 *)ptr = meta->dim.remap.dst_height;
+            } else {
+                status = VX_ERROR_INVALID_PARAMETERS;
+            }
+            break;
+        /**********************************************************************/
+        case VX_LUT_TYPE:
+            if (VX_CHECK_PARAM(ptr, size, vx_enum, 0x3)) {
+                *(vx_enum *)ptr = meta->dim.lut.type;
+            } else {
+                status = VX_ERROR_INVALID_PARAMETERS;
+            }
+            break;
+        case VX_LUT_COUNT:
+            if (VX_CHECK_PARAM(ptr, size, vx_size, 0x3)) {
+                *(vx_size *)ptr = meta->dim.lut.count;
+            } else {
+                status = VX_ERROR_INVALID_PARAMETERS;
+            }
+            break;
+        /**********************************************************************/
+        case VX_THRESHOLD_TYPE:
+            if (VX_CHECK_PARAM(ptr, size, vx_enum, 0x3)) {
+                *(vx_enum *)ptr = meta->dim.threshold.type;
+            } else {
+                status = VX_ERROR_INVALID_PARAMETERS;
+            }
+            break;
+        /**********************************************************************/
+        case VX_VALID_RECT_CALLBACK:
+            if (VX_CHECK_PARAM(ptr, size, vx_kernel_image_valid_rectangle_f, 0x0)) {
+                *(vx_kernel_image_valid_rectangle_f*)ptr = meta->set_valid_rectangle_callback;
+            } else {
+                status = VX_ERROR_INVALID_PARAMETERS;
+            }
+            break;
+        /**********************************************************************/
+        case VX_OBJECT_ARRAY_ITEMTYPE:
+            if (VX_CHECK_PARAM(ptr, size, vx_enum, 0x3)) {
+                *(vx_enum *)ptr = meta->dim.object_array.item_type;
+            } else {
+                status = VX_ERROR_INVALID_PARAMETERS;
+            }
+            break;
+        case VX_OBJECT_ARRAY_NUMITEMS:
+            if (VX_CHECK_PARAM(ptr, size, vx_size, 0x3)) {
+                *(vx_enum *)ptr = meta->dim.object_array.num_items;
+            } else {
+                status = VX_ERROR_INVALID_PARAMETERS;
+            }
+            break;
+        /**********************************************************************/
+        case VX_TENSOR_NUMBER_OF_DIMS:
+            if (VX_CHECK_PARAM(ptr, size, vx_size, 0x3)) {
+                *(vx_size *)ptr = meta->dim.tensor.number_of_dimensions;
+            }
+            else {
+                status = VX_ERROR_INVALID_PARAMETERS;
+            }
+            break;
+        case VX_TENSOR_DIMS:
+            if (size <= (sizeof(vx_size)*VX_MAX_TENSOR_DIMENSIONS) && ((vx_size)ptr & 0x3) == 0)
+            {
+                memcpy(ptr, meta->dim.tensor.dimensions, size);
+            }
+            else {
+                status = VX_ERROR_INVALID_PARAMETERS;
+            }
+            break;
+        case VX_TENSOR_DATA_TYPE:
+            if (VX_CHECK_PARAM(ptr, size, vx_enum, 0x3))
+            {
+                *(vx_enum *)ptr = meta->dim.tensor.data_type;
+            }
+            else {
+                status = VX_ERROR_INVALID_PARAMETERS;
+            }
+            break;
+        case VX_TENSOR_FIXED_POINT_POSITION:
+            if (VX_CHECK_PARAM(ptr, size, vx_int8, 0x0)) //??
+            {
+                *(vx_int8 *)ptr = meta->dim.tensor.fixed_point_position;
+            }
+            else {
+                status = VX_ERROR_INVALID_PARAMETERS;
+            }
+            break;
+        default:
+            status = VX_ERROR_NOT_SUPPORTED;
+            break;
+    }
+    return status;
+}
+
 VX_API_ENTRY vx_status VX_API_CALL vxSetMetaFormatAttribute(vx_meta_format meta, vx_enum attribute, const void *ptr, vx_size size)
 {
     vx_status status = VX_SUCCESS;

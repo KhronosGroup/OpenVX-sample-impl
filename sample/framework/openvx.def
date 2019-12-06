@@ -153,6 +153,7 @@ EXPORTS
 ;    vxMeanStdDevNode
 ;    vxMedian3x3Node
 ;    vxMinMaxLocNode
+;    vxWeightedAverageNode
 ;    vxMultiplyNode
 ;    vxNotNode
 ;    vxOpticalFlowPyrLKNode

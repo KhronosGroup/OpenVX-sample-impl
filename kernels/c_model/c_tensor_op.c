@@ -205,10 +205,10 @@ void ElementwiseTensorOpImpl(
                         if (to_ne) { OP_TEMPLATE(vx_int16, { *res_ptr = (int16_t)nearbyint(in0_val * in1_val * new_scale); }); }    //TODO: cast issue?
                         else { OP_TEMPLATE(vx_int16, { *res_ptr = (int16_t)trunc(in0_val * in1_val * new_scale); }); }              //TODO: cast issue?
                     }
-                    else
+                    else  // using "uint32_t" will fail the CTS test on Rasberry Pi
                     {
-                        if (to_ne) { OP_TEMPLATE(vx_int16, { *res_ptr = (vx_int16)conversion_24_8((uint32_t)nearbyint(in0_val * in1_val * new_scale)); }); }
-                        else { OP_TEMPLATE(vx_int16, { *res_ptr = (vx_int16)conversion_24_8((uint32_t)trunc(in0_val * in1_val * new_scale)); }); }
+                        if (to_ne) { OP_TEMPLATE(vx_int16, { *res_ptr = (vx_int16)conversion_24_8(nearbyint(in0_val * in1_val * new_scale)); }); }
+                        else { OP_TEMPLATE(vx_int16, { *res_ptr = (vx_int16)conversion_24_8(trunc(in0_val * in1_val * new_scale)); }); }
                     }
                 }
                 break;

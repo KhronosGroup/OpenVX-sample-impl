@@ -1,4 +1,4 @@
-/* 
+/*
 
  * Copyright (c) 2012-2017 The Khronos Group Inc.
  *
@@ -351,6 +351,21 @@ VX_API_ENTRY vx_status VX_API_CALL vxQueryParameter(vx_parameter parameter, vx_e
                     }
                     else
                         status = VX_ERROR_NOT_SUPPORTED;
+                }
+                else
+                    status = VX_ERROR_INVALID_PARAMETERS;
+                break;
+            case VX_PARAMETER_META_FORMAT:
+                if (VX_CHECK_PARAM(ptr, size, vx_meta_format, 0x3))
+                {
+                    if(NULL != parameter->kernel->signature.meta_formats[parameter->index])
+                    {
+                        *(vx_meta_format *)ptr = parameter->kernel->signature.meta_formats[parameter->index];
+                    }
+                    else
+                    {
+                        status = VX_ERROR_NOT_SUPPORTED;
+                    }
                 }
                 else
                     status = VX_ERROR_INVALID_PARAMETERS;

@@ -129,8 +129,8 @@ static vx_status VX_CALLBACK vxHogCellsOutputValidator(vx_node node, vx_uint32 i
     }
     else if (tensor && index == 5)
     {
-        format = VX_TYPE_INT8;
-        vx_uint8 fixed_point_pos1 = 0;
+        format = VX_TYPE_INT16;
+        vx_uint8 fixed_point_pos1 = 8;
         vx_size out_num_dims;
         vx_size out_dims[3];
         status = vxQueryTensor(tensor, VX_TENSOR_NUMBER_OF_DIMS, &out_num_dims, sizeof(out_num_dims));
@@ -241,7 +241,7 @@ static vx_status VX_CALLBACK vxHogFeaturesInputValidator(vx_node node, vx_uint32
             {
                 vx_enum format = -1;
                 vxQueryTensor(mag, VX_TENSOR_DATA_TYPE, &format, sizeof(format));
-                if (format == VX_TYPE_INT8)
+                if (format == VX_TYPE_INT16)
                 {
 
                     status = VX_SUCCESS;

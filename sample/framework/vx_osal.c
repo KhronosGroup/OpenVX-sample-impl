@@ -155,7 +155,7 @@ vx_bool ownSemTryWait(vx_sem_t *sem)
         return vx_false_e;
 }
 
-vx_bool ownDeinitEvent(vx_event_t *e)
+vx_bool ownDeinitEvent(vx_internal_event_t *e)
 {
 #if defined(__linux__) || defined(__ANDROID__) || defined(__QNX__) || defined(__CYGWIN__) || defined(__APPLE__)
     int err = 0;
@@ -176,7 +176,7 @@ vx_bool ownDeinitEvent(vx_event_t *e)
 #endif
 }
 
-vx_bool ownInitEvent(vx_event_t *e, vx_bool autoreset)
+vx_bool ownInitEvent(vx_internal_event_t *e, vx_bool autoreset)
 {
 #if defined(__linux__) || defined(__ANDROID__) || defined(__QNX__) || defined(__CYGWIN__) || defined(__APPLE__)
     int err = 0;
@@ -199,7 +199,7 @@ vx_bool ownInitEvent(vx_event_t *e, vx_bool autoreset)
 }
 
 #if defined(__linux__) || defined(__ANDROID__) || defined(__QNX__) || defined(__CYGWIN__) || defined(__APPLE__)
-vx_bool ownWaitEventInternal(vx_event_t *e, vx_uint32 ms)
+vx_bool ownWaitEventInternal(vx_internal_event_t *e, vx_uint32 ms)
 {
     int retcode = 0;
     vx_bool ret = vx_false_e;
@@ -230,7 +230,7 @@ vx_bool ownWaitEventInternal(vx_event_t *e, vx_uint32 ms)
 }
 #endif
 
-vx_bool ownWaitEvent(vx_event_t *e, vx_uint32 timeout)
+vx_bool ownWaitEvent(vx_internal_event_t *e, vx_uint32 timeout)
 {
     vx_bool ret = vx_false_e;
 #if defined(__linux__) || defined(__ANDROID__) || defined(__QNX__) || defined(__CYGWIN__) || defined(__APPLE__)
@@ -257,7 +257,7 @@ vx_bool ownWaitEvent(vx_event_t *e, vx_uint32 timeout)
     return ret;
 }
 
-vx_bool ownSetEvent(vx_event_t *e)
+vx_bool ownSetEvent(vx_internal_event_t *e)
 {
 #if defined(__linux__) || defined(__ANDROID__) || defined(__QNX__) || defined(__CYGWIN__) || defined(__APPLE__)
     int err = 0;
@@ -274,7 +274,7 @@ vx_bool ownSetEvent(vx_event_t *e)
 #endif
 }
 
-vx_bool ownResetEvent(vx_event_t *e)
+vx_bool ownResetEvent(vx_internal_event_t *e)
 {
 #if defined(__linux__) || defined(__ANDROID__) || defined(__QNX__) || defined(__CYGWIN__) || defined(__APPLE__)
     pthread_mutex_lock(&e->mutex);

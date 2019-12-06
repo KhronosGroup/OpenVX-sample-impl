@@ -1,4 +1,4 @@
-/* 
+/*
 
  * Copyright (c) 2012-2017 The Khronos Group Inc.
  *
@@ -46,7 +46,7 @@ static vx_status VX_CALLBACK vxBinaryBitwiseInputValidator(vx_node node, vx_uint
         {
             vx_df_image format = 0;
             vxQueryImage(input, VX_IMAGE_FORMAT, &format, sizeof(format));
-            if (format == VX_DF_IMAGE_U8)
+            if (format == VX_DF_IMAGE_U1 || format == VX_DF_IMAGE_U8)
                 status = VX_SUCCESS;
             vxReleaseImage(&input);
         }
@@ -99,11 +99,13 @@ static vx_status VX_CALLBACK vxBinaryBitwiseOutputValidator(vx_node node, vx_uin
              */
             if (image0)
             {
+                vx_df_image format = 0;
                 vx_uint32 width = 0, height = 0;
+                vxQueryImage(image0, VX_IMAGE_FORMAT, &format, sizeof(format));
                 vxQueryImage(image0, VX_IMAGE_WIDTH, &width, sizeof(width));
                 vxQueryImage(image0, VX_IMAGE_HEIGHT, &height, sizeof(height));
                 ptr->type = VX_TYPE_IMAGE;
-                ptr->dim.image.format = VX_DF_IMAGE_U8;
+                ptr->dim.image.format = format;
                 ptr->dim.image.width = width;
                 ptr->dim.image.height = height;
                 status = VX_SUCCESS;
@@ -214,7 +216,7 @@ static vx_status VX_CALLBACK vxUnaryBitwiseInputValidator(vx_node node, vx_uint3
         {
             vx_df_image format = 0;
             vxQueryImage(input, VX_IMAGE_FORMAT, &format, sizeof(format));
-            if (format == VX_DF_IMAGE_U8)
+            if (format == VX_DF_IMAGE_U1 || format == VX_DF_IMAGE_U8)
                 status = VX_SUCCESS;
             vxReleaseImage(&input);
         }
@@ -235,11 +237,13 @@ static vx_status VX_CALLBACK vxUnaryBitwiseOutputValidator(vx_node node, vx_uint
             vxQueryParameter(param, VX_PARAMETER_REF, &inimage, sizeof(inimage));
             if (inimage)
             {
+                vx_df_image format = 0;
                 vx_uint32 width = 0, height = 0;
+                vxQueryImage(inimage, VX_IMAGE_FORMAT, &format, sizeof(format));
                 vxQueryImage(inimage, VX_IMAGE_WIDTH, &width, sizeof(width));
                 vxQueryImage(inimage, VX_IMAGE_HEIGHT, &height, sizeof(height));
                 ptr->type = VX_TYPE_IMAGE;
-                ptr->dim.image.format = VX_DF_IMAGE_U8;
+                ptr->dim.image.format = format;
                 ptr->dim.image.width = width;
                 ptr->dim.image.height = height;
                 status = VX_SUCCESS;

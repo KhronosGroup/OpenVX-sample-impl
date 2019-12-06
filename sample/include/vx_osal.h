@@ -104,27 +104,27 @@ void ownPrintPerf(vx_perf_t *perf);
 /*! \brief
  * \ingroup group_int_osal
  */
-vx_bool ownDeinitEvent(vx_event_t *e);
+vx_bool ownDeinitEvent(vx_internal_event_t *e);
 
 /*! \brief
  * \ingroup group_int_osal
  */
-vx_bool ownInitEvent(vx_event_t *e, vx_bool autoreset);
+vx_bool ownInitEvent(vx_internal_event_t *e, vx_bool autoreset);
 
 /*! \brief
  * \ingroup group_int_osal
  */
-vx_bool ownWaitEvent(vx_event_t *e, vx_uint32 timeout);
+vx_bool ownWaitEvent(vx_internal_event_t *e, vx_uint32 timeout);
 
 /*! \brief
  * \ingroup group_int_osal
  */
-vx_bool ownSetEvent(vx_event_t *e);
+vx_bool ownSetEvent(vx_internal_event_t *e);
 
 /*! \brief
  * \ingroup group_int_osal
  */
-vx_bool ownResetEvent(vx_event_t *e);
+vx_bool ownResetEvent(vx_internal_event_t *e);
 
 /*! \brief
  * \ingroup group_int_osal

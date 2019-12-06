@@ -82,18 +82,29 @@ def main():
     parser.add_option("--rebuild", dest="rebuild", help="Rebuild the targets (Use it when you add source file) [Default False]", default='False')
     parser.add_option("--package", dest="package", help="Build packages", default='False')
     parser.add_option('--dump_commands', dest='dump_commands', help='Add -DCMAKE_EXPORT_COMPILE_COMMANDS=ON for YCM and other tools', default=False, action='store_true')
+    # Feature sets
+    parser.add_option("--conf_vision", dest="conf_vision", help="Add -DOPENVX_CONFORMANCE_VISION=ON to support the Vision conformance feature set", default=False, action='store_true')
+    parser.add_option("--conf_nn", dest="conf_nn", help="Add -DOPENVX_CONFORMANCE_NEURAL_NETWORKS=ON to support the Neural Networks conformance feature set", default=False, action='store_true')
+    parser.add_option("--conf_nnef", dest="conf_nnef", help="Add -DOPENVX_CONFORMANCE_NNEF_IMPORT=ON to support the NNEF Import conformance feature set", default=False, action='store_true')
+    parser.add_option("--enh_vision", dest="enh_vision", help="Add -DOPENVX_USE_ENHANCED_VISION=ON to support the Enhanced Vision feature set", default=False, action='store_true')
     # Official extensions
     parser.add_option("--ix", dest="ix", help="Add -DOPENVX_USE_IX=ON to support the import-export extension", default=False, action='store_true')
     parser.add_option("--nn", dest="nn", help="Add -DOPENVX_USE_NN=ON to support the neural network extension", default=False, action='store_true')
-    parser.add_option("--opencl", dest="opencl", help="Add -DOPENVX_USE_OPENCL_INTEROP=ON to support OpenVX OpenCL InterOp", default=False, action='store_true')
+    parser.add_option("--pipelining", dest="pipelining", help="Add -DOPENVX_USE_PIPELINING=ON to support the pipelining extension", default=False, action='store_true')
+    parser.add_option("--streaming", dest="streaming", help="Add -DOPENVX_USE_STREAMING=ON to support the streaming extension", default=False, action='store_true')
+    parser.add_option("--opencl_interop", dest="opencl_interop", help="Add -DOPENVX_USE_OPENCL_INTEROP=ON to support OpenVX OpenCL InterOp", default=False, action='store_true')
     # Provisional extensions
     parser.add_option("--tiling", dest="tiling", help="Add -DOPENVX_USE_TILING=ON to support the tiling extension", default=False, action='store_true')
     parser.add_option("--s16", dest="s16", help="Add -DOPENVX_USE_S16=ON to have an extended support for S16", default=False, action='store_true')
     # Experimental features
     parser.add_option("--f16", dest="f16", help="Add -DEXPERIMENTAL_PLATFORM_SUPPORTS_16_FLOAT=ON to support VX_TYPE_FLOAT16", default=False, action='store_true')
+    parser.add_option("--venum", dest="venum", help="Add -DEXPERIMENTAL_USE_VENUM=ON to build also raspberrypi 3B+ Neon target[Default False]", default=False, action='store_true')
+    parser.add_option("--opencl", dest="opencl", help="Add -DEXPERIMENTAL_USE_OPENCL=ON to build also OpenCL target [Default False]", default=False, action='store_true')
 
     options, args = parser.parse_args()
     if options.env_vars != "False":
+        print("VX_OPENCL_INCLUDE_PATH - OpenCL include files location")
+        print("VX_OPENCL_LIB_PATH - OpenCL libraries location")
         print("ANDROID_NDK_TOOLCHAIN_ROOT - ANDROID toolchain installation path")
         return
 
@@ -111,6 +122,10 @@ def main():
 
     arch = arch_enum.x64
     if options.arch == "32":
+        arch = arch_enum.x32
+
+    # set the arch enum to x32 if use --venum/--tiling/--opencl
+    if options.venum or options.tiling or options.opencl:
         arch = arch_enum.x32
 
     conf = configuration_enum.Release
@@ -183,20 +198,36 @@ def main():
         cmd += ['-DBUILD_PACKAGES=1']
     if options.dump_commands:
         cmd += ['-DCMAKE_EXPORT_COMPILE_COMMANDS=ON']
+    if options.conf_vision:
+        cmd += ['-DOPENVX_CONFORMANCE_VISION=ON']
+    if options.conf_nn:
+        cmd += ['-DOPENVX_CONFORMANCE_NEURAL_NETWORKS=ON']
+    if options.conf_nnef:
+        cmd += ['-DOPENVX_CONFORMANCE_NNEF_IMPORT=ON']
+    if options.enh_vision:
+        cmd += ['-DOPENVX_USE_ENHANCED_VISION=ON']
     if options.ix:
         cmd += ['-DOPENVX_USE_IX=ON']
     if options.nn:
         cmd += ['-DOPENVX_USE_NN=ON']
-    if options.opencl:
+    if options.opencl_interop:
         cmd += ['-DOPENVX_USE_OPENCL_INTEROP=ON']
 #    if options.nn16:
 #        cmd += ['-DOPENVX_USE_NN_16=ON']
+    if options.pipelining:
+        cmd += ['-DOPENVX_USE_PIPELINING=ON']
+    if options.streaming:
+        cmd += ['-DOPENVX_USE_STREAMING=ON']
     if options.tiling:
         cmd += ['-DOPENVX_USE_TILING=ON']
     if options.s16:
         cmd += ['-DOPENVX_USE_S16=ON']
     if options.f16:
         cmd += ['-DEXPERIMENTAL_PLATFORM_SUPPORTS_16_FLOAT=ON']
+    if options.venum:
+        cmd += ['-DEXPERIMENTAL_USE_VENUM=ON']
+    if options.opencl:
+        cmd += ['-DEXPERIMENTAL_USE_OPENCL=ON']
     cmd = ' '.join(cmd)
 
     print( "" )

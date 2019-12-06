@@ -691,7 +691,6 @@ static vx_param_description_t laplacian_pyramid_kernel_params[] =
 
 static vx_status VX_CALLBACK vxLaplacianPyramidKernel(vx_node node, const vx_reference parameters[], vx_uint32 num)
 {
-
     vx_status status = VX_FAILURE;
     (void)node;
     (void)parameters;
@@ -701,7 +700,6 @@ static vx_status VX_CALLBACK vxLaplacianPyramidKernel(vx_node node, const vx_ref
         status = VX_SUCCESS;
     }
     return status;
-
 }
 
 static vx_status VX_CALLBACK vxLaplacianPyramidInputValidator(vx_node node, vx_uint32 index)

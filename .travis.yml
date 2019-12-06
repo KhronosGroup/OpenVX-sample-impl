@@ -16,7 +16,7 @@ addons:
             - lcov
   
 branches:
-  - openvx_1.2
+  - openvx_1.3
 
 before_script:
   - git submodule sync --recursive

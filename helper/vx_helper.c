@@ -1,4 +1,4 @@
-/* 
+/*
 
  * Copyright (c) 2012-2017 The Khronos Group Inc.
  *
@@ -328,7 +328,8 @@ void vxReadRectangle(const void *base,
                      vx_uint32 center_y,
                      vx_uint32 radius_x,
                      vx_uint32 radius_y,
-                     void *destination)
+                     void *destination,
+                     vx_uint32 border_x_start)
 {
 #if 0
     /* strides are not modified by scaled planes, they are byte distances from allocators */
@@ -394,10 +395,11 @@ void vxReadRectangle(const void *base,
     vx_int32 width = (vx_int32)addr->dim_x, height = (vx_int32)addr->dim_y;
     vx_int32 stride_y = addr->stride_y;
     vx_int32 stride_x = addr->stride_x;
+    vx_uint16 stride_x_bits = addr->stride_x_bits;
     const vx_uint8 *ptr = (const vx_uint8 *)base;
     vx_int32 ky, kx;
     vx_uint32 dest_index = 0;
-    // kx, kx - kernel x and y
+    // kx, ky - kernel x and y
     if( borders->mode == VX_BORDER_REPLICATE || borders->mode == VX_BORDER_UNDEFINED )
     {
         for (ky = -(int32_t)radius_y; ky <= (int32_t)radius_y; ++ky)
@@ -408,10 +410,14 @@ void vxReadRectangle(const void *base,
             for (kx = -(int32_t)radius_x; kx <= (int32_t)radius_x; ++kx, ++dest_index)
             {
                 vx_int32 x = (int32_t)(center_x + kx);
-                x = x < 0 ? 0 : x >= width ? width - 1 : x;
+                x = x < (int32_t)border_x_start ? (int32_t)border_x_start : x >= width ? width - 1 : x;
 
                 switch(type)
                 {
+                case VX_DF_IMAGE_U1:
+                    ((vx_uint8*)destination)[dest_index] =
+                        ( *(vx_uint8*)(ptr + y*stride_y + vxDivFloor(x*stride_x_bits, 8)) & (1 << (x % 8)) ) >> (x % 8);
+                    break;
                 case VX_DF_IMAGE_U8:
                     ((vx_uint8*)destination)[dest_index] = *(vx_uint8*)(ptr + y*stride_y + x*stride_x);
                     break;
@@ -443,10 +449,17 @@ void vxReadRectangle(const void *base,
             for (kx = -(int32_t)radius_x; kx <= (int32_t)radius_x; ++kx, ++dest_index)
             {
                 vx_int32 x = (int32_t)(center_x + kx);
-                int ccase = ccase_y || x < 0 || x >= width;
+                int ccase = ccase_y || x < (int32_t)border_x_start || x >= width;
 
                 switch(type)
                 {
+                    case VX_DF_IMAGE_U1:
+                        if( !ccase )
+                            ((vx_uint8*)destination)[dest_index] =
+                                ( *(vx_uint8*)(ptr + y*stride_y + vxDivFloor(x*stride_x_bits, 8)) & (1 << (x % 8)) ) >> (x % 8);
+                        else
+                            ((vx_uint8*)destination)[dest_index] = (vx_uint8)(cval.U1 ? 1 : 0);
+                        break;
                     case VX_DF_IMAGE_U8:
                         if( !ccase )
                             ((vx_uint8*)destination)[dest_index] = *(vx_uint8*)(ptr + y*stride_y + x*stride_x);
@@ -485,6 +498,15 @@ void vxReadRectangle(const void *base,
     else
         abort();
 #endif
+}
+
+// Integer division with rounding towards minus infinity
+vx_int64 vxDivFloor(vx_int64 x, vx_int64 y) {
+    vx_int64 q = x / y;
+    vx_int64 r = x % y;
+    if ( (r != 0) && ((r < 0) != (y < 0)) )
+        --q;
+    return q;
 }
 
 #if __STDC_VERSION__ == 199901L // C99

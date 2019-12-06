@@ -1,4 +1,4 @@
-/* 
+/*
 
  * Copyright (c) 2012-2017 The Khronos Group Inc.
  *
@@ -59,7 +59,8 @@ static vx_status VX_CALLBACK vxMeanStdDevInputValidator(vx_node node, vx_uint32 
         {
             status = VX_SUCCESS;
             vxQueryImage(image, VX_IMAGE_FORMAT, &format, sizeof(format));
-            if (format != VX_DF_IMAGE_U8
+            if (format != VX_DF_IMAGE_U1
+                && format != VX_DF_IMAGE_U8
 #if defined(OPENVX_USE_S16)
                 && format != VX_DF_IMAGE_U16
 #endif

@@ -83,7 +83,8 @@ static vx_status VX_CALLBACK vxNonMaxSuppressionInputValidator(vx_node node, vx_
             vxQueryImage(images[0], VX_IMAGE_HEIGHT, &height[0], sizeof(height[0]));
             vxQueryImage(images[1], VX_IMAGE_HEIGHT, &height[1], sizeof(height[1]));
             vxQueryImage(images[1], VX_IMAGE_FORMAT, &format, sizeof(format));
-            if (width[0] == width[1] && height[0] == height[1] && format == VX_DF_IMAGE_U8)
+            if ( (width[0] == width[1]) && (height[0] == height[1]) &&
+                 (format == VX_DF_IMAGE_U1 || format == VX_DF_IMAGE_U8) )
             {
                 status = VX_SUCCESS;
             }
@@ -152,7 +153,7 @@ static vx_status VX_CALLBACK vxNonMaxSuppressionOutputValidator(vx_node node, vx
                 vxQueryImage(img, VX_IMAGE_WIDTH, &width, sizeof(width));
                 vxQueryImage(img, VX_IMAGE_HEIGHT, &height, sizeof(height));
                 vxQueryImage(img, VX_IMAGE_FORMAT, &format, sizeof(format));
-                
+
                 /* fill in the meta data with the attributes so that the checker will pass */
                 ptr->type = VX_TYPE_IMAGE;
                 ptr->dim.image.format = format;

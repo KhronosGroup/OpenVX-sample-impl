@@ -1,4 +1,4 @@
-/* 
+/*
 
  * Copyright (c) 2012-2017 The Khronos Group Inc.
  *
@@ -58,6 +58,7 @@ static vx_status VX_CALLBACK vxConvertDepthInputValidator(vx_node node, vx_uint3
                 vx_df_image format = 0;
                 status = vxQueryImage(input, VX_IMAGE_FORMAT, &format, sizeof(format));
                 if ((status != VX_SUCCESS) ||
+                    (format == VX_DF_IMAGE_U1)  ||
                     (format == VX_DF_IMAGE_U8)  ||
 #if defined(OPENVX_USE_S16)
                     (format == VX_DF_IMAGE_U16) ||
@@ -175,8 +176,15 @@ static vx_status VX_CALLBACK vxConvertDepthOutputValidator(vx_node node, vx_uint
                 status |= vxQueryImage(images[0], VX_IMAGE_HEIGHT, &height, sizeof(height));
                 status |= vxQueryImage(images[0], VX_IMAGE_FORMAT, &format[0], sizeof(format[0]));
                 status |= vxQueryImage(images[1], VX_IMAGE_FORMAT, &format[1], sizeof(format[1]));
-                if (((format[0] == VX_DF_IMAGE_U8)  && (format[1] == VX_DF_IMAGE_S16)) ||
+                if (((format[0] == VX_DF_IMAGE_U1)  && (format[1] == VX_DF_IMAGE_U8))  ||
+                    ((format[0] == VX_DF_IMAGE_U1)  && (format[1] == VX_DF_IMAGE_S16)) ||
+                    ((format[0] == VX_DF_IMAGE_U8)  && (format[1] == VX_DF_IMAGE_U1))  ||
+                    ((format[0] == VX_DF_IMAGE_U8)  && (format[1] == VX_DF_IMAGE_S16)) ||
 #if defined(OPENVX_USE_S16)
+                    ((format[0] == VX_DF_IMAGE_U1)  && (format[1] == VX_DF_IMAGE_U16)) ||
+                    ((format[0] == VX_DF_IMAGE_U1)  && (format[1] == VX_DF_IMAGE_U32)) ||
+                    ((format[0] == VX_DF_IMAGE_U16) && (format[1] == VX_DF_IMAGE_U1))  ||
+                    ((format[0] == VX_DF_IMAGE_U32) && (format[1] == VX_DF_IMAGE_U1))  ||
                     ((format[0] == VX_DF_IMAGE_U8)  && (format[1] == VX_DF_IMAGE_U16)) ||
                     ((format[0] == VX_DF_IMAGE_U8)  && (format[1] == VX_DF_IMAGE_U32)) ||
                     ((format[0] == VX_DF_IMAGE_U16) && (format[1] == VX_DF_IMAGE_U8))  ||
@@ -187,6 +195,7 @@ static vx_status VX_CALLBACK vxConvertDepthOutputValidator(vx_node node, vx_uint
                     ((format[0] == VX_DF_IMAGE_S32) && (format[1] == VX_DF_IMAGE_S16)) ||
                     ((format[0] == VX_DF_IMAGE_F32) && (format[1] == VX_DF_IMAGE_U8))  || /* non-specification */
 #endif
+                    ((format[0] == VX_DF_IMAGE_S16) && (format[1] == VX_DF_IMAGE_U1))  ||
                     ((format[0] == VX_DF_IMAGE_S16) && (format[1] == VX_DF_IMAGE_U8)))
                 {
                     ptr->type = VX_TYPE_IMAGE;

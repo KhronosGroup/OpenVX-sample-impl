@@ -22,6 +22,8 @@
  */
 
 #include <vx_examples.h>
+#include <VX/vx_compatibility.h>  // needed for the old vxAccumulateWeightedImageNode
+                                  // TODO: replace this with the new vxWeightedAverageNode
 
 void userCalculatePerspectiveTransformFromLK(vx_matrix matrix_forward, vx_matrix matrix_backward, vx_array old_features,
         vx_array new_features)

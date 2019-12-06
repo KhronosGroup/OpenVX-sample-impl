@@ -1,4 +1,4 @@
-/* 
+/*
 
  * Copyright (c) 2012-2017 The Khronos Group Inc.
  *
@@ -31,7 +31,35 @@
  */
 #define AREA_SCALE_ENABLE 0 /* TODO enable this again after changing implementation in sample/targets/vx_scale.c */
 
-static vx_bool read_pixel(void *base, vx_imagepatch_addressing_t *addr,
+static vx_bool read_pixel_1u(void *base, vx_imagepatch_addressing_t *addr, vx_int32 x, vx_int32 y,
+                             const vx_border_t *borders, vx_uint8 *pixel, vx_uint32 shift_x_u1)
+{
+    vx_bool out_of_bounds = (x <  (vx_int32)shift_x_u1  || y <  0 ||
+                             x >= (vx_int32)addr->dim_x || y >= (vx_int32)addr->dim_y);
+    vx_uint32 bx, by;
+    vx_uint8 *bpixel_group;
+    if (out_of_bounds)
+    {
+        if (borders->mode == VX_BORDER_UNDEFINED)
+            return vx_false_e;
+        if (borders->mode == VX_BORDER_CONSTANT)
+        {
+            *pixel = (vx_uint8)(borders->constant_value.U1 ? 1 : 0);
+            return vx_true_e;
+        }
+    }
+
+    // bounded x/y
+    bx = x < (vx_int32)shift_x_u1 ? shift_x_u1 : x >= (vx_int32)addr->dim_x ? addr->dim_x - 1 : (vx_uint32)x;
+    by = y < 0                    ? 0          : y >= (vx_int32)addr->dim_y ? addr->dim_y - 1 : (vx_uint32)y;
+
+    bpixel_group = (vx_uint8*)vxFormatImagePatchAddress2d(base, bx, by, addr);
+    *pixel = (*bpixel_group & (1 << (bx % 8))) >> (bx % 8);
+
+    return vx_true_e;
+}
+
+static vx_bool read_pixel_8u(void *base, vx_imagepatch_addressing_t *addr,
         vx_int32 x, vx_int32 y, const vx_border_t *borders, vx_uint8 *pixel)
 {
     vx_bool out_of_bounds = (x < 0 || y < 0 || x >= (vx_int32)addr->dim_x || y >= (vx_int32)addr->dim_y);
@@ -52,7 +80,7 @@ static vx_bool read_pixel(void *base, vx_imagepatch_addressing_t *addr,
     bx = x < 0 ? 0 : x >= (vx_int32)addr->dim_x ? addr->dim_x - 1 : (vx_uint32)x;
     by = y < 0 ? 0 : y >= (vx_int32)addr->dim_y ? addr->dim_y - 1 : (vx_uint32)y;
 
-    bpixel = vxFormatImagePatchAddress2d(base, bx, by, addr);
+    bpixel = (vx_uint8*)vxFormatImagePatchAddress2d(base, bx, by, addr);
     *pixel = *bpixel;
 
     return vx_true_e;
@@ -93,7 +121,7 @@ static vx_bool read_pixel_16s(void *base, vx_imagepatch_addressing_t *addr,
 static vx_status vxNearestScaling(vx_image src_image, vx_image dst_image, const vx_border_t *borders)
 {
     vx_status status = VX_SUCCESS;
-    vx_int32 x1,y1,x2,y2;
+    vx_int32 x1, y1, x2, y2;
     void *src_base = NULL, *dst_base = NULL;
     vx_rectangle_t src_rect, dst_rect;
     vx_imagepatch_addressing_t src_addr, dst_addr;
@@ -108,15 +136,12 @@ static vx_status vxNearestScaling(vx_image src_image, vx_image dst_image, const 
     vxQueryImage(dst_image, VX_IMAGE_WIDTH, &w2, sizeof(w2));
     vxQueryImage(dst_image, VX_IMAGE_HEIGHT, &h2, sizeof(h2));
 
-    src_rect.start_x = src_rect.start_y = 0;
-    src_rect.end_x = w1;
-    src_rect.end_y = h1;
-
     dst_rect.start_x = dst_rect.start_y = 0;
     dst_rect.end_x = w2;
     dst_rect.end_y = h2;
 
     status = VX_SUCCESS;
+    status |= vxGetValidRegionImage(src_image, &src_rect);
     status |= vxAccessImagePatch(src_image, &src_rect, 0, &src_addr, &src_base, VX_READ_ONLY);
     status |= vxAccessImagePatch(dst_image, &dst_rect, 0, &dst_addr, &dst_base, VX_WRITE_ONLY);
 
@@ -127,30 +152,62 @@ static vx_status vxNearestScaling(vx_image src_image, vx_image dst_image, const 
     {
         for (x2 = 0; x2 < (vx_int32)w2; x2++)
         {
-            if (VX_DF_IMAGE_U8 == format)
+            if (VX_DF_IMAGE_U1 == format)
             {
                 vx_uint8 v = 0;
-                vx_uint8 *dst = vxFormatImagePatchAddress2d(dst_base, x2, y2, &dst_addr);
+                vx_uint8 *dst = (vx_uint8*)vxFormatImagePatchAddress2d(dst_base, x2, y2, &dst_addr);
                 vx_float32 x_src = ((vx_float32)x2 + 0.5f)*wr - 0.5f;
                 vx_float32 y_src = ((vx_float32)y2 + 0.5f)*hr - 0.5f;
+
+                // Switch to coordinates in the mapped image patch
+                x_src = x_src - src_rect.start_x + src_rect.start_x % 8;
+                y_src = y_src - src_rect.start_y;
                 vx_float32 x_min = floorf(x_src);
                 vx_float32 y_min = floorf(y_src);
                 x1 = (vx_int32)x_min;
                 y1 = (vx_int32)y_min;
+
+                if (x_src - x_min >= 0.5f)
+                    x1++;
+                if (y_src - y_min >= 0.5f)
+                    y1++;
+
+                if (dst && vx_true_e == read_pixel_1u(src_base, &src_addr, x1, y1, borders, &v, src_rect.start_x % 8))
+                    *dst = (*dst & ~(1 << (x2 % 8))) | (v << (x2 % 8));
+            }
+            else if (VX_DF_IMAGE_U8 == format)
+            {
+                vx_uint8 v = 0;
+                vx_uint8 *dst = (vx_uint8*)vxFormatImagePatchAddress2d(dst_base, x2, y2, &dst_addr);
+                vx_float32 x_src = ((vx_float32)x2 + 0.5f)*wr - 0.5f;
+                vx_float32 y_src = ((vx_float32)y2 + 0.5f)*hr - 0.5f;
+
+                // Switch to coordinates in the mapped image patch
+                x_src = x_src - src_rect.start_x;
+                y_src = y_src - src_rect.start_y;
+                vx_float32 x_min = floorf(x_src);
+                vx_float32 y_min = floorf(y_src);
+                x1 = (vx_int32)x_min;
+                y1 = (vx_int32)y_min;
+
                 if (x_src - x_min >= 0.5f)
                     x1++;
                 if (y_src - y_min >= 0.5f)
                     y1++;
                 //printf("x2,y2={%u,%u} => x1,y1={%u,%u}\n", x2,y2,x1,y1);
-                if (dst && vx_true_e == read_pixel(src_base, &src_addr, x1, y1, borders, &v))
+                if (dst && vx_true_e == read_pixel_8u(src_base, &src_addr, x1, y1, borders, &v))
                     *dst = v;
             }
             else
             {
                 vx_int16 v = 0;
-                vx_int16* dst = vxFormatImagePatchAddress2d(dst_base, x2, y2, &dst_addr);
+                vx_int16* dst = (vx_int16*)vxFormatImagePatchAddress2d(dst_base, x2, y2, &dst_addr);
                 vx_float32 x_src = ((vx_float32)x2 + 0.5f)*wr - 0.5f;
                 vx_float32 y_src = ((vx_float32)y2 + 0.5f)*hr - 0.5f;
+
+                // Switch to coordinates in the mapped image patch
+                x_src = x_src - src_rect.start_x;
+                y_src = y_src - src_rect.start_y;
                 vx_float32 x_min = floorf(x_src);
                 vx_float32 y_min = floorf(y_src);
                 x1 = (vx_int32)x_min;
@@ -176,27 +233,27 @@ static vx_status vxNearestScaling(vx_image src_image, vx_image dst_image, const 
 static vx_status vxBilinearScaling(vx_image src_image, vx_image dst_image, const vx_border_t *borders)
 {
     vx_status status = VX_SUCCESS;
-    vx_int32 x2,y2;
+    vx_int32 x2, y2;
     void *src_base = NULL, *dst_base = NULL;
     vx_rectangle_t src_rect, dst_rect;
     vx_imagepatch_addressing_t src_addr, dst_addr;
     vx_uint32 w1 = 0, h1 = 0, w2 = 0, h2 = 0;
     vx_float32 wr, hr;
+    vx_df_image format = 0;
 
     vxQueryImage(src_image, VX_IMAGE_WIDTH, &w1, sizeof(w1));
     vxQueryImage(src_image, VX_IMAGE_HEIGHT, &h1, sizeof(h1));
+    vxQueryImage(src_image, VX_IMAGE_FORMAT, &format, sizeof(format));
+
     vxQueryImage(dst_image, VX_IMAGE_WIDTH, &w2, sizeof(w2));
     vxQueryImage(dst_image, VX_IMAGE_HEIGHT, &h2, sizeof(h2));
-
-    src_rect.start_x = src_rect.start_y = 0;
-    src_rect.end_x = w1;
-    src_rect.end_y = h1;
 
     dst_rect.start_x = dst_rect.start_y = 0;
     dst_rect.end_x = w2;
     dst_rect.end_y = h2;
 
     status = VX_SUCCESS;
+    status |= vxGetValidRegionImage(src_image, &src_rect);
     status |= vxAccessImagePatch(src_image, &src_rect, 0, &src_addr, &src_base, VX_READ_ONLY);
     status |= vxAccessImagePatch(dst_image, &dst_rect, 0, &dst_addr, &dst_base, VX_WRITE_ONLY);
 
@@ -208,19 +265,35 @@ static vx_status vxBilinearScaling(vx_image src_image, vx_image dst_image, const
         for (x2 = 0; x2 < (vx_int32)w2; x2++)
         {
             vx_uint8 tl = 0, tr = 0, bl = 0, br = 0;
-            vx_uint8 *dst = vxFormatImagePatchAddress2d(dst_base, x2, y2, &dst_addr);
+            vx_uint8 *dst = (vx_uint8*)vxFormatImagePatchAddress2d(dst_base, x2, y2, &dst_addr);
             vx_float32 x_src = ((vx_float32)x2+0.5f)*wr - 0.5f;
             vx_float32 y_src = ((vx_float32)y2+0.5f)*hr - 0.5f;
+
+            // Switch to coordinates in the mapped image patch
+            x_src = x_src - src_rect.start_x + (format == VX_DF_IMAGE_U1 ? src_rect.start_x % 8 : 0);
+            y_src = y_src - src_rect.start_y;
             vx_float32 x_min = floorf(x_src);
             vx_float32 y_min = floorf(y_src);
             vx_int32 x1 = (vx_int32)x_min;
             vx_int32 y1 = (vx_int32)y_min;
             vx_float32 s = x_src - x_min;
             vx_float32 t = y_src - y_min;
-            vx_bool defined_tl = read_pixel(src_base, &src_addr, x1 + 0, y1 + 0, borders, &tl);
-            vx_bool defined_tr = read_pixel(src_base, &src_addr, x1 + 1, y1 + 0, borders, &tr);
-            vx_bool defined_bl = read_pixel(src_base, &src_addr, x1 + 0, y1 + 1, borders, &bl);
-            vx_bool defined_br = read_pixel(src_base, &src_addr, x1 + 1, y1 + 1, borders, &br);
+
+            vx_bool defined_tl, defined_tr, defined_bl, defined_br;
+            if (format == VX_DF_IMAGE_U1)
+            {
+                defined_tl = read_pixel_1u(src_base, &src_addr, x1 + 0, y1 + 0, borders, &tl, src_rect.start_x % 8);
+                defined_tr = read_pixel_1u(src_base, &src_addr, x1 + 1, y1 + 0, borders, &tr, src_rect.start_x % 8);
+                defined_bl = read_pixel_1u(src_base, &src_addr, x1 + 0, y1 + 1, borders, &bl, src_rect.start_x % 8);
+                defined_br = read_pixel_1u(src_base, &src_addr, x1 + 1, y1 + 1, borders, &br, src_rect.start_x % 8);
+            }
+            else
+            {
+                defined_tl = read_pixel_8u(src_base, &src_addr, x1 + 0, y1 + 0, borders, &tl);
+                defined_tr = read_pixel_8u(src_base, &src_addr, x1 + 1, y1 + 0, borders, &tr);
+                defined_bl = read_pixel_8u(src_base, &src_addr, x1 + 0, y1 + 1, borders, &bl);
+                defined_br = read_pixel_8u(src_base, &src_addr, x1 + 1, y1 + 1, borders, &br);
+            }
             vx_bool defined = defined_tl & defined_tr & defined_bl & defined_br;
             if (defined == vx_false_e)
             {
@@ -238,6 +311,7 @@ static vx_status vxBilinearScaling(vx_image src_image, vx_image dst_image, const
                     defined = defined_tl & defined_tr & defined_bl & defined_br;
                 }
             }
+
             if (defined == vx_true_e)
             {
                 vx_float32 ref =
@@ -246,26 +320,34 @@ static vx_status vxBilinearScaling(vx_image src_image, vx_image dst_image, const
                         (1 - s) * (    t) * bl +
                         (    s) * (    t) * br;
                 vx_uint8 ref_8u;
-                if (ref > 255)
+                if (format == VX_DF_IMAGE_U1)   // Rounding instead of thresholding for U1 images
+                    ref = ref + 0.5f;
+
+                if (format == VX_DF_IMAGE_U8 && ref > 255)
                     ref_8u = 255;
-                // numbers are non-negative
-                //else if (ref < 0)
-                //    ref_8u = 0;
+                else if (format == VX_DF_IMAGE_U1 && ref > 1)
+                    ref_8u = 1;
                 else
                     ref_8u = (vx_uint8)ref;
-                if (dst)
+
+                if (dst && format == VX_DF_IMAGE_U1)
+                    *dst = (*dst & ~(1 << (x2 % 8))) | (ref_8u << (x2 % 8));
+                else if (dst && format == VX_DF_IMAGE_U8)
                     *dst = ref_8u;
             }
         }
     }
+
     status |= vxCommitImagePatch(src_image, NULL, 0, &src_addr, src_base);
     status |= vxCommitImagePatch(dst_image, &dst_rect, 0, &dst_addr, dst_base);
+
     return VX_SUCCESS;
 }
 
 #if AREA_SCALE_ENABLE
 static vx_status vxAreaScaling(vx_image src_image, vx_image dst_image, const vx_border_t *borders, vx_float64 *interm, vx_size size)
 {
+    // TODO Implement U1 support for area scaling once the U8 implementation is fixed
     vx_status status = VX_SUCCESS;
     void *src_base = NULL, *dst_base = NULL;
     vx_rectangle_t src_rect, dst_rect;

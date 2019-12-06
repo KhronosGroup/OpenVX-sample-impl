@@ -19,7 +19,7 @@
 #include <c_model.h>
 
 #define VX_PI   3.1415926535897932384626433832795
-static vx_uint64 state = 0xffffffff; 
+static vx_uint64 state = 0xffffffff;
 
 vx_int32 vxRound(vx_float64 value)
 {
@@ -53,28 +53,27 @@ vx_status vxHoughLinesP(vx_image img, vx_array param_hough_lines_array, vx_array
     vx_hough_lines_p_t *param_hough_lines = (vx_hough_lines_p_t *)param_hough_lines_array_ptr;
 
     vx_float32 irho = 1 / param_hough_lines->rho;
-    vx_int32 width, height;
-
-    vx_rectangle_t src_rect;
-    vx_imagepatch_addressing_t src_addr = VX_IMAGEPATCH_ADDR_INIT;
-    void *src_base = NULL;
 
     vx_df_image format = 0;
+    vx_uint32 width = 0, height = 0;
     vxQueryImage(img, VX_IMAGE_FORMAT, &format, sizeof(format));
+    vxQueryImage(img, VX_IMAGE_WIDTH,  &width,  sizeof(width));
+    vxQueryImage(img, VX_IMAGE_HEIGHT, &height, sizeof(height));
 
-    if (format != VX_DF_IMAGE_U8)
+    if (format != VX_DF_IMAGE_U1 && format != VX_DF_IMAGE_U8)
     {
         status = VX_FAILURE;
         return status;
     }
 
-    status = vxGetValidRegionImage(img, &src_rect);
-    status |= vxAccessImagePatch(img, &src_rect, 0, &src_addr, (void **)&src_base, VX_READ_AND_WRITE);
-    
-    width = src_addr.dim_x;
-    height = src_addr.dim_y;
+    vx_rectangle_t src_rect, src_full_rect = {0, 0, width, height};
+    vx_imagepatch_addressing_t src_addr = VX_IMAGEPATCH_ADDR_INIT;
+    void *src_base = NULL;
 
-    int numangle = (int)(((vx_float32)VX_PI)/param_hough_lines->theta);
+    status = vxGetValidRegionImage(img, &src_rect);
+    status |= vxAccessImagePatch(img, &src_full_rect, 0, &src_addr, (void **)&src_base, VX_READ_AND_WRITE);
+
+    int numangle = (int)(((vx_float32)VX_PI) / param_hough_lines->theta);
     int numrho = vxRound(((width + height) * 2 + 1) / param_hough_lines->rho);
 
     vx_rng((vx_uint64)-1);
@@ -84,7 +83,7 @@ vx_status vxHoughLinesP(vx_image img, vx_array param_hough_lines_array, vx_array
     vx_array mask = vxCreateArray(context_houghlines_internal, VX_TYPE_UINT8, width * height);
     vx_array trigtab = vxCreateArray(context_houghlines_internal, VX_TYPE_FLOAT32, numangle * 2);
     vx_array nzloc = vxCreateArray(context_houghlines_internal, VX_TYPE_COORDINATES2D, width * height);
- 
+
     vx_size accum_stride = 0;
     void *accum_ptr = NULL;
     vx_map_id accum_map_id;
@@ -118,11 +117,21 @@ vx_status vxHoughLinesP(vx_image img, vx_array param_hough_lines_array, vx_array
     // stage 1. collect non-zero image points
     for (pt.y = 0; pt.y < (vx_uint32)height; pt.y++)
     {
-        const vx_uint8* data = vxFormatImagePatchAddress2d(src_base, 0, pt.y, &src_addr);
+        const vx_uint8* data = (vx_uint8*)vxFormatImagePatchAddress2d(src_base, 0, pt.y, &src_addr);
         for (pt.x = 0; pt.x < (vx_uint32)width; pt.x++)
         {
             vx_uint8 mdata_in = 0;
-            if (data[pt.x])
+            vx_bool pxl_is_valid = vx_false_e, pxl_is_non_zero = vx_false_e;
+
+            if (pt.y >= src_rect.start_y && pt.y < src_rect.end_y && pt.x >= src_rect.start_x && pt.x < src_rect.end_x)
+                pxl_is_valid = vx_true_e;
+
+            if (pxl_is_valid && format == VX_DF_IMAGE_U1)
+                pxl_is_non_zero = (data[pt.x / 8] & (1 << (pt.x % 8))) ? vx_true_e : vx_false_e;
+            else if (pxl_is_valid)  // format == VX_DF_IMAGE_U8
+                pxl_is_non_zero =  data[pt.x] ? vx_true_e : vx_false_e;
+
+            if (pxl_is_non_zero)
             {
                 mdata_in = 1;
                 vxAddArrayItems(nzloc, 1, &pt, sizeof(vx_coordinates2d_t));
@@ -230,7 +239,7 @@ vx_status vxHoughLinesP(vx_image img, vx_array param_hough_lines_array, vx_array
                     i1 = y;
                 }
 
-                if (j1 < 0 || j1 >= width || i1 < 0 || i1 >= height)
+                if (j1 < 0 || j1 >= (vx_int32)width || i1 < 0 || i1 >= (vx_int32)height)
                     break;
 
                 mdata = mdata0 + i1*width + j1;
@@ -333,7 +342,7 @@ vx_status vxHoughLinesP(vx_image img, vx_array param_hough_lines_array, vx_array
     status |= vxUnmapArrayRange(trigtab, trigtab_map_id);
     status |= vxUnmapArrayRange(nzloc, nzloc_map_id);
     status |= vxUnmapArrayRange(param_hough_lines_array, param_hough_lines_array_map_id);
-    status |= vxCommitImagePatch(img, &src_rect, 0, &src_addr, src_base);
+    status |= vxCommitImagePatch(img, &src_full_rect, 0, &src_addr, src_base);
 
     vxReleaseArray(&accum);
     vxReleaseArray(&mask);

@@ -22,6 +22,15 @@
 const vx_char implementation[VX_MAX_IMPLEMENTATION_NAME] = "khronos.sample";
 
 vx_char targetModules[][VX_MAX_TARGET_NAME] = {
+#if defined(EXPERIMENTAL_USE_OPENCL)
+    "openvx-opencl",
+#endif
+#if defined(OPENVX_USE_TILING)
+    "openvx-tiling_chaining",
+#endif
+#if defined(EXPERIMENTAL_USE_VENUM)
+    "openvx-venum",
+#endif
     "openvx-c_model",
 };
 
@@ -331,6 +340,17 @@ VX_INT_API vx_bool ownMemoryMap(
                     vx_memory_map_extra* extra = (vx_memory_map_extra*)extra_data;
                     context->memory_maps[id].extra.array_data.start = extra->array_data.start;
                     context->memory_maps[id].extra.array_data.end   = extra->array_data.end;
+                }
+                else if (VX_TYPE_TENSOR == ref->type)
+                {
+                    vx_memory_map_extra* extra = (vx_memory_map_extra*)extra_data;
+                    memcpy(context->memory_maps[id].extra.tensor_data.start,
+                           extra->tensor_data.start, sizeof(vx_size) * extra->tensor_data.number_of_dims);
+                    memcpy(context->memory_maps[id].extra.tensor_data.end,
+                           extra->tensor_data.end, sizeof(vx_size) * extra->tensor_data.number_of_dims);
+                    memcpy(context->memory_maps[id].extra.tensor_data.stride,
+                           extra->tensor_data.stride, sizeof(vx_size) * extra->tensor_data.number_of_dims);
+                    context->memory_maps[id].extra.tensor_data.number_of_dims = extra->tensor_data.number_of_dims;
                 }
 
                 *ptr = buf;
@@ -1092,14 +1112,79 @@ VX_API_ENTRY vx_enum VX_API_CALL vxGetUserStructByName(vx_context context, const
     return type;
 }
 
-VX_API_ENTRY vx_enum VX_API_CALL vxRegisterUserStructWithName(vx_context context, vx_size size, const vx_char *name)
+VX_API_ENTRY vx_status VX_API_CALL vxGetUserStructNameByEnum(vx_context context, vx_enum user_struct_type, vx_char* type_name, vx_size name_size)
+{
+    vx_uint32 i = 0;
+    vx_status status = VX_ERROR_INVALID_PARAMETERS;
+
+    if ((ownIsValidContext(context) == vx_true_e) && (user_struct_type != VX_TYPE_INVALID))
+    {
+        for (i = 0; i < VX_INT_MAX_USER_STRUCTS; ++i)
+        {
+            if (user_struct_type == context->user_structs[i].type)
+            {
+                break;
+            }
+        }
+
+        if (i == VX_INT_MAX_USER_STRUCTS)
+        {
+            status = VX_FAILURE;
+        }
+        else
+        {
+            if (name_size < (strlen(context->user_structs[i].name) + 1))
+            {
+                status = VX_ERROR_NO_MEMORY;
+            }
+            else
+            {
+                memcpy(type_name, context->user_structs[i].name,
+                       strlen(context->user_structs[i].name) + 1);
+                status = VX_SUCCESS;
+            }
+        }
+    }
+    return status;
+}
+
+VX_API_ENTRY vx_status VX_API_CALL vxGetUserStructEnumByName(vx_context context, const vx_char* type_name, vx_enum *user_struct_type)
+{
+    vx_status status = VX_FAILURE;
+    vx_uint32 i = 0;
+    vx_size len = 0;
+    if (NULL != type_name)
+    {
+        len = strlen(type_name);
+        if (VX_MAX_REFERENCE_NAME < len)
+        {
+            len = VX_MAX_REFERENCE_NAME;
+        }
+    }
+    if ((ownIsValidContext(context) == vx_true_e) && (len != 0))
+    {
+        for (i = 0; i < VX_INT_MAX_USER_STRUCTS; ++i)
+        {
+            if ((VX_TYPE_INVALID != context->user_structs[i].type) &&
+                (0 == strncmp(context->user_structs[i].name, type_name, len)))
+            {
+                *user_struct_type = context->user_structs[i].type;
+                status = VX_SUCCESS;
+                break;
+            }
+        }
+    }
+    return status;
+}
+
+VX_API_ENTRY vx_enum VX_API_CALL vxRegisterUserStructWithName(vx_context context, vx_size size, const vx_char *type_name)
 {
     vx_enum type = VX_TYPE_INVALID;
     vx_uint32 i = 0;
 
     if ((ownIsValidContext(context) == vx_true_e) &&
         (size != 0) &&
-        VX_TYPE_INVALID == vxGetUserStructByName(context, name))
+        VX_TYPE_INVALID == vxGetUserStructByName(context, type_name))
     {
         for (i = 0; i < VX_INT_MAX_USER_STRUCTS; ++i)
         {
@@ -1107,7 +1192,7 @@ VX_API_ENTRY vx_enum VX_API_CALL vxRegisterUserStructWithName(vx_context context
             {
                 context->user_structs[i].type = VX_TYPE_USER_STRUCT_START + i;
                 context->user_structs[i].size = size;
-                strncpy(context->user_structs[i].name, name, VX_MAX_STRUCT_NAME - 1);
+                strncpy(context->user_structs[i].name, type_name, VX_MAX_REFERENCE_NAME - 1);
                 type = context->user_structs[i].type;
                 break;
             }

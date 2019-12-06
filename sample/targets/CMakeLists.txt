@@ -16,3 +16,12 @@
 
 
 add_subdirectory( c_model )
+if (EXPERIMENTAL_USE_VENUM)
+    add_subdirectory( venum )
+endif (EXPERIMENTAL_USE_VENUM)
+if (OPENVX_USE_TILING)
+    add_subdirectory( tiling )
+endif (OPENVX_USE_TILING)
+if (EXPERIMENTAL_USE_OPENCL)
+    add_subdirectory( opencl )
+endif (EXPERIMENTAL_USE_OPENCL)

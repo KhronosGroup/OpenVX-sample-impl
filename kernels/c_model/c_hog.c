@@ -105,7 +105,7 @@ vx_status vxHogCells(vx_image img, vx_scalar cell_width, vx_scalar cell_height, 
             void *mag_ptr = (vx_int8 *)magnitudes_data + magnitudes_pos;
             void *bins_ptr = (vx_int8 *)bins_data + bins_pos;
             *(vx_int16 *)(mag_ptr) = *(vx_int16 *)(mag_ptr) + (vx_int16)(magnitude / (float)(cell_w * cell_h));
-            *(vx_int8 *)(bins_ptr) = *(vx_int8 *)(bins_ptr) + (vx_int8)(magnitude / (float)(cell_w * cell_h));
+            *(vx_int16 *)(bins_ptr) = *(vx_int16 *)(bins_ptr)+(vx_int16)(magnitude / (float)(cell_w * cell_h));
         }
     }
 
@@ -181,7 +181,7 @@ vx_status vxHogFeatures(vx_image img, vx_tensor magnitudes, vx_tensor bins, vx_a
                     {
                         vx_int32 bins_index = (blkH + y)*n_cellsx * hog_params_t->num_bins + (blkW + x)*hog_params_t->num_bins + k;
                         vx_int32 block_index = blkH * num_blockW * hog_params_t->num_bins + blkW * hog_params_t->num_bins + k;
-                        float hist = min((vx_int8)(*((vx_int8 *)bins_data + bins_index)) / sum, hog_params_t->threshold);
+                        float hist = min((vx_int16)(*((vx_int8 *)bins_data + bins_index)) / sum, hog_params_t->threshold);
                         void *features_ptr = (vx_int8 *)features_data + block_index;
                         *(vx_int16 *)features_ptr = *(vx_int16 *)features_ptr + (vx_int16)hist;
                     }

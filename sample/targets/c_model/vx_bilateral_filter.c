@@ -1,4 +1,4 @@
-/* 
+/*
 
  * Copyright (c) 2016-2017 The Khronos Group Inc.
  *
@@ -43,31 +43,35 @@ static vx_param_description_t bilateral_filter_kernel_params[] = {
 
 static vx_status VX_CALLBACK vxBilateralFilterKernel(vx_node node, const vx_reference parameters[], vx_uint32 num)
 {
-    (void)node;
-
     if (num == BILATERAL_FILTER_PARAMS_NUMBER)
     {
         vx_status status = VX_SUCCESS;
         vx_tensor src_tensor =  (vx_tensor)parameters[BILATERAL_FILTER_PARAM_SRC];
         vx_tensor dst_tensor =  (vx_tensor)parameters[BILATERAL_FILTER_PARAM_DST];
 
+        vx_border_t bordermode;
         vx_int32 diameter;
         vx_float32 sigmaSpace, sigmaValues;
         status |= vxCopyScalar((vx_scalar)parameters[BILATERAL_FILTER_PARAM_DIAMETER], &diameter, VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
         status |= vxCopyScalar((vx_scalar)parameters[BILATERAL_FILTER_PARAM_SIGMASPACE], &sigmaSpace, VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
         status |= vxCopyScalar((vx_scalar)parameters[BILATERAL_FILTER_PARAM_SIGMAVALUES], &sigmaValues, VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
+        status |= vxQueryNode(node, VX_NODE_BORDER, &bordermode, sizeof(bordermode));
 
         vx_size dims_num;
         vx_size dims[VX_MAX_TENSOR_DIMENSIONS];
         vx_size stride[VX_MAX_TENSOR_DIMENSIONS];
         void *out_ptr;
+        if (status == VX_SUCCESS)
+        {
 
-        status |= AllocatePatch (dst_tensor, &dims_num, dims, stride, &out_ptr, VX_WRITE_ONLY);
+            status = AllocatePatch (dst_tensor, &dims_num, dims, stride, &out_ptr, VX_WRITE_ONLY);
 
-        status |= vxBilateralFilter(src_tensor->addr, src_tensor->stride, src_tensor->dimensions, src_tensor->number_of_dimensions,
-                diameter, sigmaSpace, sigmaValues, out_ptr, dst_tensor->stride, dst_tensor->data_type);
+            status |= vxBilateralFilter(src_tensor->addr, src_tensor->stride, src_tensor->dimensions, src_tensor->number_of_dimensions,
+                    diameter, sigmaSpace, sigmaValues, out_ptr, dst_tensor->stride, dst_tensor->data_type,
+                    &bordermode);
 
-        status |= ReleasePatch(dst_tensor, dims_num, dims, stride, &out_ptr, VX_WRITE_ONLY);
+            status |= ReleasePatch(dst_tensor, dims_num, dims, stride, &out_ptr, VX_WRITE_ONLY);
+        }
 
         return status;
     }

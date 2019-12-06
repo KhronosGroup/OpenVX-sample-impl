@@ -1,4 +1,4 @@
-/* 
+/*
 
  * Copyright (c) 2012-2017 The Khronos Group Inc.
  *
@@ -39,15 +39,18 @@ vx_status vxMedian3x3(vx_image src, vx_image dst, vx_border_t *borders)
     vx_uint32 y, x;
     void *src_base = NULL;
     void *dst_base = NULL;
+    vx_df_image format = 0;
     vx_imagepatch_addressing_t src_addr, dst_addr;
     vx_rectangle_t rect;
-    vx_uint32 low_x = 0, low_y = 0, high_x, high_y;
+    vx_uint32 low_x = 0, low_y = 0, high_x, high_y, shift_x_u1;
 
     vx_status status = vxGetValidRegionImage(src, &rect);
+    status |= vxQueryImage(src, VX_IMAGE_FORMAT, &format, sizeof(format));
     status |= vxAccessImagePatch(src, &rect, 0, &src_addr, &src_base, VX_READ_ONLY);
     status |= vxAccessImagePatch(dst, &rect, 0, &dst_addr, &dst_base, VX_WRITE_ONLY);
 
-    high_x = src_addr.dim_x;
+    shift_x_u1 = (format == VX_DF_IMAGE_U1) ? rect.start_x % 8 : 0;
+    high_x = src_addr.dim_x - shift_x_u1;   // U1 addressing rounds down imagepatch start_x to nearest byte boundary
     high_y = src_addr.dim_y;
 
     if (borders->mode == VX_BORDER_UNDEFINED)
@@ -61,13 +64,18 @@ vx_status vxMedian3x3(vx_image src, vx_image dst, vx_border_t *borders)
     {
         for (x = low_x; x < high_x; x++)
         {
-            vx_uint8 *dst = vxFormatImagePatchAddress2d(dst_base, x, y, &dst_addr);
+            vx_uint32 xShftd = x + shift_x_u1;      // Bit-shift for U1 valid region start
+            vx_uint8 *dst_ptr = (vx_uint8*)vxFormatImagePatchAddress2d(dst_base, xShftd, y, &dst_addr);
             vx_uint8 values[9];
 
-            vxReadRectangle(src_base, &src_addr, borders, VX_DF_IMAGE_U8, x, y, 1, 1, values);
+            vxReadRectangle(src_base, &src_addr, borders, format, xShftd, y, 1, 1, values, shift_x_u1);
 
             qsort(values, dimof(values), sizeof(vx_uint8), vx_uint8_compare);
-            *dst = values[4]; /* pick the middle value */
+            /* pick the middle value */
+            if (format == VX_DF_IMAGE_U1)
+                *dst_ptr = (*dst_ptr & ~(1 << (xShftd % 8))) | (values[4] << (xShftd % 8));
+            else
+                *dst_ptr = values[4];
         }
     }
 

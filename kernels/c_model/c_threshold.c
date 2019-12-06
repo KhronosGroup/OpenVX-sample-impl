@@ -1,4 +1,4 @@
-/* 
+/*
 
  * Copyright (c) 2012-2017 The Khronos Group Inc.
  *
@@ -35,7 +35,8 @@ vx_status vxThreshold(vx_image src_image, vx_threshold threshold, vx_image dst_i
     vx_pixel_value_t true_value;
     vx_pixel_value_t false_value;
     vx_status status = VX_FAILURE;
-    vx_enum format = 0;
+    vx_enum in_format  = 0;
+    vx_enum out_format = 0;
 
     vxQueryThreshold(threshold, VX_THRESHOLD_TYPE, &type, sizeof(type));
 
@@ -59,18 +60,20 @@ vx_status vxThreshold(vx_image src_image, vx_threshold threshold, vx_image dst_i
     status |= vxAccessImagePatch(src_image, &rect, 0, &src_addr, &src_base, VX_READ_ONLY);
     status |= vxAccessImagePatch(dst_image, &rect, 0, &dst_addr, &dst_base, VX_WRITE_ONLY);
 
-    vxQueryThreshold(threshold, VX_THRESHOLD_INPUT_FORMAT, &format, sizeof(format));
-    VX_PRINT(VX_ZONE_INFO, "threshold input_format = %d\n", format);
+    vxQueryThreshold(threshold, VX_THRESHOLD_INPUT_FORMAT,  &in_format,  sizeof(in_format));
+    vxQueryThreshold(threshold, VX_THRESHOLD_OUTPUT_FORMAT, &out_format, sizeof(out_format));
+    VX_PRINT(VX_ZONE_INFO, "threshold: input_format  = %d, output_format = %d\n", in_format, out_format);
 
     for (y = 0; y < src_addr.dim_y; y++)
     {
         for (x = 0; x < src_addr.dim_x; x++)
         {
+            vx_uint32 xShftd = x + (out_format == VX_DF_IMAGE_U1 ? rect.start_x % 8 : 0);
             void *src_void_ptr = vxFormatImagePatchAddress2d(src_base, x, y, &src_addr);
-            void *dst_void_ptr = vxFormatImagePatchAddress2d(dst_base, x, y, &dst_addr);
+            void *dst_void_ptr = vxFormatImagePatchAddress2d(dst_base, xShftd, y, &dst_addr);
 
-            if( format == VX_DF_IMAGE_S16 )
-            {//case of input: VX_DF_IMAGE_S16 -> output: VX_DF_IMAGE_U8
+            if( in_format == VX_DF_IMAGE_S16 )
+            {//case of input: VX_DF_IMAGE_S16
 
                 vx_int16 *src_ptr = (vx_int16*)src_void_ptr;
                 vx_uint8 *dst_ptr = (vx_uint8*)dst_void_ptr;
@@ -78,69 +81,100 @@ vx_status vxThreshold(vx_image src_image, vx_threshold threshold, vx_image dst_i
                 vx_uint8 dst_value = 0;
 
                 if (type == VX_THRESHOLD_TYPE_BINARY)
-                {                    
-                    if (*src_ptr > value.S16)
-                    {
-                        dst_value = true_value.U8;
+                {
+                    if (out_format == VX_DF_IMAGE_U1)
+                    {// case of output: VX_DF_IMAGE_U1
+                        if (*src_ptr > value.S16)
+                            dst_value = true_value.U1  ? 1 : 0;
+                        else
+                            dst_value = false_value.U1 ? 1 : 0;
+
+                        vx_uint8 offset = xShftd % 8;
+                        *dst_ptr = (*dst_ptr & ~(1 << offset)) | (dst_value << offset);
                     }
                     else
-                    {
-                         dst_value = false_value.U8;
+                    {// case of output: VX_DF_IMAGE_U8
+                        if (*src_ptr > value.S16)
+                            dst_value = true_value.U8;
+                        else
+                            dst_value = false_value.U8;
+
+                        *dst_ptr = dst_value;
                     }
-
-                    *dst_ptr = dst_value;
-
                 }
 
                 if (type == VX_THRESHOLD_TYPE_RANGE)
                 {
-                    if (*src_ptr > upper.S16)
-                    {
-                        dst_value = false_value.U8;
-                    }
-                    else if (*src_ptr < lower.S16)
-                    {
-                        dst_value = false_value.U8;
+                    if (out_format == VX_DF_IMAGE_U1)
+                    {// case of output: VX_DF_IMAGE_U1
+                        if (*src_ptr > upper.S16)
+                            dst_value = false_value.U1 ? 1 : 0;
+                        else if (*src_ptr < lower.S16)
+                            dst_value = false_value.U1 ? 1 : 0;
+                        else
+                            dst_value = true_value.U1  ? 1 : 0;
+
+                        vx_uint8 offset = xShftd % 8;
+                        *dst_ptr = (*dst_ptr & ~(1 << offset)) | (dst_value << offset);
                     }
                     else
-                    {
-                        dst_value = true_value.U8;
-                    }
+                    {// case of output: VX_DF_IMAGE_U8
+                        if (*src_ptr > upper.S16)
+                            dst_value = false_value.U8;
+                        else if (*src_ptr < lower.S16)
+                            dst_value = false_value.U8;
+                        else
+                            dst_value = true_value.U8;
 
-                    *dst_ptr = dst_value;
+                        *dst_ptr = dst_value;
+                    }
                 }
             }
             else
-            {//case of input: VX_DF_IMAGE_U8  -> output: VX_DF_IMAGE_U8
+            {//case of input: VX_DF_IMAGE_U8
 
                 vx_uint8 *src_ptr = (vx_uint8*)src_void_ptr;
                 vx_uint8 *dst_ptr = (vx_uint8*)dst_void_ptr;
 
                 if (type == VX_THRESHOLD_TYPE_BINARY)
                 {
-                    if (*src_ptr > value.U8)
-                    {
-                        *dst_ptr = (vx_uint8)true_value.U8;
+                    if (out_format == VX_DF_IMAGE_U1)
+                    {// case of output: VX_DF_IMAGE_U1
+                        vx_uint8 offset = xShftd % 8;
+                        if (*src_ptr > value.U8)
+                            *dst_ptr = (*dst_ptr & ~(1 << offset)) | ((true_value.U1  ? 1 : 0) << offset);
+                        else
+                            *dst_ptr = (*dst_ptr & ~(1 << offset)) | ((false_value.U8 ? 1 : 0) << offset);
                     }
                     else
-                    {
-                        *dst_ptr = (vx_uint8)false_value.U8;
+                    {// case of output: VX_DF_IMAGE_U8
+                        if (*src_ptr > value.U8)
+                            *dst_ptr = (vx_uint8)true_value.U8;
+                        else
+                            *dst_ptr = (vx_uint8)false_value.U8;
                     }
                 }
 
                 if (type == VX_THRESHOLD_TYPE_RANGE)
                 {
-                    if (*src_ptr > upper.U8)
-                    {
-                        *dst_ptr = (vx_uint8)false_value.U8;
-                    }
-                    else if (*src_ptr < lower.U8)
-                    {
-                        *dst_ptr = (vx_uint8)false_value.U8;
+                    if (out_format == VX_DF_IMAGE_U1)
+                    {// case of output: VX_DF_IMAGE_U1
+                        vx_uint8 offset = xShftd % 8;
+                        if (*src_ptr > upper.U8)
+                            *dst_ptr = (*dst_ptr & ~(1 << offset)) | ((false_value.U1 ? 1 : 0) << offset);
+                        else if (*src_ptr < lower.U8)
+                            *dst_ptr = (*dst_ptr & ~(1 << offset)) | ((false_value.U1 ? 1 : 0) << offset);
+                        else
+                            *dst_ptr = (*dst_ptr & ~(1 << offset)) | ((true_value.U1  ? 1 : 0) << offset);
                     }
                     else
-                    {
-                        *dst_ptr = (vx_uint8)true_value.U8;
+                    {// case of output: VX_DF_IMAGE_U8
+                        if (*src_ptr > upper.U8)
+                            *dst_ptr = (vx_uint8)false_value.U8;
+                        else if (*src_ptr < lower.U8)
+                            *dst_ptr = (vx_uint8)false_value.U8;
+                        else
+                            *dst_ptr = (vx_uint8)true_value.U8;
                     }
                 }
             } //end if else

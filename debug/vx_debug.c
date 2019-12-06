@@ -1,4 +1,4 @@
-/* 
+/*
 
  * Copyright (c) 2012-2017 The Khronos Group Inc.
  *
@@ -214,10 +214,11 @@ void ownPrintImageAddressing(const vx_imagepatch_addressing_t *addr)
 {
     if (addr)
     {
-        VX_PRINT(VX_ZONE_IMAGE, "addr:%p dim={%u,%u} stride={%d,%d} scale={%u,%u} step={%u,%u}\n",
+        VX_PRINT(VX_ZONE_IMAGE, "addr:%p dim={%u,%u} stride={%d,%d} stride_x_bits={%u} scale={%u,%u} step={%u,%u}\n",
                 addr,
                 addr->dim_x, addr->dim_y,
                 addr->stride_x, addr->stride_y,
+                addr->stride_x_bits,
                 addr->scale_x, addr->scale_y,
                 addr->step_x, addr->step_y);
     }

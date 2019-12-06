@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+#ifdef OPENVX_CONFORMANCE_NEURAL_NETWORKS
 #ifdef OPENVX_USE_NN
 
 #include "vx_internal.h"
@@ -145,12 +146,13 @@ VX_API_ENTRY vx_node VX_API_CALL vxSoftmaxLayer(vx_graph graph, vx_tensor inputs
 
 
 /*==============================================================================
-vxNormalizationLayer
+vxLocalResponseNormalizationLayer
 =============================================================================*/
-VX_API_ENTRY vx_node VX_API_CALL vxNormalizationLayer(vx_graph graph, vx_tensor inputs, vx_enum type,
+VX_API_ENTRY vx_node VX_API_CALL vxLocalResponseNormalizationLayer(vx_graph graph, vx_tensor inputs, vx_enum type,
 		vx_size normalization_size,
 		vx_float32 alpha,
 		vx_float32 beta,
+		vx_float32 bias,
 		vx_tensor outputs)
 {
     vx_context context = vxGetContext((vx_reference)graph);
@@ -268,3 +270,4 @@ VX_API_ENTRY vx_node VX_API_CALL vxDeconvolutionLayer(vx_graph graph, vx_tensor 
 }
 
 #endif
+#endif//OPENVX_CONFORMANCE_NEURAL_NETWORKS

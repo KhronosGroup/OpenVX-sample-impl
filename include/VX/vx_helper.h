@@ -1,4 +1,4 @@
-/* 
+/*
 
  * Copyright (c) 2012-2017 The Khronos Group Inc.
  *
@@ -251,7 +251,13 @@ void vxReadRectangle(const void *base,
                      vx_uint32 center_y,
                      vx_uint32 radius_x,
                      vx_uint32 radius_y,
-                     void *destination);
+                     void *destination,
+                     vx_uint32 border_x_start);
+
+/*! \brief Integer division with rounding towards minus infinity.
+* \ingroup group_helper
+*/
+vx_int64 vxDivFloor(vx_int64 x, vx_int64 y);
 
 #ifdef __cplusplus
 }

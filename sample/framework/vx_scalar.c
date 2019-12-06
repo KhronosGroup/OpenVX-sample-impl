@@ -1,4 +1,4 @@
-/* 
+/*
 
  * Copyright (c) 2012-2017 The Khronos Group Inc.
  *
@@ -106,6 +106,81 @@ VX_API_ENTRY vx_scalar VX_API_CALL vxCreateScalar(vx_context context, vx_enum da
 
     return (vx_scalar)scalar;
 } /* vxCreateScalar() */
+
+static void* ownAllocateScalarMemory(vx_scalar scalar, vx_size size)
+{
+    if (scalar->data_addr == NULL)
+    {
+        scalar->data_addr = calloc(size, 1);
+    }
+
+    return scalar->data_addr;
+}
+
+VX_API_ENTRY vx_scalar VX_API_CALL vxCreateScalarWithSize(vx_context context, vx_enum data_type, const void *ptr, vx_size size)
+{
+    vx_scalar scalar = NULL;
+
+    if (ownIsValidContext(context) == vx_false_e)
+        return NULL;
+
+    if (!VX_TYPE_IS_SCALAR_WITH_SIZE(data_type))
+    {
+        VX_PRINT(VX_ZONE_ERROR, "Invalid type to scalar\n");
+        vxAddLogEntry(&context->base, VX_ERROR_INVALID_TYPE, "Invalid type to scalar\n");
+        scalar = (vx_scalar)ownGetErrorObject(context, VX_ERROR_INVALID_TYPE);
+    }
+    else
+    {
+        scalar = (vx_scalar)ownCreateReference(context, VX_TYPE_SCALAR, VX_EXTERNAL, &context->base);
+        if (vxGetStatus((vx_reference)scalar) == VX_SUCCESS && scalar->base.type == VX_TYPE_SCALAR)
+        {
+            scalar->data_type = data_type;
+            vxCopyScalarWithSize(scalar, size, (void*)ptr, VX_WRITE_ONLY, VX_MEMORY_TYPE_HOST);
+        }
+    }
+
+    return (vx_scalar)scalar;
+}
+
+void ownDestructScalar(vx_reference ref)
+{
+    vx_scalar scalar = (vx_scalar)ref;
+    if (scalar->data_addr)
+    {
+        free(scalar->data_addr);
+        scalar->data_addr = NULL;
+        scalar->data_len = 0;
+    }
+}
+
+VX_API_ENTRY vx_scalar VX_API_CALL vxCreateVirtualScalar(vx_graph graph, vx_enum data_type)
+{
+    vx_scalar scalar = NULL;
+    vx_reference_t *ref = (vx_reference_t *)graph;
+
+    if (ownIsValidSpecificReference(ref, VX_TYPE_GRAPH) != vx_true_e)
+        return NULL;
+
+    if (!VX_TYPE_IS_SCALAR_WITH_SIZE(data_type))
+    {
+        VX_PRINT(VX_ZONE_ERROR, "Invalid type to scalar\n");
+        vxAddLogEntry(&(ref->context->base), VX_ERROR_INVALID_TYPE, "Invalid type to scalar\n");
+        scalar = (vx_scalar)ownGetErrorObject(ref->context, VX_ERROR_INVALID_TYPE);
+    }
+    else
+    {
+        scalar = (vx_scalar)ownCreateReference(ref->context, VX_TYPE_SCALAR, VX_EXTERNAL, &(ref->context->base));
+        if (vxGetStatus((vx_reference)scalar) == VX_SUCCESS && scalar->base.type == VX_TYPE_SCALAR)
+        {
+            scalar->base.is_virtual = vx_true_e;
+            scalar->base.scope = (vx_reference_t *)graph;
+            scalar->data_type = data_type;
+        }
+    }
+
+    return (vx_scalar)scalar;
+}
 
 VX_API_ENTRY vx_status VX_API_CALL vxReleaseScalar(vx_scalar *s)
 {
@@ -288,6 +363,78 @@ VX_API_ENTRY vx_status VX_API_CALL vxCopyScalar(vx_scalar scalar, void* user_ptr
 
     return status;
 } /* vxCopyScalar() */
+
+VX_API_ENTRY vx_status VX_API_CALL vxCopyScalarWithSize(vx_scalar scalar, vx_size size, void *user_ptr, vx_enum usage, vx_enum user_mem_type)
+{
+    vx_status status = VX_SUCCESS;
+    vx_size min_size;
+
+    if (vx_false_e == ownIsValidSpecificReference(&scalar->base, VX_TYPE_SCALAR))
+        return VX_ERROR_INVALID_REFERENCE;
+
+    if (NULL == user_ptr || VX_MEMORY_TYPE_HOST != user_mem_type)
+        return VX_ERROR_INVALID_PARAMETERS;
+
+
+    switch (usage)
+    {
+    case VX_READ_ONLY:
+        if (scalar->data_addr != NULL && scalar->data_len != 0)
+        {
+            min_size = scalar->data_len > size ? size : scalar->data_len;
+            memcpy(user_ptr, scalar->data_addr, min_size);
+        }
+        else
+        {
+            status = VX_ERROR_NO_RESOURCES;
+        }
+        break;
+    case VX_WRITE_ONLY:
+        if (scalar->data_addr == NULL)
+        {
+            if(NULL == ownAllocateScalarMemory(scalar, size))
+            {
+                status = VX_ERROR_NO_MEMORY;
+            }
+            else
+            {
+                scalar->data_len = size;
+                memcpy(scalar->data_addr, user_ptr, size);
+            }
+        }
+        else
+        {
+            if (scalar->data_len < size)
+            {
+                void *tmp_addr = scalar->data_addr;
+                scalar->data_addr = NULL;
+                if(NULL == ownAllocateScalarMemory(scalar, size))
+                {
+                    scalar->data_addr = tmp_addr;
+                    status = VX_ERROR_NO_MEMORY;
+                }
+                else
+                {
+                    free(tmp_addr);
+                    scalar->data_len = size;
+                    memcpy(scalar->data_addr, user_ptr, size);
+                }
+            }
+            else
+            {
+                scalar->data_len = size;
+                memcpy(scalar->data_addr, user_ptr, size);
+            }
+        }
+        break;
+
+    default:
+        status = VX_ERROR_INVALID_PARAMETERS;
+        break;
+    }
+
+    return status;
+}
 
 VX_API_ENTRY vx_status VX_API_CALL vxReadScalarValue(vx_scalar scalar, void *ptr)
 {

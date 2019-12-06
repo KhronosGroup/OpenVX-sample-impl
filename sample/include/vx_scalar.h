@@ -1,4 +1,4 @@
-/* 
+/*
 
  * Copyright (c) 2012-2017 The Khronos Group Inc.
  *
@@ -30,6 +30,6 @@
  * \brief The Internal Scalar API.
  */
 
-void ownReleaseScalarInt(vx_scalar_t *scalar);
+void ownDestructScalar(vx_reference ref);
 
 #endif

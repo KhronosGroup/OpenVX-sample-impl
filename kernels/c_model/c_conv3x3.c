@@ -1,4 +1,4 @@
-/* 
+/*
 
  * Copyright (c) 2012-2017 The Khronos Group Inc.
  *
@@ -59,7 +59,7 @@ static vx_int32 vx_convolve8with16(void *base, vx_uint32 x, vx_uint32 y, vx_imag
 
     vx_uint8 pixels[3][3];
     vx_int32 div, sum;
-    vxReadRectangle(base, addr, borders, VX_DF_IMAGE_U8, x, y, 1, 1, &pixels[0][0]);
+    vxReadRectangle(base, addr, borders, VX_DF_IMAGE_U8, x, y, 1, 1, &pixels[0][0], 0);
     div = conv[0][0] + conv[0][1] + conv[0][2] +
           conv[1][0] + conv[1][1] + conv[1][2] +
           conv[2][0] + conv[2][1] + conv[2][2];

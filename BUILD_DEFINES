@@ -32,6 +32,12 @@ OPENVX_USE_IX (ENABLED)
 OPENVX_USE_NN (ENABLED)
 - Enables the neural network extension
 
+OPENVX_USE_PIPELINING (DISABLED)
+- Enables the pipelining extension
+
+OPENVX_USE_STREAMING (DISABLED)
+- Enables the streaming extension
+
 
 IMPLEMENTATION SPECIFIC OPTIONS:
 --------------------------------

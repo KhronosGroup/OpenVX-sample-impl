@@ -737,8 +737,10 @@ VX_API_ENTRY vx_status VX_API_CALL vxSetNodeTarget(vx_node node, vx_enum target_
             case VX_TARGET_ANY:
                 for (t = 0; (t < context->num_targets) && (kernel == NULL); t++)
                 {
-                    rt = t; /*context->priority_targets[t];*/
+                    rt = context->priority_targets[t];
                     kernel = findKernelByEnum(&context->targets[rt], node->kernel->enumeration);
+                    if (NULL != kernel)
+                        break;
                 }
                 break;
 

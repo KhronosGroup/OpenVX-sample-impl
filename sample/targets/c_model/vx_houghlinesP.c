@@ -56,7 +56,7 @@ static vx_status VX_CALLBACK vxHoughLinesPInputValidator(vx_node node, vx_uint32
         {
             vx_df_image format = 0;
             vxQueryImage(input, VX_IMAGE_ATTRIBUTE_FORMAT, &format, sizeof(format));
-            if (format == VX_DF_IMAGE_U8)
+            if (format == VX_DF_IMAGE_U1 || format == VX_DF_IMAGE_U8)
             {
                 status = VX_SUCCESS;
             }

@@ -100,7 +100,7 @@ vx_status vxTableLookup(vx_image src, vx_lut lut, vx_image dst);
 
 vx_status vxMeanStdDev(vx_image input, vx_scalar mean, vx_scalar stddev);
 vx_status vxMinMaxLoc(vx_image input, vx_scalar minVal, vx_scalar maxVal, vx_array minLoc, vx_array maxLoc, vx_scalar minCount, vx_scalar maxCount);
-
+vx_status vxWeightedAverage(vx_image img1, vx_scalar alpha, vx_image img2, vx_image output);
 vx_status vxErode3x3(vx_image src, vx_image dst, vx_border_t *bordermode);
 vx_status vxDilate3x3(vx_image src, vx_image dst, vx_border_t *bordermode);
 
@@ -267,7 +267,7 @@ void ActivationKernelImpl(
 
 vx_status vxBilateralFilter(void* src, vx_size* src_strides, vx_size* dims, vx_size num_of_dims,
         vx_int32 diameter, vx_float32 sigmaSpace, vx_float32 sigmaValues,
-        void* dst, vx_size* dst_strides, vx_enum type);
+        void* dst, vx_size* dst_strides, vx_enum type, vx_border_t *bordermode);
 
 vx_status vxHoughLinesP(vx_image img, vx_array param_hough_lines_array, vx_array lines_array, vx_scalar num_lines);
 

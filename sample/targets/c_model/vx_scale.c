@@ -1,4 +1,4 @@
-/* 
+/*
 
  * Copyright (c) 2012-2017 The Khronos Group Inc.
  *
@@ -85,7 +85,7 @@ static vx_status VX_CALLBACK vxScaleImageInputValidator(vx_node node, vx_uint32 
 
             vxQueryImage(input, VX_IMAGE_FORMAT, &format, sizeof(format));
 
-            if (format == VX_DF_IMAGE_U8)
+            if (format == VX_DF_IMAGE_U1 || format == VX_DF_IMAGE_U8)
             {
                 status = VX_SUCCESS;
             }
@@ -501,7 +501,7 @@ static vx_status VX_CALLBACK vxHalfscaleGaussianInitializer(vx_node node, const 
                     {
                         status |= vxReleaseNode(&nodes[i]);
                     }
-                    
+
                     if (convolution)
                         status |= vxReleaseConvolution(&convolution);
 

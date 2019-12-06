@@ -27,18 +27,28 @@ vx_status vxMeanStdDev(vx_image input, vx_scalar mean, vx_scalar stddev)
     vx_imagepatch_addressing_t addrs = VX_IMAGEPATCH_ADDR_INIT;
     vx_map_id map_id = 0;
     void *base_ptr = NULL;
-    vx_uint32 x, y;
+    vx_uint32 x, y, width, height, shift_x_u1;
     vx_status status  = VX_SUCCESS;
 
-    vxQueryImage(input, VX_IMAGE_FORMAT, &format, sizeof(format));
-    status = vxGetValidRegionImage(input, &rect);
-    //VX_PRINT(VX_ZONE_INFO, "Rectangle = {%u,%u x %u,%u}\n",rect.start_x, rect.start_y, rect.end_x, rect.end_y);
+    status  = vxQueryImage(input, VX_IMAGE_FORMAT, &format, sizeof(format));
+    status |= vxGetValidRegionImage(input, &rect);
     status |= vxMapImagePatch(input, &rect, 0, &map_id, &addrs, &base_ptr, VX_READ_ONLY, VX_MEMORY_TYPE_HOST, 0);
-    for (y = 0; y < addrs.dim_y; y++)
+    //VX_PRINT(VX_ZONE_INFO, "Rectangle = {%u,%u x %u,%u}\n",rect.start_x, rect.start_y, rect.end_x, rect.end_y);
+
+    width  = rect.end_x - rect.start_x;
+    height = rect.end_y - rect.start_y;
+    shift_x_u1 = rect.start_x % 8;    // Bit shift for U1 valid regions
+
+    for (y = 0; y < height; y++)
     {
-        for (x = 0; x < addrs.dim_x; x++)
+        for (x = 0; x < width; x++)
         {
-            if (format == VX_DF_IMAGE_U8)
+            if (format == VX_DF_IMAGE_U1)
+            {
+                vx_uint8 *pixels = vxFormatImagePatchAddress2d(base_ptr, x + shift_x_u1, y, &addrs);
+                sum += (*pixels & (1 << (x + shift_x_u1) % 8)) >> (x + shift_x_u1) % 8;
+            }
+            else if (format == VX_DF_IMAGE_U8)
             {
                 vx_uint8 *pixel = vxFormatImagePatchAddress2d(base_ptr, x, y, &addrs);
                 sum += *pixel;
@@ -50,12 +60,18 @@ vx_status vxMeanStdDev(vx_image input, vx_scalar mean, vx_scalar stddev)
             }
         }
     }
-    fmean = (vx_float32)(sum / (addrs.dim_x*addrs.dim_y));
-    for (y = 0; y < addrs.dim_y; y++)
+    fmean = (vx_float32)(sum / (width * height));
+    for (y = 0; y < height; y++)
     {
-        for (x = 0; x < addrs.dim_x; x++)
+        for (x = 0; x < width; x++)
         {
-            if (format == VX_DF_IMAGE_U8)
+            if (format == VX_DF_IMAGE_U1)
+            {
+                vx_uint8 *pixels = vxFormatImagePatchAddress2d(base_ptr, x + shift_x_u1, y, &addrs);
+                vx_uint8  pixel  = (*pixels & (1 << (x + shift_x_u1) % 8)) >> (x + shift_x_u1) % 8;
+                sum_diff_sqrs += pow((vx_float64)pixel - fmean, 2);
+            }
+            else if (format == VX_DF_IMAGE_U8)
             {
                 vx_uint8 *pixel = vxFormatImagePatchAddress2d(base_ptr, x, y, &addrs);
                 sum_diff_sqrs += pow((vx_float64)(*pixel) - fmean, 2);
@@ -68,7 +84,7 @@ vx_status vxMeanStdDev(vx_image input, vx_scalar mean, vx_scalar stddev)
         }
     }
 
-    fstddev = (vx_float32)sqrt(sum_diff_sqrs / (addrs.dim_x*addrs.dim_y));
+    fstddev = (vx_float32)sqrt(sum_diff_sqrs / (width * height));
 
     status |= vxCopyScalar(mean, &fmean, VX_WRITE_ONLY, VX_MEMORY_TYPE_HOST);
     status |= vxCopyScalar(stddev, &fstddev, VX_WRITE_ONLY, VX_MEMORY_TYPE_HOST);

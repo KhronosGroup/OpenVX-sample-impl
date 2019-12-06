@@ -1,4 +1,4 @@
-/* 
+/*
 
  * Copyright (c) 2012-2017 The Khronos Group Inc.
  *
@@ -462,7 +462,7 @@ vx_status VX_CALLBACK ownSobelMxNKernel(vx_node node, const vx_reference paramet
                     vx_float32* out_y = 0;
 
                     vx_uint8 square[7 * 7];
-                    vxReadRectangle(src_base, &src_addr, &borders, VX_DF_IMAGE_U8, x, y, b, b, square);
+                    vxReadRectangle(src_base, &src_addr, &borders, VX_DF_IMAGE_U8, x, y, b, b, square, 0);
 
                     for (i = 0; i < ws * ws; ++i)
                     {
