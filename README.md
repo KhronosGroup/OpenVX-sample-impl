@@ -186,11 +186,9 @@ For each system, consider the following prerequisites:
     configures the environment for compiling with VC) is executed from a
     CMD window.
 
-Building OpenVX using Concerto
-------------------------------
-Once the correct packages above are installed, the sample
-implementation can be built by typing "make" in the OpenVX
-installation directory (e.g., "openvx_sample").
+#### Building OpenVX using Concerto
+
+Once the correct packages above are installed, the sample implementation can be built by typing "make" in the OpenVX installation directory (e.g., "openvx_sample").
 
     $ cd openvx_sample
     $ make
@@ -199,9 +197,7 @@ Outputs are placed in
 
     out/$(TARGET_OS)/$(TARGET_CPU)/$(TARGET_BUILD)/
     
-These variables are visible in the make output. This will be referred to
-as TARGET_OUT, though this may not be present in the actual environment
-(users could define this themselves).
+These variables are visible in the make output. This will be referred to as TARGET_OUT, though this may not be present in the actual environment (users could define this themselves).
 
 In order to see a list and description of all make commands for concerto,
 type:
@@ -209,19 +205,19 @@ type:
     $ make help
 
 
-Executing OpenVX using Concerto
--------------------------------
+#### Executing OpenVX using Concerto
+
 The tests can be manually run as follows. In any environment, PATHs may need to be altered to allow loading dynamic modules. The $(TARGET_OUT) variable below should be replaced with the actual path to the output file where the libraries and executables are placed, as per the description in section 1: BUILD.
 
-On Linux
---------
+##### On Linux
+
 TARGET_OUT is usually out/LINUX/x86_64/release
 
     $ cd raw
     $ LD_LIBRARY_PATH=../$(TARGET_OUT) ../$(TARGET_OUT)/vx_test
 
-On Windows (Cygwin)
--------------------
+##### On Windows (Cygwin)
+
 TARGET_OUT is usually
 
     out/CYGWIN/X86/release
@@ -231,8 +227,8 @@ Commands:
     $ cd raw
     $ LD_LIBRARY_PATH=../$(TARGET_OUT) ../$(TARGET_OUT)/vx_test
 
-On Windows (native)
--------------------
+##### On Windows (native)
+
 TARGET_OUT is usually
 
     out\Windows_NT\x86\release
@@ -242,8 +238,8 @@ Commands:
     C:\> copy raw\*.* %TARGET_OUT%
     C:\> pushd %TARGET_OUT% && vx_test.exe
 
-On Mac OSX (from openvx_sample)
-------------------------------------
+##### On Mac OSX (from openvx_sample)
+
 TARGET_OUT is usually
 
     out/DARWIN/x86_64/release
