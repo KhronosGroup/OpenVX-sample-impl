@@ -256,19 +256,19 @@ The sample implementation comes with a few unit sanity tests that exercises
 some examples of the specification.  The executables are called:
 
 **vx_test:**
-    - main function is in source file: openvx_sample/tests/vx_test.c
-    - No arguments will run all included unit tests.
-    - -? argument will list the tests to be run
-    - Single tests can be run by specifying test number using -t <testnum>
-    - expects to be run from the raw directory (the program looks for image files in the execution directory).
+* main function is in source file: openvx_sample/tests/vx_test.c
+* No arguments will run all included unit tests.
+* Argument will list the tests to be run
+* Single tests can be run by specifying test number using -t <testnum>
+* Expects to be run from the raw directory (the program looks for image files in the execution directory).
 
 **vx_query:**
-    - main function is in source file: openvx_sample/tools/query/vx_query.c
-    - Queries the implementation and prints out details about all kernels
+* Main function is in source file: openvx_sample/tools/query/vx_query.c
+* Queries the implementation and prints out details about all kernels
 
 **vx_example:**
-    - main function is in source file: openvx_sample/examples/vx_graph_factory.c
-    - This is an example of creating and running a graph using what is called a graph factory.  This example is beyond the scope of the openvx specification, but is an example of how graph parameters can be use to abstract the details of a graph to clients.
+* Main function is in source file: openvx_sample/examples/vx_graph_factory.c
+* This is an example of creating and running a graph using what is called a graph factory.  This example is beyond the scope of the openvx specification, but is an example of how graph parameters can be use to abstract the details of a graph to clients.
 
 vx_bug13510:
 vx_bug13517:
