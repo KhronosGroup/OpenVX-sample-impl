@@ -5,6 +5,8 @@
 
 # OpenVX 1.3 Sample Implementation
 
+<a href="https://www.khronos.org/openvx/" target="_blank">Khronos OpenVX™</a> is an open, royalty-free standard for cross platform acceleration of computer vision applications. OpenVX enables performance and power-optimized computer vision processing, especially important in embedded and real-time use cases such as face, body and gesture tracking, smart video surveillance, advanced driver assistance systems (ADAS), object and scene reconstruction, augmented reality, visual inspection, robotics and more.
+
 This document outlines the purpose of this sample implementation as well as provide build and execution instructions.
 
 ## CONTENTS:
@@ -20,7 +22,7 @@ This document outlines the purpose of this sample implementation as well as prov
 
 ## Purpose
 
-The purpose of this software package is to provide a sample implementation of the OpenVX 1.3 Specification that passes the conformance test. It is NOT intended to be a reference implementation.  If there are any discrepancies with the OpenVX 1.2 specification, they are not intentional and the specification should take precedence.  Many of the design decisions made in this sample implementation were motivated out of convenience rather than optimizing for performance.  It is expected that vendor's implementations would choose to make different design choices based on their priorities, and the specification was written in such a way as to allow freedom to do so. Beyond the conformance tests, there was very limited testing, as this was not intended to be directly used as production software.
+The purpose of this software package is to provide a sample implementation of the OpenVX 1.3 Specification that passes the conformance test. It is NOT intended to be a reference implementation.  If there are any discrepancies with the OpenVX 1.3 specification, they are not intentional and the specification should take precedence.  Many of the design decisions made in this sample implementation were motivated out of convenience rather than optimizing for performance.  It is expected that vendor's implementations would choose to make different design choices based on their priorities, and the specification was written in such a way as to allow freedom to do so. Beyond the conformance tests, there was very limited testing, as this was not intended to be directly used as production software.
 
 This sample implementation contains additional 'experimental' or 'internally proposed' features which are not included in OpenVX 1.3.  Since these are not part of OpenVX, these are disabled by default in the build by using preprocessor definitions.  These features may potentially be modified or may never be added to the OpenVX spec, and should not be relied on as such. Additional details on these preprocessor definitions can be found in the BUILD_DEFINES document in this same folder.
 
@@ -29,13 +31,13 @@ Future revisions of the OpenVX sample implementation may or may not be released,
 The following is a summary of what this sample implementation IS and IS NOT:
 
 **IS**:
-- passing OpenVX 1.3 conformance tests
+* passing OpenVX 1.3 conformance tests
 
 **IS NOT**:
-- a reference implementation
-- optimized
-- production ready
-- actively maintained by Khronos publically
+* a reference implementation
+* optimized
+* production ready
+* actively maintained by Khronos publically
 
 ## Building And Executing
 
@@ -43,30 +45,26 @@ The sample implementation contains two different build system options:
 cmake and concerto (non-standard makefile-based system). The build and execution instructions for each are shown below.
 
 ### CMake
----------
-Supported systems:
-------------------
-1. Linux
-2. Android
-3. Windows (Visual studio or Cygwin)
 
-Pre-requisite:
---------------
+#### Supported systems:
 
-    python 2.x (Tested with python 2.7)
-    CMAKE 2.8.12 or higher. (should be in PATH)
+* Linux
+* Android
+* Windows (Visual studio or Cygwin)
 
-    Windows:
-    --------
-    Visual studio 12 (2013) or higher in order to create VS solution and use VS compiler to build OpenVX and related projects. (Need DEVENV in PATH)
-	Or Cygwin.
+#### Pre-requisite:
 
-    Android:
-    --------
-    NDK tool chain.
+* python 2.x (Tested with python 2.7)
+* CMAKE 2.8.12 or higher. (should be in PATH)
 
-Building:
----------
+##### Windows:
+* Visual studio 12 (2013) or higher in order to create VS solution and use VS compiler to build OpenVX and related projects. (Need DEVENV in PATH) Or Cygwin.
+
+##### Android:
+* NDK tool chain.
+
+#### Building:
+
     Windows:
     --------
     From VS / Cygwin command prompt:
@@ -122,14 +120,12 @@ Building:
         (6) click 'g' to generate the make files
         (7) > make install
 
-Install:
---------
+#### Install:
 
     The build process installs the OpenVX headers in 'include' folder / executables and libraries in 'bin' folder / libs in 'lib' folder under:
     ${OUTPUT_PATH}/install/${OS}/${ARCH}/${CONF}
 
-Running:
---------
+##### Running:
 
     Windows:
     --------
@@ -215,11 +211,7 @@ type:
 
 Executing OpenVX using Concerto
 -------------------------------
-The tests can be manually run as follows. In any environment, PATHs may
-need to be altered to allow loading dynamic modules. The $(TARGET_OUT)
-variable below should be replaced with the actual path to the output
-file where the libraries and executables are placed, as per the description
-in section 1: BUILD.
+The tests can be manually run as follows. In any environment, PATHs may need to be altered to allow loading dynamic modules. The $(TARGET_OUT) variable below should be replaced with the actual path to the output file where the libraries and executables are placed, as per the description in section 1: BUILD.
 
 On Linux
 --------
@@ -272,8 +264,7 @@ vx_test:
     - No arguments will run all included unit tests.
     - -? argument will list the tests to be run
     - Single tests can be run by specifying test number using -t <testnum>
-    - expects to be run from the raw directory (the program looks for
-      image files in the execution directory).
+    - expects to be run from the raw directory (the program looks for image files in the execution directory).
 
 vx_query:
     - main function is in source file: openvx_sample/tools/query/vx_query.c
@@ -281,10 +272,7 @@ vx_query:
 
 vx_example:
     - main function is in source file: openvx_sample/examples/vx_graph_factory.c
-    - This is an example of creating and running a graph using what is
-      called a graph factory.  This example is beyond the scope of the
-      openvx specification, but is an example of how graph parameters
-      can be use to abstract the details of a graph to clients.
+    - This is an example of creating and running a graph using what is called a graph factory.  This example is beyond the scope of the openvx specification, but is an example of how graph parameters can be use to abstract the details of a graph to clients.
 
 vx_bug13510:
 vx_bug13517:
@@ -342,11 +330,6 @@ Installing DEB package
 
 ##   Bug Reporting
 
-Although Khronos is not actively maintaining a public project of this
-sample implementation, bug reports can be reported back to the working
-group in an effort to make sure that we don't overlook related specification
-and implementation issues going forward.
+Although Khronos is not actively maintaining a public project of this sample implementation, bug reports can be reported back to the working group in an effort to make sure that we don't overlook related specification and implementation issues going forward.
 
-If any bugs are found in the sample implementation, you can notify the
-Khronos working group via the OpenVX feedback forum:
-    https://www.khronos.org/openvx/feedback_forum
+If any bugs are found in the sample implementation, you can notify the Khronos working group via the OpenVX feedback forum: https://www.khronos.org/openvx/feedback_forum
