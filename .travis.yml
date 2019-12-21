@@ -27,6 +27,15 @@ script:
   - python Build.py --os=Linux --conf=Debug
   - export OPENVX_DIR=$(pwd)/install/Linux/x64/Debug
   - export VX_TEST_DATA_PATH=$(pwd)/cts/test_data/
+  # Travis Mode -- OpenVX Conformance for Vision, Enhanced Vision, & Neural Net [Can not run CI longer than 30 min on Travis Open Source Version]
+  - mkdir build-cts-travis-mode
+  - rm -rf install/Linux/x64/Debug
+  - python Build.py --os=Linux --arch=64 --conf=Debug --conf_vision --enh_vision --conf_nn
+  - cd build-cts-travis-mode
+  - cmake -DOPENVX_INCLUDES=$OPENVX_DIR/include -DOPENVX_LIBRARIES=$OPENVX_DIR/bin/libopenvx.so\;$OPENVX_DIR/bin/libvxu.so\;pthread\;dl\;m\;rt -DOPENVX_CONFORMANCE_VISION=ON -DOPENVX_USE_ENHANCED_VISION=ON -DOPENVX_CONFORMANCE_NEURAL_NETWORKS=ON ../cts/
+  - cmake --build .
+  - LD_LIBRARY_PATH=./lib ./bin/vx_test_conformance
+  - cd ../
   # Mode:1 -- OpenVX Conformance for Vision
   - mkdir build-cts-mode-1
   - rm -rf install/Linux/x64/Debug
@@ -34,7 +43,7 @@ script:
   - cd build-cts-mode-1
   - cmake -DOPENVX_INCLUDES=$OPENVX_DIR/include -DOPENVX_LIBRARIES=$OPENVX_DIR/bin/libopenvx.so\;$OPENVX_DIR/bin/libvxu.so\;pthread\;dl\;m\;rt -DOPENVX_CONFORMANCE_VISION=ON ../cts/
   - cmake --build .
-  - LD_LIBRARY_PATH=./lib ./bin/vx_test_conformance
+  #- LD_LIBRARY_PATH=./lib ./bin/vx_test_conformance [RUN Disabled]
   - cd ../
   # Mode:2 -- OpenVX Conformance for Vision & Enhanced Vision
   - mkdir build-cts-mode-2
@@ -43,7 +52,7 @@ script:
   - cd build-cts-mode-2
   - cmake -DOPENVX_INCLUDES=$OPENVX_DIR/include -DOPENVX_LIBRARIES=$OPENVX_DIR/bin/libopenvx.so\;$OPENVX_DIR/bin/libvxu.so\;pthread\;dl\;m\;rt -DOPENVX_CONFORMANCE_VISION=ON -DOPENVX_USE_ENHANCED_VISION=ON ../cts/
   - cmake --build .
-  - LD_LIBRARY_PATH=./lib ./bin/vx_test_conformance
+  #- LD_LIBRARY_PATH=./lib ./bin/vx_test_conformance [RUN Disabled]
   - cd ../
   # Mode:3 -- OpenVX Conformance for Neural Net
   - mkdir build-cts-mode-3
@@ -52,7 +61,7 @@ script:
   - cd build-cts-mode-3
   - cmake -DOPENVX_INCLUDES=$OPENVX_DIR/include -DOPENVX_LIBRARIES=$OPENVX_DIR/bin/libopenvx.so\;$OPENVX_DIR/bin/libvxu.so\;pthread\;dl\;m\;rt -DOPENVX_CONFORMANCE_NEURAL_NETWORKS=ON ../cts/
   - cmake --build .
-  - LD_LIBRARY_PATH=./lib ./bin/vx_test_conformance
+  #- LD_LIBRARY_PATH=./lib ./bin/vx_test_conformance [RUN Disabled]
   - cd ../
   # Mode:4 -- OpenVX Conformance for NNEF Import
   # -- TBD --
@@ -63,7 +72,7 @@ script:
   - cd build-cts-mode-5
   - cmake -DOPENVX_INCLUDES=$OPENVX_DIR/include -DOPENVX_LIBRARIES=$OPENVX_DIR/bin/libopenvx.so\;$OPENVX_DIR/bin/libvxu.so\;pthread\;dl\;m\;rt -DOPENVX_CONFORMANCE_VISION=ON -DOPENVX_USE_ENHANCED_VISION=ON -DOPENVX_CONFORMANCE_NEURAL_NETWORKS=ON -DOPENVX_USE_NN=ON -DOPENVX_USE_IX=ON ../cts/
   - cmake --build .
-  - LD_LIBRARY_PATH=./lib ./bin/vx_test_conformance
+  #- LD_LIBRARY_PATH=./lib ./bin/vx_test_conformance [RUN Disabled]
   - cd ../
   # Mode:6 -- OpenVX Conformance for Vision, Enhanced Vision, Pipelining, & Streaming
   - rm -rf install/Linux/x64/Debug
