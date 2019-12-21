@@ -23,18 +23,56 @@ before_script:
   - git submodule update --init --recursive --remote
    
 script:
-  - python Build.py --os=Linux --arch=64 --conf=Release --ix --nn
-  - python Build.py --os=Linux --arch=64 --conf=Debug --ix --nn
+  - python Build.py --os=Linux --conf=Release
+  - python Build.py --os=Linux --conf=Debug
   - export OPENVX_DIR=$(pwd)/install/Linux/x64/Debug
   - export VX_TEST_DATA_PATH=$(pwd)/cts/test_data/
-  - mkdir build-cts
-  - cd build-cts
-  - cmake -DOPENVX_INCLUDES=$OPENVX_DIR/include -DOPENVX_LIBRARIES=$OPENVX_DIR/bin/libopenvx.so\;$OPENVX_DIR/bin/libvxu.so\;pthread\;dl\;m\;rt -DOPENVX_USE_NN=ON -DOPENVX_USE_IX=ON ../cts/
-  - cmake --build .  
+  # Mode:1 -- OpenVX Conformance for Vision
+  - mkdir build-cts-mode-1
+  - rm -rf install/Linux/x64/Debug
+  - python Build.py --os=Linux --arch=64 --conf=Debug --conf_vision
+  - cd build-cts-mode-1
+  - cmake -DOPENVX_INCLUDES=$OPENVX_DIR/include -DOPENVX_LIBRARIES=$OPENVX_DIR/bin/libopenvx.so\;$OPENVX_DIR/bin/libvxu.so\;pthread\;dl\;m\;rt -DOPENVX_CONFORMANCE_VISION=ON ../cts/
+  - cmake --build .
   - LD_LIBRARY_PATH=./lib ./bin/vx_test_conformance
+  - cd ../
+  # Mode:2 -- OpenVX Conformance for Vision & Enhanced Vision
+  - mkdir build-cts-mode-2
+  - rm -rf install/Linux/x64/Debug
+  - python Build.py --os=Linux --arch=64 --conf=Debug --conf_vision --enh_vision
+  - cd build-cts-mode-2
+  - cmake -DOPENVX_INCLUDES=$OPENVX_DIR/include -DOPENVX_LIBRARIES=$OPENVX_DIR/bin/libopenvx.so\;$OPENVX_DIR/bin/libvxu.so\;pthread\;dl\;m\;rt -DOPENVX_CONFORMANCE_VISION=ON -DOPENVX_USE_ENHANCED_VISION=ON ../cts/
+  - cmake --build .
+  - LD_LIBRARY_PATH=./lib ./bin/vx_test_conformance
+  - cd ../
+  # Mode:3 -- OpenVX Conformance for Neural Net
+  - mkdir build-cts-mode-3
+  - rm -rf install/Linux/x64/Debug
+  - python Build.py --os=Linux --arch=64 --conf=Debug --conf_nn
+  - cd build-cts-mode-3
+  - cmake -DOPENVX_INCLUDES=$OPENVX_DIR/include -DOPENVX_LIBRARIES=$OPENVX_DIR/bin/libopenvx.so\;$OPENVX_DIR/bin/libvxu.so\;pthread\;dl\;m\;rt -DOPENVX_CONFORMANCE_NEURAL_NETWORKS=ON ../cts/
+  - cmake --build .
+  - LD_LIBRARY_PATH=./lib ./bin/vx_test_conformance
+  - cd ../
+  # Mode:4 -- OpenVX Conformance for NNEF Import
+  # -- TBD --
+  # Mode:5 -- OpenVX Conformance for Vision, Enhanced Vision, Neural Net, TBD:(NNEF Import), Import/Export, TBD:(NN_16, & Binary)
+  - mkdir build-cts-mode-5
+  - rm -rf install/Linux/x64/Debug
+  - python Build.py --os=Linux --arch=64 --conf=Debug --conf_vision --enh_vision --conf_nn --nn --ix
+  - cd build-cts-mode-5
+  - cmake -DOPENVX_INCLUDES=$OPENVX_DIR/include -DOPENVX_LIBRARIES=$OPENVX_DIR/bin/libopenvx.so\;$OPENVX_DIR/bin/libvxu.so\;pthread\;dl\;m\;rt -DOPENVX_CONFORMANCE_VISION=ON -DOPENVX_USE_ENHANCED_VISION=ON -DOPENVX_CONFORMANCE_NEURAL_NETWORKS=ON -DOPENVX_USE_NN=ON -DOPENVX_USE_IX=ON ../cts/
+  - cmake --build .
+  - LD_LIBRARY_PATH=./lib ./bin/vx_test_conformance
+  - cd ../
+  # Mode:6 -- OpenVX Conformance for Vision, Enhanced Vision, Pipelining, & Streaming
+  - rm -rf install/Linux/x64/Debug
+  - python Build.py --os=Linux --arch=64 --conf=Debug --conf_vision --enh_vision --pipelining --streaming
 
 after_success:
 
 notifications:
   email:
     - kiritigowda@gmail.com
+    - jesse.villarreal@ti.com
+    - brill@cadence.com
