@@ -15,6 +15,7 @@ This document outlines the purpose of this sample implementation as well as prov
 * [Building And Executing](#building-and-executing)
   * [CMake](#cmake)
   * [Concerto](#concerto)
+* [Sample Build Instructions](#sample-build-instructions)
 * [Included Unit Tests](#included-unit-tests)
 * [Debugging](#debugging)
 * [Packaging And Installing](#packaging-and-installing)
@@ -249,6 +250,51 @@ Commands:
     $ cd raw
     $ DYLD_LIBRARY_PATH=../$(TARGET_OUT) ../$(TARGET_OUT)/vx_test
 
+## Sample Build Instructions
+
+### Sample 1 - Build OpenVX 1.3 on Ubuntu 18.04
+
+* Git Clone project with recursive flag to get submodules
+````
+git clone --recursive https://github.com/KhronosGroup/OpenVX-sample-impl.git
+````
+* Use `Build.py` script
+````
+cd OpenVX-sample-impl/
+python Build.py --os=Linux --arch=64 --conf=Debug --conf_vision --enh_vision --conf_nn
+````
+* Build and run conformance
+````
+export OPENVX_DIR=$(pwd)/install/Linux/x64/Debug
+export VX_TEST_DATA_PATH=$(pwd)/cts/test_data/
+mkdir build-cts
+cd build-cts
+cmake -DOPENVX_INCLUDES=$OPENVX_DIR/include -DOPENVX_LIBRARIES=$OPENVX_DIR/bin/libopenvx.so\;$OPENVX_DIR/bin/libvxu.so\;pthread\;dl\;m\;rt -DOPENVX_CONFORMANCE_VISION=ON -DOPENVX_USE_ENHANCED_VISION=ON -DOPENVX_CONFORMANCE_NEURAL_NETWORKS=ON ../cts/
+cmake --build .
+LD_LIBRARY_PATH=./lib ./bin/vx_test_conformance
+````
+
+### Sample 2 - Build OpenVX 1.3 on Raspberry Pi
+
+* Git Clone project with recursive flag to get submodules
+````
+git clone --recursive https://github.com/KhronosGroup/OpenVX-sample-impl.git
+````
+* Use `Build.py` script
+````
+cd OpenVX-sample-impl/
+python Build.py --os=Linux --venum --conf=Debug --conf_vision --enh_vision --conf_nn
+````
+* Build and run conformance
+````
+export OPENVX_DIR=$(pwd)/install/Linux/x64/Debug
+export VX_TEST_DATA_PATH=$(pwd)/cts/test_data/
+mkdir build-cts
+cd build-cts
+cmake -DOPENVX_INCLUDES=$OPENVX_DIR/include -DOPENVX_LIBRARIES=$OPENVX_DIR/bin/libopenvx.so\;$OPENVX_DIR/bin/libvxu.so\;pthread\;dl\;m\;rt -DOPENVX_CONFORMANCE_VISION=ON -DOPENVX_USE_ENHANCED_VISION=ON -DOPENVX_CONFORMANCE_NEURAL_NETWORKS=ON ../cts/
+cmake --build .
+LD_LIBRARY_PATH=./lib ./bin/vx_test_conformance
+````
 
 ## Included Unit Tests
 
