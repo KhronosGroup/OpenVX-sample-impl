@@ -287,7 +287,7 @@ python Build.py --os=Linux --venum --conf=Debug --conf_vision --enh_vision --con
 ````
 * Build and run conformance
 ````
-export OPENVX_DIR=$(pwd)/install/Linux/x64/Debug
+export OPENVX_DIR=$(pwd)/install/Linux/x32/Debug
 export VX_TEST_DATA_PATH=$(pwd)/cts/test_data/
 mkdir build-cts
 cd build-cts
