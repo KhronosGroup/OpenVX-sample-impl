@@ -370,8 +370,10 @@ Installing DEB package
     $ dpkg-deb -i <path>/openvx-*.deb
 
 
-##   Bug Reporting
+## Bug Reporting
 
 Although Khronos is not actively maintaining a public project of this sample implementation, bug reports can be reported back to the working group in an effort to make sure that we don't overlook related specification and implementation issues going forward.
 
-If any bugs are found in the sample implementation, you can notify the Khronos working group via the OpenVX feedback forum: https://www.khronos.org/openvx/feedback_forum
+If any bugs are found in the sample implementation, you can notify the Khronos working group via 
+* File an [issue on the GitHub](https://github.com/KhronosGroup/OpenVX-sample-impl/issues)
+* The OpenVX feedback forum: https://community.khronos.org/c/openvx
