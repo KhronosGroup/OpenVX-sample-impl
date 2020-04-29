@@ -25,51 +25,51 @@ static vx_uint32 vxNextNode(vx_graph graph, vx_uint32 index)
 
 static vx_reference vxLocateBaseLocation(vx_reference ref, vx_size* start, vx_size* end)
 {
-	if (ref->type == VX_TYPE_IMAGE)
-	{
-		start[0] = start[1] = 0;
-		end[0] = ((vx_image)ref)->width;
-		end[1] = ((vx_image)ref)->height;
-	}
-	else
-	{
-		for (vx_uint32 i = 0; i < VX_MAX_TENSOR_DIMENSIONS; i++)
-		{
-			start[i] = 0;
-			end[i] = ((vx_tensor)ref)->dimensions[i];
-		}
-	}
-	while ((ref->type == VX_TYPE_IMAGE && ((vx_image)ref)->parent && ((vx_image)ref)->parent != ((vx_image)ref))
-		||
-		(ref->type == VX_TYPE_TENSOR && ((vx_tensor)ref)->parent && ((vx_tensor)ref)->parent != ((vx_tensor)ref))
-		)
-	{
-		if (ref->type == VX_TYPE_IMAGE)
-		{
-			vx_image img = (vx_image)ref;
-			vx_size plane_offset = img->memory.ptrs[0] - img->parent->memory.ptrs[0];
-			vx_uint32 dy = (vx_uint32)(plane_offset * img->scale[0][VX_DIM_Y] / img->memory.strides[0][VX_DIM_Y]);
-			vx_uint32 dx = (vx_uint32)((plane_offset - (dy * img->memory.strides[0][VX_DIM_Y] / img->scale[0][VX_DIM_Y])) * img->scale[0][VX_DIM_X] / img->memory.strides[0][VX_DIM_X]);
-			start[0] += dx;
-			end[0] += dx;
-			start[1] += dy;
-			end[1] += dy;
-			ref = (vx_reference)img->parent;
-		}
-		else
-		{
-			vx_tensor tensor = (vx_tensor)ref;
-			vx_uint32 offset = 0;
-			for (vx_int32 i = tensor->number_of_dimensions - 1; i >= 0; i--)
-			{
-				start[i] = ((vx_uint8*)tensor->addr - (vx_uint8*)tensor->parent->addr - offset) / tensor->stride[i];
-				end[i] = start[i] + tensor->dimensions[i];
-				offset += (vx_uint32)(start[i] * tensor->stride[i]);
-			}
-			ref = (vx_reference)tensor->parent;
-		}
-	}
-	return ref;
+    if (ref->type == VX_TYPE_IMAGE)
+    {
+        start[0] = start[1] = 0;
+        end[0] = ((vx_image)ref)->width;
+        end[1] = ((vx_image)ref)->height;
+    }
+    else
+    {
+        for (vx_uint32 i = 0; i < VX_MAX_TENSOR_DIMENSIONS; i++)
+        {
+            start[i] = 0;
+            end[i] = ((vx_tensor)ref)->dimensions[i];
+        }
+    }
+    while ((ref->type == VX_TYPE_IMAGE && ((vx_image)ref)->parent && ((vx_image)ref)->parent != ((vx_image)ref))
+        ||
+        (ref->type == VX_TYPE_TENSOR && ((vx_tensor)ref)->parent && ((vx_tensor)ref)->parent != ((vx_tensor)ref))
+        )
+    {
+        if (ref->type == VX_TYPE_IMAGE)
+        {
+            vx_image img = (vx_image)ref;
+            vx_size plane_offset = img->memory.ptrs[0] - img->parent->memory.ptrs[0];
+            vx_uint32 dy = (vx_uint32)(plane_offset * img->scale[0][VX_DIM_Y] / img->memory.strides[0][VX_DIM_Y]);
+            vx_uint32 dx = (vx_uint32)((plane_offset - (dy * img->memory.strides[0][VX_DIM_Y] / img->scale[0][VX_DIM_Y])) * img->scale[0][VX_DIM_X] / img->memory.strides[0][VX_DIM_X]);
+            start[0] += dx;
+            end[0] += dx;
+            start[1] += dy;
+            end[1] += dy;
+            ref = (vx_reference)img->parent;
+        }
+        else
+        {
+            vx_tensor tensor = (vx_tensor)ref;
+            vx_uint32 offset = 0;
+            for (vx_int32 i = tensor->number_of_dimensions - 1; i >= 0; i--)
+            {
+                start[i] = ((vx_uint8*)tensor->addr - (vx_uint8*)tensor->parent->addr - offset) / tensor->stride[i];
+                end[i] = start[i] + tensor->dimensions[i];
+                offset += (vx_uint32)(start[i] * tensor->stride[i]);
+            }
+            ref = (vx_reference)tensor->parent;
+        }
+    }
+    return ref;
 }
 static vx_tensor vxLocateView(vx_tensor mddata, vx_size* start, vx_size* end)
 {
@@ -121,33 +121,33 @@ static vx_bool vxCheckWriteDependency(vx_reference ref1, vx_reference ref2)
     // two images or ROIs
     if (ref1->type == VX_TYPE_IMAGE && ref2->type == VX_TYPE_IMAGE)
     {
-		vx_size rr_start[VX_MAX_TENSOR_DIMENSIONS], rw_start[VX_MAX_TENSOR_DIMENSIONS], rr_end[VX_MAX_TENSOR_DIMENSIONS], rw_end[VX_MAX_TENSOR_DIMENSIONS];
-		vx_reference refr = vxLocateBaseLocation(ref1, rr_start, rr_end);
-		vx_reference refw = vxLocateBaseLocation(ref2, rw_start, rw_end);
-		if (refr == refw)
+        vx_size rr_start[VX_MAX_TENSOR_DIMENSIONS], rw_start[VX_MAX_TENSOR_DIMENSIONS], rr_end[VX_MAX_TENSOR_DIMENSIONS], rw_end[VX_MAX_TENSOR_DIMENSIONS];
+        vx_reference refr = vxLocateBaseLocation(ref1, rr_start, rr_end);
+        vx_reference refw = vxLocateBaseLocation(ref2, rw_start, rw_end);
+        if (refr == refw)
         {
-			if (refr->type == VX_TYPE_IMAGE)
-			{
+            if (refr->type == VX_TYPE_IMAGE)
+            {
             // check for ROI intersection
-				if (rr_start[0] < rw_end[0] && rr_end[0] > rw_start[0] && rr_start[1] < rw_end[1] && rr_end[1] > rw_start[1])
+                if (rr_start[0] < rw_end[0] && rr_end[0] > rw_start[0] && rr_start[1] < rw_end[1] && rr_end[1] > rw_start[1])
                 return vx_true_e;
         }
-			else
-			{
-				if (refr->type == VX_TYPE_TENSOR)
-				{
-					for (vx_uint32 i = 0; i < ((vx_tensor)refr)->number_of_dimensions; i++)
-					{
-						if ((rr_start[i] >= rw_end[i]) ||
-							(rw_start[i] >= rr_end[i]))
-						{
-							return vx_false_e;
-						}
-					}
-					return vx_true_e;
+            else
+            {
+                if (refr->type == VX_TYPE_TENSOR)
+                {
+                    for (vx_uint32 i = 0; i < ((vx_tensor)refr)->number_of_dimensions; i++)
+                    {
+                        if ((rr_start[i] >= rw_end[i]) ||
+                            (rw_start[i] >= rr_end[i]))
+                        {
+                            return vx_false_e;
+                        }
+                    }
+                    return vx_true_e;
     }
-			}
-		}
+            }
+        }
     }
     if (ref1->type == VX_TYPE_TENSOR && ref2->type == VX_TYPE_TENSOR)
     {
@@ -2542,6 +2542,15 @@ VX_API_ENTRY vx_status VX_API_CALL vxScheduleGraph(vx_graph graph)
     vx_status status = VX_SUCCESS;
     if (ownIsValidReference(&graph->base) == vx_false_e)
         return VX_ERROR_INVALID_REFERENCE;
+
+    if (graph->verified == vx_false_e)
+    {
+        status = vxVerifyGraph((vx_graph)graph);
+        if (status != VX_SUCCESS)
+        {
+            return status;
+        }
+    }
 
     if (ownSemTryWait(&graph->lock) == vx_true_e)
     {
