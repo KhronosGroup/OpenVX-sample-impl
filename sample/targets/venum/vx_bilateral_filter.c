@@ -157,7 +157,7 @@ static vx_status VX_CALLBACK vxBilateralFilterValidator(vx_node node, const vx_r
 
 vx_kernel_description_t bilateral_filter_kernel  = {
      VX_KERNEL_BILATERAL_FILTER,
-    "org.khronos.openvx.bilateral_filter ",
+    "org.khronos.openvx.bilateral_filter",
     vxBilateralFilterKernel,
     bilateral_filter_kernel_params, dimof(bilateral_filter_kernel_params),
     vxBilateralFilterValidator,

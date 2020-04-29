@@ -69,7 +69,7 @@ vx_status VX_CALLBACK vxCopyNodeValidator(vx_node node, const vx_reference param
 vx_kernel_description_t copy_kernel =
 {
     VX_KERNEL_COPY,
-    "org.khronos.openvx.copy_node",
+    "org.khronos.openvx.copy",
     vxCopyKernel,
     copy_kernel_params, dimof(copy_kernel_params),
     vxCopyNodeValidator,

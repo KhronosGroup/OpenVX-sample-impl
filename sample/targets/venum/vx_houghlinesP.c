@@ -116,7 +116,7 @@ static vx_param_description_t houghlinesp_kernel_params[] = {
 
 vx_kernel_description_t houghlinesp_kernel = {
     VX_KERNEL_HOUGH_LINES_P,
-    "org.khronos.openvx.hough_lines_probabilistic",
+    "org.khronos.openvx.hough_lines_p",
     vxHoughLinesPKernel,
     houghlinesp_kernel_params, dimof(houghlinesp_kernel_params),
     NULL,

@@ -178,7 +178,7 @@ static vx_param_description_t nonmaxsuppression_kernel_params[] = {
 
 vx_kernel_description_t nonmaxsuppression_kernel = {
     VX_KERNEL_NON_MAX_SUPPRESSION,
-    "org.khronos.openvx.nonmaxsuppression",
+    "org.khronos.openvx.non_max_suppression",
     vxNonMaxSuppressionKernel,
     nonmaxsuppression_kernel_params, dimof(nonmaxsuppression_kernel_params),
     NULL,

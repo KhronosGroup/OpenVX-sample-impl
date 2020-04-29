@@ -197,7 +197,7 @@ static vx_status VX_CALLBACK tensorMatrixMultiplyValidator(vx_node node, const v
 
 vx_kernel_description_t tensor_matrix_multiply_kernel  = {
      VX_KERNEL_TENSOR_MATRIX_MULTIPLY,
-    "org.khronos.openvx.tensor_matrix_multiply ",
+    "org.khronos.openvx.tensor_matrix_multiply",
     tensorMultiplyMatrixKernel,
     tensor_matrix_multiply_kernel_params, dimof(tensor_matrix_multiply_kernel_params),
     tensorMatrixMultiplyValidator,

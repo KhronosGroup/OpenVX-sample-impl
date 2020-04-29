@@ -173,7 +173,7 @@ static vx_status VX_CALLBACK vxWeightedAverageOutputValidator(vx_node node, vx_u
 
 vx_kernel_description_t weightedaverage_kernel = {
     VX_KERNEL_WEIGHTED_AVERAGE,
-    "org.khronos.openvx.weightedaverage",
+    "org.khronos.openvx.weighted_average",
     vxWeightedAverageKernel,
     weightedaverage_kernel_params, dimof(weightedaverage_kernel_params),
     NULL,

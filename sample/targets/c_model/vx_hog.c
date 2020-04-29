@@ -338,7 +338,7 @@ static vx_param_description_t hogfeatures_kernel_params[] = {
 
 vx_kernel_description_t hogfeatures_kernel = {
     VX_KERNEL_HOG_FEATURES,
-    "org.khronos.openvx.hogfeatures",
+    "org.khronos.openvx.hog_features",
     vxHogFeaturesKernel,
     hogfeatures_kernel_params, dimof(hogfeatures_kernel_params),
     NULL,
