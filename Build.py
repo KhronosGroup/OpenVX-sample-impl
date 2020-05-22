@@ -100,6 +100,8 @@ def main():
     parser.add_option("--f16", dest="f16", help="Add -DEXPERIMENTAL_PLATFORM_SUPPORTS_16_FLOAT=ON to support VX_TYPE_FLOAT16", default=False, action='store_true')
     parser.add_option("--venum", dest="venum", help="Add -DEXPERIMENTAL_USE_VENUM=ON to build also raspberrypi 3B+ Neon target[Default False]", default=False, action='store_true')
     parser.add_option("--opencl", dest="opencl", help="Add -DEXPERIMENTAL_USE_OPENCL=ON to build also OpenCL target [Default False]", default=False, action='store_true')
+    # C Flags
+    parser.add_option("--c_flags", dest="c_flags", help="Set C Compiler Flags -DCMAKE_C_FLAGS=" " [Default empty]", default='')
 
     options, args = parser.parse_args()
     if options.env_vars != "False":
@@ -191,9 +193,11 @@ def main():
         cmd += ['-DBUILD_X64=1']
     cmd += [cmake_generator_command]
     if options.c_compiler:
-        cmd += ['-DCMAKE_C_COMPILER="' + options.c_compiler+'"']
+        cmd += ['-DCMAKE_C_COMPILER=' + options.c_compiler]
+    if options.c_flags:
+        cmd += ['-DCMAKE_C_FLAGS="' + options.c_flags + '"']
     if options.cpp_compiler:
-        cmd += ['-DCMAKE_CXX_COMPILER="' + options.c_compiler+'"']
+        cmd += ['-DCMAKE_CXX_COMPILER=' + options.cpp_compiler]
     if options.package.lower() != 'false':
         cmd += ['-DBUILD_PACKAGES=1']
     if options.dump_commands:
