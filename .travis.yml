@@ -30,7 +30,7 @@ script:
   # Travis Mode -- OpenVX Conformance for Vision, Enhanced Vision, & Neural Net [Can not run CI longer than 30 min on Travis Open Source Version]
   - mkdir build-cts-travis-mode
   - rm -rf install/Linux/x64/Debug
-  - python Build.py --os=Linux --arch=64 --conf=Debug --conf_vision --enh_vision --conf_nn
+  - python Build.py --os=Linux --arch=64 --conf=Debug --conf_vision --enh_vision --conf_nn --c="-Wall -fprofile-arcs -ftest-coverage -std=c99"
   - cd build-cts-travis-mode
   - cmake -DOPENVX_INCLUDES=$OPENVX_DIR/include -DOPENVX_LIBRARIES=$OPENVX_DIR/bin/libopenvx.so\;$OPENVX_DIR/bin/libvxu.so\;pthread\;dl\;m\;rt -DOPENVX_CONFORMANCE_VISION=ON -DOPENVX_USE_ENHANCED_VISION=ON -DOPENVX_CONFORMANCE_NEURAL_NETWORKS=ON ../cts/
   - cmake --build .
@@ -79,6 +79,10 @@ script:
   - python Build.py --os=Linux --arch=64 --conf=Debug --conf_vision --enh_vision --pipelining --streaming
 
 after_success:
+  - lcov --directory . --capture --output-file coverage.info
+  - lcov --remove coverage.info '/usr/*' --output-file coverage.info
+  - lcov --list coverage.info
+  - bash <(curl -s https://codecov.io/bash) || echo "codecov did not collect coverage reports"
 
 notifications:
   email:
