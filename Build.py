@@ -1,5 +1,4 @@
 #
-
 # Copyright (c) 2011-2017 The Khronos Group Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,16 +14,13 @@
 # limitations under the License.
 #
 
-
 import os
 import sys
 import subprocess
 import shutil
 from optparse import OptionParser
 
-
 gProjName = "OpenVX"
-
 
 class os_enum(object):
     Linux = 1
@@ -41,7 +37,6 @@ class os_enum(object):
             return "Android"
         return ""
 
-
 class arch_enum(object):
     x64 = 1
     x32 = 2
@@ -54,7 +49,6 @@ class arch_enum(object):
             return "x32"
         return ""
 
-
 class configuration_enum(object):
     Release = 1
     Debug = 2
@@ -66,7 +60,6 @@ class configuration_enum(object):
         elif eVal == configuration_enum.Debug:
             return "Debug"
         return ""
-
 
 def main():
     parser = OptionParser(usage='usage: %prog [options]', description = "Generate build make / sln files")
