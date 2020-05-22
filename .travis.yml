@@ -30,7 +30,7 @@ script:
   # Travis Mode -- OpenVX Conformance for Vision, Enhanced Vision, & Neural Net [Can not run CI longer than 30 min on Travis Open Source Version]
   - mkdir build-cts-travis-mode
   - rm -rf install/Linux/x64/Debug
-  - python Build.py --os=Linux --arch=64 --conf=Debug --conf_vision --enh_vision --conf_nn --c="-Wall -fprofile-arcs -ftest-coverage"
+  - python Build.py --os=Linux --arch=64 --conf=Debug --conf_vision --enh_vision --conf_nn --c=-Wall -fprofile-arcs -ftest-coverage
   - cd build-cts-travis-mode
   - cmake -DOPENVX_INCLUDES=$OPENVX_DIR/include -DOPENVX_LIBRARIES=$OPENVX_DIR/bin/libopenvx.so\;$OPENVX_DIR/bin/libvxu.so\;pthread\;dl\;m\;rt -DOPENVX_CONFORMANCE_VISION=ON -DOPENVX_USE_ENHANCED_VISION=ON -DOPENVX_CONFORMANCE_NEURAL_NETWORKS=ON ../cts/
   - cmake --build .
