@@ -86,6 +86,6 @@ after_success:
 
 notifications:
   email:
-    - kiritigowda@gmail.com
-    - jesse.villarreal@ti.com
     - brill@cadence.com
+    - jesse.villarreal@ti.com
+    - kiriti.nageshgowda@amd.com
