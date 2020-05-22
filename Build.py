@@ -191,9 +191,9 @@ def main():
         cmd += ['-DBUILD_X64=1']
     cmd += [cmake_generator_command]
     if options.c_compiler:
-        cmd += ['-DCMAKE_C_COMPILER=' + options.c_compiler]
+        cmd += ['-DCMAKE_C_COMPILER="' + options.c_compiler+'"']
     if options.cpp_compiler:
-        cmd += ['-DCMAKE_CXX_COMPILER=' + options.c_compiler]
+        cmd += ['-DCMAKE_CXX_COMPILER="' + options.c_compiler+'"']
     if options.package.lower() != 'false':
         cmd += ['-DBUILD_PACKAGES=1']
     if options.dump_commands:
