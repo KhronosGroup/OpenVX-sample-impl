@@ -37,7 +37,6 @@ script:
   - LD_LIBRARY_PATH=./lib ./bin/vx_test_conformance
   - cd ../
   # Mode:1 -- OpenVX Conformance for Vision
-  - mkdir build-cts-mode-1
   - export OPENVX_DIR=$(pwd)/install/Linux/x64/Release
   - mkdir build-cts-mode-1
   - rm -rf install/Linux/x64/Release
@@ -77,8 +76,10 @@ script:
   #- LD_LIBRARY_PATH=./lib ./bin/vx_test_conformance [RUN Disabled]
   - cd ../
   # Mode:6 -- OpenVX Conformance for Vision, Enhanced Vision, Pipelining, & Streaming
+  - mkdir build-cts-mode-6
   - rm -rf install/Linux/x64/Release
   - python Build.py --os=Linux --arch=64 --conf=Release --conf_vision --enh_vision --pipelining --streaming
+  # -- TBD: Run CTS --
 
 after_success:
   - lcov --directory . --capture --output-file coverage.info
