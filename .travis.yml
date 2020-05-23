@@ -1,6 +1,6 @@
 language: c
 sudo: false
-dist: trusty
+dist: xenial
 
 os:
   - linux
@@ -30,16 +30,17 @@ script:
   # Travis Mode -- OpenVX Conformance for Vision, Enhanced Vision, & Neural Net [Can not run CI longer than 30 min on Travis Open Source Version]
   - mkdir build-cts-travis-mode
   - rm -rf install/Linux/x64/Debug
-  - python Build.py --os=Linux --arch=64 --conf=Debug --conf_vision --enh_vision --conf_nn
+  - python Build.py --os=Linux --arch=64 --conf=Debug --conf_vision --enh_vision --conf_nn --c_flags="-fprofile-arcs -ftest-coverage" --cpp_flags="-fprofile-arcs -ftest-coverage"
   - cd build-cts-travis-mode
   - cmake -DOPENVX_INCLUDES=$OPENVX_DIR/include -DOPENVX_LIBRARIES=$OPENVX_DIR/bin/libopenvx.so\;$OPENVX_DIR/bin/libvxu.so\;pthread\;dl\;m\;rt -DOPENVX_CONFORMANCE_VISION=ON -DOPENVX_USE_ENHANCED_VISION=ON -DOPENVX_CONFORMANCE_NEURAL_NETWORKS=ON ../cts/
   - cmake --build .
   - LD_LIBRARY_PATH=./lib ./bin/vx_test_conformance
   - cd ../
   # Mode:1 -- OpenVX Conformance for Vision
+  - export OPENVX_DIR=$(pwd)/install/Linux/x64/Release
   - mkdir build-cts-mode-1
-  - rm -rf install/Linux/x64/Debug
-  - python Build.py --os=Linux --arch=64 --conf=Debug --conf_vision
+  - rm -rf install/Linux/x64/Release
+  - python Build.py --os=Linux --arch=64 --conf=Release --conf_vision
   - cd build-cts-mode-1
   - cmake -DOPENVX_INCLUDES=$OPENVX_DIR/include -DOPENVX_LIBRARIES=$OPENVX_DIR/bin/libopenvx.so\;$OPENVX_DIR/bin/libvxu.so\;pthread\;dl\;m\;rt -DOPENVX_CONFORMANCE_VISION=ON ../cts/
   - cmake --build .
@@ -47,8 +48,8 @@ script:
   - cd ../
   # Mode:2 -- OpenVX Conformance for Vision & Enhanced Vision
   - mkdir build-cts-mode-2
-  - rm -rf install/Linux/x64/Debug
-  - python Build.py --os=Linux --arch=64 --conf=Debug --conf_vision --enh_vision
+  - rm -rf install/Linux/x64/Release
+  - python Build.py --os=Linux --arch=64 --conf=Release --conf_vision --enh_vision
   - cd build-cts-mode-2
   - cmake -DOPENVX_INCLUDES=$OPENVX_DIR/include -DOPENVX_LIBRARIES=$OPENVX_DIR/bin/libopenvx.so\;$OPENVX_DIR/bin/libvxu.so\;pthread\;dl\;m\;rt -DOPENVX_CONFORMANCE_VISION=ON -DOPENVX_USE_ENHANCED_VISION=ON ../cts/
   - cmake --build .
@@ -56,8 +57,8 @@ script:
   - cd ../
   # Mode:3 -- OpenVX Conformance for Neural Net
   - mkdir build-cts-mode-3
-  - rm -rf install/Linux/x64/Debug
-  - python Build.py --os=Linux --arch=64 --conf=Debug --conf_nn
+  - rm -rf install/Linux/x64/Release
+  - python Build.py --os=Linux --arch=64 --conf=Release --conf_nn
   - cd build-cts-mode-3
   - cmake -DOPENVX_INCLUDES=$OPENVX_DIR/include -DOPENVX_LIBRARIES=$OPENVX_DIR/bin/libopenvx.so\;$OPENVX_DIR/bin/libvxu.so\;pthread\;dl\;m\;rt -DOPENVX_CONFORMANCE_NEURAL_NETWORKS=ON ../cts/
   - cmake --build .
@@ -67,21 +68,27 @@ script:
   # -- TBD --
   # Mode:5 -- OpenVX Conformance for Vision, Enhanced Vision, Neural Net, TBD:(NNEF Import), Import/Export, TBD:(NN_16, & Binary)
   - mkdir build-cts-mode-5
-  - rm -rf install/Linux/x64/Debug
-  - python Build.py --os=Linux --arch=64 --conf=Debug --conf_vision --enh_vision --conf_nn --nn --ix
+  - rm -rf install/Linux/x64/Release
+  - python Build.py --os=Linux --arch=64 --conf=Release --conf_vision --enh_vision --conf_nn --nn --ix
   - cd build-cts-mode-5
   - cmake -DOPENVX_INCLUDES=$OPENVX_DIR/include -DOPENVX_LIBRARIES=$OPENVX_DIR/bin/libopenvx.so\;$OPENVX_DIR/bin/libvxu.so\;pthread\;dl\;m\;rt -DOPENVX_CONFORMANCE_VISION=ON -DOPENVX_USE_ENHANCED_VISION=ON -DOPENVX_CONFORMANCE_NEURAL_NETWORKS=ON -DOPENVX_USE_NN=ON -DOPENVX_USE_IX=ON ../cts/
   - cmake --build .
   #- LD_LIBRARY_PATH=./lib ./bin/vx_test_conformance [RUN Disabled]
   - cd ../
   # Mode:6 -- OpenVX Conformance for Vision, Enhanced Vision, Pipelining, & Streaming
-  - rm -rf install/Linux/x64/Debug
-  - python Build.py --os=Linux --arch=64 --conf=Debug --conf_vision --enh_vision --pipelining --streaming
+  - mkdir build-cts-mode-6
+  - rm -rf install/Linux/x64/Release
+  - python Build.py --os=Linux --arch=64 --conf=Release --conf_vision --enh_vision --pipelining --streaming
+  # -- TBD: Run CTS --
 
 after_success:
+  - lcov --directory . --capture --output-file coverage.info
+  - lcov --remove coverage.info '/usr/*' --output-file coverage.info
+  - lcov --list coverage.info
+  - bash <(curl -s https://codecov.io/bash) || echo "codecov did not collect coverage reports"
 
 notifications:
   email:
-    - kiritigowda@gmail.com
-    - jesse.villarreal@ti.com
     - brill@cadence.com
+    - jesse.villarreal@ti.com
+    - kiriti.nageshgowda@amd.com
