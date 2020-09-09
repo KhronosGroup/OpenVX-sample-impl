@@ -686,6 +686,12 @@ typedef struct _vx_kernel_attr_t {
 #endif
 } vx_kernel_attr_t;
 
+/*!
+* \brief The pointer to the kernel object deinitializer.
+* \param [in] kernel object local ptr.
+*/
+typedef vx_status(VX_CALLBACK *vx_kernel_object_deinitialize_f)(vx_kernel nn_kernel);
+
 /*! \brief The internal representation of an abstract kernel.
  * \ingroup group_int_kernel
  */
@@ -723,6 +729,8 @@ typedef struct _vx_kernel {
     vx_tiling_kernel_f tilingfast_function;
     vx_tiling_kernel_f tilingflexible_function;
 #endif
+    /*! \brief The pointer to the kernel object deinitializer. */
+    vx_kernel_object_deinitialize_f kernel_object_deinitialize;
 } vx_kernel_t;
 
 /*! \brief The function which initializes the target

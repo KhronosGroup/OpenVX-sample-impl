@@ -61,6 +61,9 @@ static VX_INLINE int validFormat(vx_enum data_type, vx_uint8 fixed_point_pos)
 #ifdef EXPERIMENTAL_PLATFORM_SUPPORTS_16_FLOAT
             data_type == VX_TYPE_FLOAT16 ||
 #endif
+#ifdef OPENVX_CONFORMANCE_NNEF_IMPORT
+            data_type == VX_TYPE_FLOAT32 || data_type == VX_TYPE_INT32 || data_type == VX_TYPE_BOOL ||
+#endif
             (data_type == VX_TYPE_INT16 && fixed_point_pos == Q78_FIXED_POINT_POSITION) ||
             (data_type == VX_TYPE_INT8 && fixed_point_pos == 0) ||
             (data_type == VX_TYPE_UINT8 && fixed_point_pos == 0);

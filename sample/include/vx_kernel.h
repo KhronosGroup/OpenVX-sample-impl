@@ -87,4 +87,5 @@ vx_status ownDeinitializeKernel(vx_kernel *kernel);
  */
 vx_bool ownIsKernelUnique(vx_kernel kernel);
 
+
 #endif

@@ -465,6 +465,13 @@ VX_API_ENTRY vx_status VX_API_CALL vxReleaseKernel(vx_kernel *kernel)
     if (kernel && ownIsValidSpecificReference(&((*kernel)->base), VX_TYPE_KERNEL) == vx_true_e)
     {
         VX_PRINT(VX_ZONE_KERNEL, "Releasing kernel "VX_FMT_REF"\n", (void *)*kernel);
+
+        // deinitialize kernel object
+        if ((*kernel)->kernel_object_deinitialize != NULL)
+        {
+            (*kernel)->kernel_object_deinitialize(*kernel);
+        }
+
         ownReleaseReferenceInt((vx_reference *)kernel, VX_TYPE_KERNEL, VX_EXTERNAL, NULL);
     }
     else
@@ -886,7 +893,6 @@ VX_API_ENTRY vx_status VX_API_CALL vxRemoveKernel(vx_kernel kernel)
         vx_char targetName[VX_MAX_TARGET_NAME];
         vx_uint32 kernelIdx = 0u;
         vx_context context = kernel->base.context;
-
 
         /* Remoe the reference from the context */
         ownRemoveReference(context, &kernel->base);

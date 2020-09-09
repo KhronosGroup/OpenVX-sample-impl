@@ -26,7 +26,7 @@ vx_destructor_t destructors[] = {
         {VX_TYPE_GRAPH,         &ownDestructGraph},
         {VX_TYPE_NODE,          &ownDestructNode},
         {VX_TYPE_TARGET,        NULL},
-        {VX_TYPE_KERNEL,        NULL}, /*!< \todo need a destructor here */
+        {VX_TYPE_KERNEL,        NULL},/*!< \todo need a destructor here */
         {VX_TYPE_PARAMETER,     &ownDestructParameter},
         {VX_TYPE_ERROR,         NULL},
         {VX_TYPE_META_FORMAT,   NULL},

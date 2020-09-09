@@ -226,19 +226,19 @@ static vx_status bilateralFilter_8u(void* src, vx_size* src_strides, vx_size* di
                     neighborVal = vsetq_lane_f32(*((vx_uint8 *)src + tmpy * src_strides[1] + tmpx2 * src_strides[0]), neighborVal, 2);
                     neighborVal = vsetq_lane_f32(*((vx_uint8 *)src + tmpy * src_strides[1] + tmpx3 * src_strides[0]), neighborVal, 3);
 
-                    if (neighbor_x < 0 || neighbor_y < 0)
+                    if (neighbor_x < 0 || neighbor_y < 0 || neighbor_x >= dims[0] || neighbor_y >= dims[1])
                         if (border_mode == VX_BORDER_MODE_CONSTANT)
                             neighborVal = vsetq_lane_f32(bordermode->constant_value.U8, neighborVal, 0);
 
-                    if (neighbor_x1 < 0 || neighbor_y < 0)
+                    if (neighbor_x1 < 0 || neighbor_y < 0 || neighbor_x1 >= dims[0] || neighbor_y >= dims[1])
                         if (border_mode == VX_BORDER_MODE_CONSTANT)
                             neighborVal = vsetq_lane_f32(bordermode->constant_value.U8, neighborVal, 1);
 
-                    if (neighbor_x2 < 0 || neighbor_y < 0)
+                    if (neighbor_x2 < 0 || neighbor_y < 0 || neighbor_x2 >= dims[0] || neighbor_y >= dims[1])
                         if (border_mode == VX_BORDER_MODE_CONSTANT)
                             neighborVal = vsetq_lane_f32(bordermode->constant_value.U8, neighborVal, 2);
 
-                    if (neighbor_x3 < 0 || neighbor_y < 0)
+                    if (neighbor_x3 < 0 || neighbor_y < 0 || neighbor_x3 >= dims[0] || neighbor_y >= dims[1])
                         if (border_mode == VX_BORDER_MODE_CONSTANT)
                             neighborVal = vsetq_lane_f32(bordermode->constant_value.U8, neighborVal, 3);
 
@@ -829,7 +829,8 @@ vx_status vxBilateralFilter(void* src, vx_size* src_strides, vx_size* dims, vx_s
                             void* dst, vx_size* dst_strides, vx_enum type, vx_border_t *bordermode)
 {
     vx_status status = VX_SUCCESS;
-    if ((num_of_dims != 3 && num_of_dims != 2) || (num_of_dims == 3 && dims[0] != 3))
+    // In case of 3 dimensions the 1st dimension of the vx_tensor. Which can be of size 1 or 2.
+    if ((num_of_dims != 3 && num_of_dims != 2) || (num_of_dims == 3 && (dims[0] != 1 && dims[0] != 2)))
     {
         return VX_ERROR_INVALID_PARAMETERS;
     }

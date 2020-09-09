@@ -24,6 +24,9 @@ include_directories( BEFORE
                      ${VX_HEADER_DIR}
                      ${CMAKE_SOURCE_DIR}/utils
                      ${CMAKE_SOURCE_DIR}/debug
+if (OPENVX_CONFORMANCE_NNEF_IMPORT)
+                     ${CMAKE_SOURCE_DIR}/kernels/nnef_parser
+endif (OPENVX_CONFORMANCE_NNEF_IMPORT)
                      ${LIBXML2_INCLUDE_DIR})
 
 if (OPENVX_USE_OPENCL_INTEROP)
@@ -75,7 +78,11 @@ if (CYGWIN)
     set_target_properties( ${TARGET_NAME} PROPERTIES LINK_FLAGS ${CMAKE_CURRENT_SOURCE_DIR}/${DEF_FILE} )
 endif (CYGWIN)
 
+if (OPENVX_CONFORMANCE_NNEF_IMPORT)
+target_link_libraries( ${TARGET_NAME} openvx-helper utils-lib vx_debug nnef-lib ${LINK_ADDITIONAL} )
+else ()
 target_link_libraries( ${TARGET_NAME} openvx-helper utils-lib vx_debug ${LINK_ADDITIONAL} )
+endif (OPENVX_CONFORMANCE_NNEF_IMPORT)
 
 install ( TARGETS ${TARGET_NAME} 
           RUNTIME DESTINATION bin

@@ -573,8 +573,8 @@ VX_API_ENTRY vx_image VX_API_CALL vxCreateImageFromROI(vx_image image, const vx_
     if (ownIsValidImage(image) == vx_true_e)
     {
         if (!rect ||
-            rect->start_x > rect->end_x ||
-            rect->start_y > rect->end_y ||
+            rect->start_x >= rect->end_x ||
+            rect->start_y >= rect->end_y ||
             rect->end_x > image->width ||
             rect->end_y > image->height)
         {
@@ -2082,7 +2082,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxCopyImagePatch(
     }
 
     /* more bad parameters */
-    if (zero_area == vx_false_e &&
+    if (zero_area == vx_true_e ||
         ((plane_index >= image->memory.nptrs) ||
          (plane_index >= image->planes) ||
          (start_x >= end_x) ||
@@ -2422,7 +2422,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxMapImagePatch(
     }
 
     /* more bad parameters */
-    if (zero_area == vx_false_e &&
+    if (zero_area == vx_true_e ||
         ((plane_index >= image->memory.nptrs) ||
         (plane_index >= image->planes) ||
         (start_x >= end_x) ||
