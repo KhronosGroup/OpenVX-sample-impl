@@ -65,7 +65,14 @@ script:
   #- LD_LIBRARY_PATH=./lib ./bin/vx_test_conformance [RUN Disabled]
   - cd ../
   # Mode:4 -- OpenVX Conformance for NNEF Import
-  # -- TBD --
+  - mkdir build-cts-mode-4
+  - rm -rf install/Linux/x64/Release
+  - python Build.py --os=Linux --arch=64 --conf=Release --conf_nnef
+  - cd build-cts-mode-4
+  - cmake -DOPENVX_INCLUDES=$OPENVX_DIR/include -DOPENVX_LIBRARIES=$OPENVX_DIR/bin/libopenvx.so\;$OPENVX_DIR/bin/libvxu.so\;pthread\;dl\;m\;rt -DOPENVX_CONFORMANCE_NNEF_IMPORT=ON ../cts/
+  - cmake --build .
+  - LD_LIBRARY_PATH=./lib ./bin/vx_test_conformance --filter=TensorNNEF
+  - cd ../
   # Mode:5 -- OpenVX Conformance for Vision, Enhanced Vision, Neural Net, TBD:(NNEF Import), Import/Export, TBD:(NN_16, & Binary)
   - mkdir build-cts-mode-5
   - rm -rf install/Linux/x64/Release
