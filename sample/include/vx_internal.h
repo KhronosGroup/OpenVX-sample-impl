@@ -85,6 +85,9 @@
 #if defined(EXPERIMENTAL_USE_OPENCL)
 #include <VX/vx_khr_opencl.h>
 #endif
+#if defined(OPENVX_USE_USER_DATA_OBJECT)
+#include <VX/vx_khr_user_data_object.h>
+#endif
 
 #define VX_MAX_TENSOR_DIMENSIONS 6
 #define Q78_FIXED_POINT_POSITION 8
@@ -1481,6 +1484,26 @@ typedef struct _vx_import {
     vx_reference *refs;
 } vx_import_t;
 
+
+#if defined(OPENVX_USE_USER_DATA_OBJECT)
+void ownDestructUserDataObject(vx_reference ref);
+
+/*! \brief user data object descriptor as placed in shared memory
+ * \ingroup group_int_user_data_object
+ */
+typedef struct _vx_user_data_object
+{
+    /*! \brief The internal reference object. */
+    vx_reference_t base;
+    /*! \brief Memory layout */
+    vx_memory_t memory;
+    /*! \brief size of buffer in bytes */
+    vx_uint32 size;
+    /*! \brief The type name of the user data object. */
+    vx_char type_name[VX_MAX_REFERENCE_NAME];
+} vx_user_data_object_t;
+#endif
+
 /*!
  * \brief This structure is used to extract meta data from a validation
  * function. If the data object between nodes is virtual, this will allow the
@@ -1557,6 +1580,13 @@ typedef struct _vx_meta_format
             vx_enum data_type;                              /*! \brief Type of data element */
             vx_int8 fixed_point_position;                  /*! \brief Fixed point position */
         } tensor;
+#if defined(OPENVX_USE_USER_DATA_OBJECT)
+        /*! \brief When a VX_TYPE_USER_DATA_OBJECT is specified */
+        struct user_data_object {
+            vx_size size;  /*!< \brief The size of the user data object */
+            vx_char type_name[VX_MAX_REFERENCE_NAME];  /*!< \brief The name of the user data object */
+        } user_data_object;
+#endif
     } dim;
 
     vx_kernel_image_valid_rectangle_f set_valid_rectangle_callback;

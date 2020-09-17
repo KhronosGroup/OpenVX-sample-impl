@@ -47,6 +47,10 @@ vx_destructor_t destructors[] = {
         {VX_TYPE_REMAP,         &ownDestructRemap},
         {VX_TYPE_THRESHOLD,     NULL},
         {VX_TYPE_TENSOR,        &ownDestructTensor},
+#if defined(OPENVX_USE_USER_DATA_OBJECT)
+        {VX_TYPE_USER_DATA_OBJECT, &ownDestructUserDataObject},
+#endif
+
 };
 
 vx_enum static_objects[] = {
@@ -234,6 +238,9 @@ static vx_type_size_t type_sizes[] = {
     {VX_TYPE_TENSOR,    sizeof(vx_tensor_t)},
 #if defined(OPENVX_USE_IX) || defined(OPENVX_USE_XML)
     {VX_TYPE_IMPORT,    sizeof(vx_import_t)},
+#endif
+#if defined(OPENVX_USE_USER_DATA_OBJECT)
+    {VX_TYPE_USER_DATA_OBJECT, sizeof(vx_user_data_object)},
 #endif
     // others
 };
@@ -544,6 +551,9 @@ VX_API_ENTRY vx_status VX_API_CALL vxReleaseReference(vx_reference* ref_ptr)
         case VX_TYPE_TENSOR:       status = vxReleaseTensor((vx_tensor*)ref_ptr); break;
 #if defined(OPENVX_USE_IX) || defined(OPENVX_USE_XML)
         case VX_TYPE_IMPORT:       status = vxReleaseImport((vx_import*)ref_ptr); break;
+#endif
+#if defined(OPENVX_USE_USER_DATA_OBJECT)
+        case VX_TYPE_USER_DATA_OBJECT: status = vxReleaseUserDataObject((vx_user_data_object*)ref_ptr); break;
 #endif
         default:
             break;

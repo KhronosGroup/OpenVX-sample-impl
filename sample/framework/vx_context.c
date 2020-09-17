@@ -335,7 +335,11 @@ VX_INT_API vx_bool ownMemoryMap(
                     context->memory_maps[id].extra.image_data.plane_index = extra->image_data.plane_index;
                     context->memory_maps[id].extra.image_data.rect        = extra->image_data.rect;
                 }
-                else if (VX_TYPE_ARRAY == ref->type || VX_TYPE_LUT == ref->type)
+                else if (VX_TYPE_ARRAY == ref->type || VX_TYPE_LUT == ref->type
+#if defined(OPENVX_USE_USER_DATA_OBJECT)
+                            || VX_TYPE_USER_DATA_OBJECT == ref->type
+#endif
+                )
                 {
                     vx_memory_map_extra* extra = (vx_memory_map_extra*)extra_data;
                     context->memory_maps[id].extra.array_data.start = extra->array_data.start;

@@ -69,6 +69,10 @@ static vx_status ownInitObjectArrayInt(vx_object_array arr, vx_reference exempla
     vx_size tensor_num_dims, tensor_dims[VX_MAX_TENSOR_DIMENSIONS];
     vx_enum tensor_type;
     vx_int8 tensor_fpp;
+#if defined(OPENVX_USE_USER_DATA_OBJECT)
+    vx_size udo_size;
+    vx_char udo_name[VX_MAX_REFERENCE_NAME];
+#endif
 
     if (is_virtual)
     {
@@ -207,6 +211,13 @@ static vx_status ownInitObjectArrayInt(vx_object_array arr, vx_reference exempla
                     vxQueryTensor((vx_tensor)exemplar, VX_TENSOR_FIXED_POINT_POSITION, &tensor_fpp, sizeof(tensor_fpp)) != VX_SUCCESS)
                     status = VX_ERROR_INVALID_REFERENCE;
                 break;
+#if defined(OPENVX_USE_USER_DATA_OBJECT)
+            case VX_TYPE_USER_DATA_OBJECT:
+                if (vxQueryUserDataObject((vx_user_data_object)exemplar, VX_USER_DATA_OBJECT_SIZE, &udo_size, sizeof(udo_size)) != VX_SUCCESS ||
+                    vxQueryUserDataObject((vx_user_data_object)exemplar, VX_USER_DATA_OBJECT_NAME, &udo_name[0], sizeof(vx_char) * VX_MAX_REFERENCE_NAME) != VX_SUCCESS)
+                    status = VX_ERROR_INVALID_REFERENCE;
+                break;
+#endif
             default:
                 status =  VX_ERROR_INVALID_TYPE;
                 break;
@@ -248,9 +259,14 @@ static vx_status ownInitObjectArrayInt(vx_object_array arr, vx_reference exempla
                 case VX_TYPE_THRESHOLD:
                     ref = (vx_reference)vxCreateThreshold(context, threshold_type, threshold_data_type);
                     break;
-            case VX_TYPE_TENSOR:
+                case VX_TYPE_TENSOR:
                     ref = (vx_reference)vxCreateTensor(context, tensor_num_dims, tensor_dims, tensor_type, tensor_fpp);
                     break;
+#if defined(OPENVX_USE_USER_DATA_OBJECT)
+                case VX_TYPE_USER_DATA_OBJECT:
+                    ref = (vx_reference)vxCreateUserDataObject(context, udo_name, udo_size, NULL);
+                    break;
+#endif
                 default:
                     ref = NULL;
                     break;

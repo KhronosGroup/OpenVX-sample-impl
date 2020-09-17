@@ -32,12 +32,14 @@ OPENVX_USE_IX (ENABLED)
 OPENVX_USE_NN (ENABLED)
 - Enables the neural network extension
 
+OPENVX_USE_USER_DATA_OBJECT (ENABLED)
+- Enables the user data object extension
+
 OPENVX_USE_PIPELINING (DISABLED)
 - Enables the pipelining extension
 
 OPENVX_USE_STREAMING (DISABLED)
 - Enables the streaming extension
-
 
 IMPLEMENTATION SPECIFIC OPTIONS:
 --------------------------------
@@ -77,7 +79,7 @@ OPENVX_USE_S16 (DISABLED)
 EXPERIMENTAL_PLATFORM_SUPPORTS_16_FLOAT (DISABLED)
 - defines a scalar type vx_float16, if platform supports it (otherwise,
   no type is defined)
-  
+
 
 ===================================================================
 2. AUTO configured either in the code or based on environment in build
