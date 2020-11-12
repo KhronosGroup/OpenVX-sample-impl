@@ -19,11 +19,11 @@
 
 #include <vx_kernel.h>
 
-#include "nnef_parser.h"
+#include "cnnef.h"
 
 #define MAXLEN 512
 
-static inline size_t sizeof_tensor_type(int type)
+static inline size_t sizeof_tensor_type(vx_int32 type)
 {
     if (type == VX_TYPE_FLOAT32)
         return sizeof(vx_float32);;
@@ -35,7 +35,7 @@ static inline size_t sizeof_tensor_type(int type)
     return 0;
 }
 
-static inline enum vx_type_e tensor_vx_type(char * nnef_dtype)
+static inline enum vx_type_e tensor_vx_type(const vx_char * nnef_dtype)
 {
     if (strcmp(nnef_dtype, "scalar") == 0)
     {
@@ -52,14 +52,23 @@ static inline enum vx_type_e tensor_vx_type(char * nnef_dtype)
     return VX_TYPE_INVALID;
 }
 
-static inline size_t compute_patch_size(const size_t *view_end, size_t number_of_dimensions)
+static inline vx_size compute_patch_size(const vx_size *view_end, vx_size number_of_dimensions)
 {
-    size_t total_size = 1;
-    for (size_t i = 0; i < number_of_dimensions; i++)
+    vx_size total_size = 1;
+    for (vx_size i = 0; i < number_of_dimensions; i++)
     {
         total_size *= view_end[i];
     }
     return total_size;
+}
+
+// copying the dims into dimensions since OpenVX tensor created requires size_t
+static inline void copy_dims(const vx_int32 *dims, vx_int32 num_dims, vx_size *dimensions)
+{
+    for (vx_int32 i = 0; i < num_dims; i++)
+    {
+        dimensions[i] = dims[i];
+    }
 }
 
 static vx_status VX_CALLBACK vxNNEFInitializer(vx_node node, const vx_reference parameters[], vx_uint32 num)
@@ -71,10 +80,10 @@ static vx_status VX_CALLBACK vxNNEFInitializer(vx_node node, const vx_reference 
     // copy NNEF graph to node
     node->attributes.localDataPtr = nnef_graph_copy(node->kernel->attributes.localDataPtr);
    
-    if (!nnef_allocate_buffers(node->attributes.localDataPtr, perror))
+    if (!nnef_graph_allocate_buffers(node->attributes.localDataPtr, perror))
     {
         //nnef allocate buffers failed
-        printf("[nnef_allocate_buffers] error:%s\n", perror);
+        printf("[nnef_graph_allocate_buffers] error:%s\n", perror);
         status = VX_FAILURE;
     }
 
@@ -93,7 +102,7 @@ static vx_status VX_CALLBACK vxNNEFDeinitializer(vx_node node, const vx_referenc
         ownReleaseMetaFormat(&meta[i]);
     }
     // destroy NNEF graph in node 
-    nnef_destroy_graph(node->attributes.localDataPtr);
+    nnef_graph_release(node->attributes.localDataPtr);
     
     node->attributes.localDataPtr = NULL;
  
@@ -105,7 +114,7 @@ static vx_status VX_CALLBACK vxNNEFKernelDeinitializer(vx_kernel nn_kernel)
     vx_status status = VX_SUCCESS;
 
     // destroy NNEF graph in kernel 
-    nnef_destroy_graph(nn_kernel->attributes.localDataPtr);
+    nnef_graph_release(nn_kernel->attributes.localDataPtr);
 
     nn_kernel->attributes.localDataPtr = NULL;
 
@@ -133,21 +142,21 @@ static vx_status VX_CALLBACK vxNNEFKernel(vx_node node, const vx_reference *para
     vx_uint32 i = 0, j = 0, input_num = 0, output_num = 0;
     vx_char perror[MAXLEN] = "";
     vx_status status = VX_SUCCESS;
-    vx_char** inputs = NULL, **outputs = NULL;
+    const vx_char** inputs = NULL, **outputs = NULL;
 
     // Get NNEF graph from kernel attributes
     nnef_graph_t nnef_graph_node = node->attributes.localDataPtr;
 
-    input_num = nnef_graph_inputs(nnef_graph_node, NULL);
-    output_num = nnef_graph_outputs(nnef_graph_node, NULL);
+    input_num = nnef_graph_input_names(nnef_graph_node, NULL);
+    output_num = nnef_graph_output_names(nnef_graph_node, NULL);
 
     // alloc memory according to input and output number
-    inputs = (vx_char **)malloc(sizeof(vx_char *) * input_num);
-    outputs = (vx_char **)malloc(sizeof(vx_char *) * output_num);
+    inputs = (const vx_char **)malloc(sizeof(const vx_char *) * input_num);
+    outputs = (const vx_char **)malloc(sizeof(const vx_char *) * output_num);
 
     // get inputs and outputs
-    nnef_graph_inputs(nnef_graph_node, inputs);
-    nnef_graph_outputs(nnef_graph_node, outputs);
+    nnef_graph_input_names(nnef_graph_node, inputs);
+    nnef_graph_output_names(nnef_graph_node, outputs);
 
     vx_tensor *tensors = (vx_tensor *)malloc(sizeof(vx_tensor) * num);
 
@@ -165,13 +174,13 @@ static vx_status VX_CALLBACK vxNNEFKernel(vx_node node, const vx_reference *para
         size_t input_tensor_data_size = compute_patch_size(tensors[i]->dimensions, tensors[i]->number_of_dimensions) * 
                                                            sizeof_tensor_type(tensors[i]->data_type);
         
-        memcpy(nnef_get_tensor_data(nnef_graph_find_tensor(nnef_graph_node, inputs[i])), tensors[i]->addr, input_tensor_data_size);
+        memcpy(nnef_tensor_data(nnef_graph_find_tensor(nnef_graph_node, inputs[i])), tensors[i]->addr, input_tensor_data_size);
     }
 
     //Execute nnef kernel
-    if (!nnef_execute(nnef_graph_node, perror))
+    if (!nnef_graph_execute(nnef_graph_node, perror))
     {
-        printf("[nnef_execute] error:%s\n", perror);
+        printf("[nnef_graph_execute] error:%s\n", perror);
         status = VX_FAILURE;
     }
 
@@ -185,7 +194,7 @@ static vx_status VX_CALLBACK vxNNEFKernel(vx_node node, const vx_reference *para
 
         tensors[i]->addr = malloc(output_tensor_data_size);
 
-        memcpy(tensors[i]->addr, nnef_get_tensor_data(nnef_graph_find_tensor(nnef_graph_node, outputs[j])), output_tensor_data_size);
+        memcpy(tensors[i]->addr, nnef_tensor_data(nnef_graph_find_tensor(nnef_graph_node, outputs[j])), output_tensor_data_size);
     }
 
     if (NULL != tensors)
@@ -267,38 +276,40 @@ static vx_kernel vxPublishNNEFKernels(vx_context context, vx_int32 input_num, vx
     return kernel;
 }
 
-static vx_status vxSetMetaFormatNNEF(void *nnef_graph, vx_meta_format meta, vx_char * tensor_name)
+static vx_status vxSetMetaFormatNNEF(void *nnef_graph, vx_meta_format meta, const vx_char * tensor_name)
 {
     vx_status status = VX_SUCCESS;
     vx_int32 i = 0;
 
     vx_uint8 fixed_point_pos_out = 0;
-    vx_char *tensor_type_name = NULL;
+    const vx_char *tensor_type_name = NULL;
     vx_size num_dims = 0;
-    vx_size *dims = NULL;
+    const vx_int32 *dims = NULL;
     vx_int32 type = 0;
 
     // find tensor by name
     nnef_tensor_t nnef_tensor = nnef_graph_find_tensor(nnef_graph, tensor_name);
     // query NNEF tensor number of dim
-    num_dims = nnef_get_tensor_rank(nnef_tensor);
+    num_dims = nnef_tensor_rank(nnef_tensor);
 
-    // alloc memory according to num_dims
-    dims = (vx_size *)malloc(num_dims * sizeof(vx_size));
     // query NNEF tensor dims
-    nnef_get_tensor_dims(nnef_tensor, dims);
+    dims = nnef_tensor_dims(nnef_tensor);
+
+    // copying the dims into dimensions since OpenVX tensor created requires size_t
+    vx_size *dimensions = (vx_size *)malloc(num_dims * sizeof(vx_size));
+    copy_dims(dims, num_dims, dimensions);
     // query NNEF tensor name
-    tensor_type_name = nnef_get_tensor_dtype(nnef_tensor);
+    tensor_type_name = nnef_tensor_dtype(nnef_tensor);
     // convert NNEF tensor name into OpenVX tensor type
     type = tensor_vx_type(tensor_type_name);
 
     status = vxSetMetaFormatAttribute(meta, VX_TENSOR_DATA_TYPE, &type, sizeof(vx_enum));
     status = vxSetMetaFormatAttribute(meta, VX_TENSOR_FIXED_POINT_POSITION, &fixed_point_pos_out, sizeof(fixed_point_pos_out));
-    status = vxSetMetaFormatAttribute(meta, VX_TENSOR_DIMS, dims, sizeof(size_t) * num_dims);
+    status = vxSetMetaFormatAttribute(meta, VX_TENSOR_DIMS, dimensions, sizeof(vx_size) * num_dims);
     status = vxSetMetaFormatAttribute(meta, VX_TENSOR_NUMBER_OF_DIMS, &num_dims, sizeof(size_t));
 
-    if (NULL != dims)
-        free(dims);
+    if (NULL != dimensions)
+        free(dimensions);
 
     return status;
 }
@@ -312,9 +323,9 @@ VX_API_ENTRY vx_kernel VX_API_CALL vxImportKernelFromURL(vx_context context, con
     vx_char kernel_name[MAXLEN] = "";
 
     vx_int32 input_num = 0, output_num = 0, num = 0;
-    vx_char** inputs = NULL, **outputs = NULL;
+    const vx_char** inputs = NULL, **outputs = NULL;
 
-    nnef_graph_t nnef_graph = nnef_load_graph(url, perror);
+    nnef_graph_t nnef_graph = nnef_graph_load(url, perror);
 
     if (!nnef_graph)
     {
@@ -323,25 +334,25 @@ VX_API_ENTRY vx_kernel VX_API_CALL vxImportKernelFromURL(vx_context context, con
         return NULL;
     }
 
-    if (!nnef_infer_shapes(nnef_graph, perror))
+    if (!nnef_graph_infer_shapes(nnef_graph, perror))
     {
         //infer shapes failed
-        printf("[nnef_infer_shapes] error:%s\n", perror);
+        printf("[nnef_graph_infer_shapes] error:%s\n", perror);
         return NULL;
     }
 
     // get input and output number first
-    input_num = nnef_graph_inputs(nnef_graph, NULL);
-    output_num = nnef_graph_outputs(nnef_graph, NULL);
+    input_num = nnef_graph_input_names(nnef_graph, NULL);
+    output_num = nnef_graph_output_names(nnef_graph, NULL);
     num = input_num + output_num;
 
     // alloc memory according to input and output number
-    inputs = (vx_char **)malloc(sizeof(vx_char *) * input_num);
-    outputs = (vx_char **)malloc(sizeof(vx_char *) * output_num);
+    inputs = (const vx_char **)malloc(sizeof(const vx_char *) * input_num);
+    outputs = (const vx_char **)malloc(sizeof(const vx_char *) * output_num);
 
     // get inputs and outputs
-    nnef_graph_inputs(nnef_graph, inputs);
-    nnef_graph_outputs(nnef_graph, outputs);
+    nnef_graph_input_names(nnef_graph, inputs);
+    nnef_graph_output_names(nnef_graph, outputs);
 
     strcpy(kernel_name, "org.khronos.openvx.nnef.");
     vx_char *pLastSlash = strrchr(url, '/');

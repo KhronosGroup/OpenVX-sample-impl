@@ -25,7 +25,7 @@ include_directories( BEFORE
                      ${CMAKE_SOURCE_DIR}/utils
                      ${CMAKE_SOURCE_DIR}/debug
 if (OPENVX_CONFORMANCE_NNEF_IMPORT)
-                     ${CMAKE_SOURCE_DIR}/kernels/nnef_parser
+                     ${CMAKE_SOURCE_DIR}/kernels/NNEF-Tools/parser/cpp/include
 endif (OPENVX_CONFORMANCE_NNEF_IMPORT)
                      ${LIBXML2_INCLUDE_DIR})
 

@@ -26,5 +26,27 @@ if (OPENVX_USE_TILING)
     add_subdirectory( tiling )
 endif (OPENVX_USE_TILING)
 if (OPENVX_CONFORMANCE_NNEF_IMPORT)
-add_subdirectory( nnef_parser )
+# set target name
+set( TARGET_NAME nnef-lib )
+
+include_directories( BEFORE 
+                     ${CMAKE_CURRENT_SOURCE_DIR}
+                     ${CMAKE_SOURCE_DIR}/kernels/NNEF-Tools/parser/cpp/include )
+
+if (UNIX)
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+endif (UNIX)
+
+FIND_SOURCES()
+
+file(GLOB OVX_SRC_NNEF_LIB "${CMAKE_SOURCE_DIR}/kernels/NNEF-Tools/parser/cpp/src/*.cpp")
+add_library (${TARGET_NAME} STATIC ${OVX_SRC_NNEF_LIB} )
+
+install ( TARGETS ${TARGET_NAME} 
+          RUNTIME DESTINATION bin
+          ARCHIVE DESTINATION bin
+          LIBRARY DESTINATION bin )
+		  
+set_target_properties( ${TARGET_NAME} PROPERTIES FOLDER ${HELPER_FOLDER} )
 endif (OPENVX_CONFORMANCE_NNEF_IMPORT)
