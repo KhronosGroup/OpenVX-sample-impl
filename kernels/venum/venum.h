@@ -171,7 +171,7 @@ void Multiply2DMatrixesImpl(
         vx_enum type);
 
 
-vx_status vxHogFeatures(vx_image img, void * magnitudes, void * bins, vx_array hog_params, vx_scalar hog_param_size, void * features);
+vx_status vxHogFeatures(vx_image img, vx_tensor magnitudes, vx_tensor bins, vx_array hog_params, vx_scalar hog_param_size, vx_tensor features);
 
 vx_status vxNonMaxSuppression(vx_image input, vx_image mask, vx_scalar win_size, vx_image output);
 vx_status vxTensorTableLookup(

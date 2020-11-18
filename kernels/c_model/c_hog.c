@@ -104,7 +104,8 @@ vx_status vxHogCells(vx_image img, vx_scalar cell_width, vx_scalar cell_height, 
             vx_size bins_pos = ComputeGlobalPositionsFromIndex(bins_index, bins_dims, bins_strides, bins_dim_num, &bins_pos);
             void *mag_ptr = (vx_int8 *)magnitudes_data + magnitudes_pos;
             void *bins_ptr = (vx_int8 *)bins_data + bins_pos;
-            *(vx_int16 *)(mag_ptr) = *(vx_int16 *)(mag_ptr) + (vx_int16)(magnitude / (float)(cell_w * cell_h));
+            // Magnitude for each pixel is averaged over the cell area.
+            *(vx_int16 *)(mag_ptr) = *(vx_int16 *)(mag_ptr)+(vx_int16)(magnitude / (float)(cell_w * cell_h));
             *(vx_int16 *)(bins_ptr) = *(vx_int16 *)(bins_ptr)+(vx_int16)(magnitude / (float)(cell_w * cell_h));
         }
     }
@@ -122,6 +123,7 @@ vx_status vxHogFeatures(vx_image img, vx_tensor magnitudes, vx_tensor bins, vx_a
     void* magnitudes_data = NULL;
     void* bins_data = NULL;
     void* features_data = NULL;
+    vx_uint32 block_index_count = 0;
 
     vx_size hog_param_size_t;
     vx_size magnitudes_dim_num = 0, magnitudes_dims[MAX_NUM_OF_DIMENSIONS] = { 0 }, magnitudes_strides[MAX_NUM_OF_DIMENSIONS] = { 0 };
@@ -155,40 +157,110 @@ vx_status vxHogFeatures(vx_image img, vx_tensor magnitudes, vx_tensor bins, vx_a
     vx_int32 num_blockW = width / hog_params_t->cell_width - 1;
     vx_int32 num_blockH = height / hog_params_t->cell_height - 1;
     vx_int32 n_cellsx = width / hog_params_t->cell_width;
+    vx_int32 n_cellsy = height / hog_params_t->cell_height;
     vx_int32 cells_per_block_w = hog_params_t->block_width / hog_params_t->cell_width;
     vx_int32 cells_per_block_h = hog_params_t->block_height / hog_params_t->cell_height;
+    vx_int32 num_windowsW = (width - hog_params_t->window_width) / hog_params_t->window_stride + 1;
+    vx_int32 num_windowsH = (height - hog_params_t->window_height) / hog_params_t->window_stride + 1;
+    vx_int32 blocks_per_window_w = (hog_params_t->window_width - hog_params_t->block_width) / hog_params_t->block_stride + 1;
+    vx_int32 blocks_per_window_h = (hog_params_t->window_height - hog_params_t->block_height) / hog_params_t->block_stride + 1;
 
-    for (vx_int32 blkH = 0; blkH < num_blockH; blkH++)
+    // The below for-loop implements the following for each window:
+    // 1. Normalizes the histograms at block level using it's cells' magnitudes (L2-Sys)
+    // 2. Calculates HoG Descriptors for each window of the image, which is 
+    // the concatenated descriptors of all the blocks contained in it.
+    //
+    // Note: Windows in an image, blocks in a window and cells in a block, 
+    // are all processed in a row-major order. Cell bins are addressed in row-major 
+    // spanning the entire image. E.g. An image 24x16 has 6 cells of size 8x8. Bin Idx 0-8 
+    // for top left cell, 9-17 for next cell to the right, 18-26 for last cell on top row.
+    // For next row, cell's Bin Idx are 27-35, 36-44, 44-52.
+    for (vx_int32 winH = 0; winH < num_windowsH; winH++)
     {
-        for (vx_int32 blkW = 0; blkW < num_blockW; blkW++)
+        for (vx_int32 winW = 0; winW < num_windowsW; winW++)
         {
-            vx_float32 sum = 0;
-            for (vx_int32 y = 0; y < cells_per_block_h; y++)
+            // Indexes corresponding to the first cell (top left) of window and block
+            vx_uint64 binIdx_blk, binIdx_win;
+            vx_uint64 binIdx_cell, magIdx_cell;
+            binIdx_win = (winH*(n_cellsx*hog_params_t->window_stride / hog_params_t->cell_height) +
+                winW * (hog_params_t->window_stride / hog_params_t->cell_width))*hog_params_t->num_bins;
+
+            for (vx_int32 blkH = 0; blkH < blocks_per_window_h; blkH++)
             {
-                for (vx_int32 x = 0; x < cells_per_block_w; x++)
+                for (vx_int32 blkW = 0; blkW < blocks_per_window_w; blkW++)
                 {
-                    vx_int32 index = (blkH + y)*n_cellsx + (blkW + x);
-                    void *mag_ptr = (vx_int8 *)magnitudes_data + index;
-                    sum += (*(vx_int16 *)mag_ptr) * (*(vx_int16 *)mag_ptr);
-                }
-            }
-            sum = sqrtf(sum + 0.00000000000001f);
-            for (vx_int32 y = 0; y < cells_per_block_h; y++)
-            {
-                for (vx_int32 x = 0; x < cells_per_block_w; x++)
-                {
-                    for (vx_int32 k = 0; k < hog_params_t->num_bins; k++)
+                    binIdx_blk = binIdx_win + (blkH*(n_cellsx*hog_params_t->block_stride / hog_params_t->cell_height)*hog_params_t->num_bins) +
+                        (blkW*hog_params_t->block_stride / hog_params_t->cell_height)*hog_params_t->num_bins;
+
+                    vx_float32 sum = 0;
+                    vx_float32 renorm_sum = 0;
+                    vx_uint32 renorm_block_index_st = block_index_count;
+
+                    // Accumulate squared-magnitudes for all the cells in this block
+                    for (vx_int32 y = 0; y < cells_per_block_h; y++)
                     {
-                        vx_int32 bins_index = (blkH + y)*n_cellsx * hog_params_t->num_bins + (blkW + x)*hog_params_t->num_bins + k;
-                        vx_int32 block_index = blkH * num_blockW * hog_params_t->num_bins + blkW * hog_params_t->num_bins + k;
-                        float hist = min((vx_int16)(*((vx_int8 *)bins_data + bins_index)) / sum, hog_params_t->threshold);
-                        void *features_ptr = (vx_int8 *)features_data + block_index;
-                        *(vx_int16 *)features_ptr = *(vx_int16 *)features_ptr + (vx_int16)hist;
+                        for (vx_int32 x = 0; x < cells_per_block_w; x++)
+                        {
+                            magIdx_cell = (binIdx_blk / hog_params_t->num_bins) + (y*n_cellsx + x);
+                            void *mag_ptr = (vx_int16 *)magnitudes_data + magIdx_cell;
+                            sum += (*(vx_int16 *)mag_ptr) * (*(vx_int16 *)mag_ptr);
+                        }
                     }
-                }
-            }
-        }
-    }
+                    // Square root of sum-of-squares of cell magnitudes for L2-Norm
+                    // For a block with 4 cells with mag m: sqrt( m1^2 + m2^2 + m3^2 + m4^2)
+                    sum = sqrtf(sum + 0.00000000000001f);
+
+                    // Calculate HoG Descriptor for the current block from its cell histograms 
+                    for (vx_int32 y = 0; y < cells_per_block_h; y++)
+                    {
+                        for (vx_int32 x = 0; x < cells_per_block_w; x++)
+                        {
+                            binIdx_cell = binIdx_blk + (y*n_cellsx + x)*hog_params_t->num_bins;
+
+                            for (vx_int32 k = 0; k < hog_params_t->num_bins; k++)
+                            {
+                                // Bin index for the current cell
+                                vx_int32 bins_index = binIdx_cell + k;
+                                vx_int32 block_index;
+
+                                block_index = block_index_count;
+
+                                // L2-Sys (at block level) = L2-Norm -> clip at threshold -> renormalize
+
+                                // Normalize each cell histogram bin value using L2-Norm and then clip at threshold
+                                // using square root of sum-of-squares of cell magnitudes calculated above
+                                float hist = min((vx_int16)(*((vx_int16 *)bins_data + bins_index)) / sum, hog_params_t->threshold);
+                                vx_int16 *features_ptr = (vx_int16 *)features_data + block_index;
+                                hist = hist * powf(2, 8); // Bitshift for storing as INT16, Q78 feature tensor
+                                *features_ptr = (vx_int16)hist;
+                                block_index_count++;
+                            } // End for num_bins
+                        } // End for cell_w
+                    } // End for cell_h
+
+                    // Renormalize the block histogram after L2-Norm and clipping to get L2-Hys
+                    vx_uint32 renorm_block_index_end = block_index_count;
+
+                    // Sum of squares of the block feature vector
+                    for (vx_uint32 renorm_count = renorm_block_index_st; renorm_count < renorm_block_index_end; renorm_count++) {
+                        vx_int16 *features_ptr = (vx_int16 *)features_data + renorm_count;
+                        vx_float32 feature_val = *features_ptr / powf(2, 8);	// Convert INT16 Q78 tensor value to float
+                        renorm_sum += (feature_val * feature_val);
+                    }
+
+                    renorm_sum = sqrtf(renorm_sum + 0.00000000000001f);			// Sqrt of 'sum of squares' for renormalization
+
+                    // Renormalize the whole block feature vector
+                    for (vx_uint32 renorm_count = renorm_block_index_st; renorm_count < renorm_block_index_end; renorm_count++) {
+                        vx_int16 *features_ptr = (vx_int16 *)features_data + renorm_count;
+                        vx_float32 feature_val = ((vx_float32)*features_ptr) / powf(2, 8);	// Convert INT16 Q78 tensor value to float
+                        *features_ptr = (vx_int16)((feature_val / renorm_sum) * powf(2, 8));	// Renormalize and Bitshift for INT16, Q78 feature tensor
+                    }
+                }	// End for BlkW
+            }	// End for BlkH
+        }	// End for winW
+    }	// End for winH
+
     status |= vxCommitImagePatch(img, &src_rect, 0, &src_addr, src_base);
     status |= vxUnmapArrayRange(hog_params, hog_params_map_id);
     status |= ReleasePatch(magnitudes, magnitudes_dim_num, magnitudes_dims, magnitudes_strides, &magnitudes_data, VX_READ_ONLY);

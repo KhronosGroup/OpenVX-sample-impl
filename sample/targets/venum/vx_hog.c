@@ -179,7 +179,7 @@ static vx_status VX_CALLBACK vxHogFeaturesKernel(vx_node node, const vx_referenc
         vx_array hog_param = (vx_array)parameters[3];
         vx_scalar hog_param_size = (vx_scalar)parameters[4];
         vx_tensor features = (vx_tensor)parameters[5];
-        status = vxHogFeatures(img, magnitudes->addr, bins->addr, hog_param, hog_param_size, ownAllocateTensorMemory(features));
+        status = vxHogFeatures(img, magnitudes, bins, hog_param, hog_param_size, features);
     }
     return status;
 }
