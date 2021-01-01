@@ -194,6 +194,22 @@ if ( ${PROCESSOR_COUNT} LESS "1" )
 endif ( ${PROCESSOR_COUNT} LESS "1" )
 add_definitions( -DTARGET_NUM_CORES=${PROCESSOR_COUNT} )
 
+# Check submodules have been checked out.
+find_path(API_DOCS_PATH "include/VX/vx.h" HINTS "api-docs")
+find_path(CTS_PATH "openvx_cts_version.inc" HINTS "cts")
+find_path(NNEF_TOOLS_PATH "nnef_tools/__init__.py" HINTS "kernels/NNEF-Tools")
+if(
+    "${API_DOCS_PATH}" STREQUAL "API_DOCS_PATH-NOTFOUND"
+    OR "${CTS_PATH}" STREQUAL "CTS_PATH-NOTFOUND"
+    OR "${NNEF_TOOLS_PATH}" STREQUAL "NNEF_TOOLS_PATH-NOTFOUND"
+)
+    message(
+        FATAL_ERROR
+        "Repsoitory submodules, required for a correct build, could not be found or are empty. \
+        Have you checked out the repository's Git submodules (`git submodule update --init --recursive`)?"
+    )
+endif()
+
 # Framework IDE Folders Names
 set_property( GLOBAL PROPERTY PREDEFINED_TARGETS_FOLDER "" )
 set_property( GLOBAL PROPERTY USE_FOLDERS ON )
