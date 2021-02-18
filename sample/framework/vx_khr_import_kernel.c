@@ -207,6 +207,87 @@ static vx_status VX_CALLBACK vxNNEFKernel(vx_node node, const vx_reference *para
     return status;
 }
 
+static void vxPrintNNEFKernel(vx_kernel kernel)
+{
+    VX_PRINT(VX_ZONE_KERNEL, "kernel[%u] enabled?=%s %s \n",
+        kernel->enumeration,
+        (kernel->enabled ? "TRUE" : "FALSE"),
+        kernel->name);
+}
+
+static vx_size strncount(const vx_char string[], vx_size size, vx_char c)
+{
+    vx_size i = 0ul, count = 0ul;
+    while (string[i] != '\0' && i < size)
+        if (string[i++] == c)
+            count++;
+    return count;
+}
+
+static vx_kernel vxGetNNEFKernelByName(vx_context context, const vx_char string[VX_MAX_KERNEL_NAME])
+{
+    vx_kernel_t *kern = NULL;
+    if (ownIsValidContext(context) == vx_true_e)
+    {
+        vx_uint32 k = 0u, t = 0u;
+        vx_size colons = strncount(string, VX_MAX_KERNEL_NAME, ':');
+        vx_char targetName[VX_MAX_TARGET_NAME] = "default";
+        vx_char kernelName[VX_MAX_KERNEL_NAME];
+#if defined(_WIN32)
+        vx_char *nameBuffer = _strdup(string);
+#else
+        vx_char *nameBuffer = strdup(string);
+#endif
+
+        if (colons == 0)
+        {
+            strncpy(kernelName, string, VX_MAX_KERNEL_NAME - 1);
+        }
+        else
+        {
+            /* There should be no colon */
+            /* Doing nothing will leave kern = NULL, causing error condition below */
+            VX_PRINT(VX_ZONE_ERROR, "Kernel name should not contain any ':' in this implementation\n");
+        }
+
+        free(nameBuffer);
+
+        for (t = 0; t < context->num_targets && kern == NULL; t++)
+        {
+            vx_target_t *target = &context->targets[context->priority_targets[t]];
+            if (target == NULL || target->enabled == vx_false_e)
+                continue;
+            if (target->funcs.supports(target, targetName, kernelName, &k) == VX_SUCCESS)
+            {
+                vx_kernel kernel = &target->kernels[k];
+                vxPrintNNEFKernel(kernel);
+                if (kernel->enabled == vx_true_e)
+                {
+                    kernel->affinity = context->priority_targets[t];
+                    kern = kernel;
+                    ownIncrementReference(&kern->base, VX_EXTERNAL);
+                    break;
+                }
+            }
+        }
+        if (kern == NULL)
+        {
+            kern = (vx_kernel_t *)ownGetErrorObject(context, VX_ERROR_INVALID_PARAMETERS);
+        }
+        else
+        {
+            VX_PRINT(VX_ZONE_KERNEL, "Found Kernel enum %d, name %s on target %s\n",
+                kern->enumeration,
+                kern->name,
+                context->targets[kern->affinity].name);
+        }
+    }
+    else
+    {
+        VX_PRINT(VX_ZONE_ERROR, "Invalid context %p\n", context);
+    }
+    return (vx_kernel)kern;
+}
 
  /*! \brief The Entry point into a user defined kernel module */
 static vx_kernel vxPublishNNEFKernels(vx_context context, vx_int32 input_num, vx_int32 output_num, const vx_char * kernel_name)
@@ -215,7 +296,7 @@ static vx_kernel vxPublishNNEFKernels(vx_context context, vx_int32 input_num, vx
     vx_int32 i = 0;
     vx_kernel kernel;
 
-    kernel = vxGetKernelByName(context, kernel_name);
+    kernel = vxGetNNEFKernelByName(context, kernel_name);
     status = vxGetStatus((vx_reference)kernel);
 
     // did not get kernel by name, then add kernel
@@ -266,7 +347,7 @@ static vx_kernel vxPublishNNEFKernels(vx_context context, vx_int32 input_num, vx
             }
             if (status != VX_SUCCESS)
             {
-                printf("Failed to publish kernel %s\n", "org.khronos.openvx.nnef");
+                printf("Failed to publish kernel %s\n", "Import.khronos.openvx.nnef");
             }
         }
         if (NULL != nnef_kernel_params)
@@ -354,7 +435,7 @@ VX_API_ENTRY vx_kernel VX_API_CALL vxImportKernelFromURL(vx_context context, con
     nnef_graph_input_names(nnef_graph, inputs);
     nnef_graph_output_names(nnef_graph, outputs);
 
-    strcpy(kernel_name, "org.khronos.openvx.nnef.");
+    strcpy(kernel_name, "Import.khronos.openvx.nnef.");
     vx_char *pLastSlash = strrchr(url, '/');
     const vx_char *pszBaseName = pLastSlash ? pLastSlash + 1 : url;
     // Add basename to kernel_name
