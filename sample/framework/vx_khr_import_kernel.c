@@ -207,88 +207,6 @@ static vx_status VX_CALLBACK vxNNEFKernel(vx_node node, const vx_reference *para
     return status;
 }
 
-static void vxPrintNNEFKernel(vx_kernel kernel)
-{
-    VX_PRINT(VX_ZONE_KERNEL, "kernel[%u] enabled?=%s %s \n",
-        kernel->enumeration,
-        (kernel->enabled ? "TRUE" : "FALSE"),
-        kernel->name);
-}
-
-static vx_size strncount(const vx_char string[], vx_size size, vx_char c)
-{
-    vx_size i = 0ul, count = 0ul;
-    while (string[i] != '\0' && i < size)
-        if (string[i++] == c)
-            count++;
-    return count;
-}
-
-static vx_kernel vxGetNNEFKernelByName(vx_context context, const vx_char string[VX_MAX_KERNEL_NAME])
-{
-    vx_kernel_t *kern = NULL;
-    if (ownIsValidContext(context) == vx_true_e)
-    {
-        vx_uint32 k = 0u, t = 0u;
-        vx_size colons = strncount(string, VX_MAX_KERNEL_NAME, ':');
-        vx_char targetName[VX_MAX_TARGET_NAME] = "default";
-        vx_char kernelName[VX_MAX_KERNEL_NAME];
-#if defined(_WIN32)
-        vx_char *nameBuffer = _strdup(string);
-#else
-        vx_char *nameBuffer = strdup(string);
-#endif
-
-        if (colons == 0)
-        {
-            strncpy(kernelName, string, VX_MAX_KERNEL_NAME - 1);
-        }
-        else
-        {
-            /* There should be no colon */
-            /* Doing nothing will leave kern = NULL, causing error condition below */
-            VX_PRINT(VX_ZONE_ERROR, "Kernel name should not contain any ':' in this implementation\n");
-        }
-
-        free(nameBuffer);
-
-        for (t = 0; t < context->num_targets && kern == NULL; t++)
-        {
-            vx_target_t *target = &context->targets[context->priority_targets[t]];
-            if (target == NULL || target->enabled == vx_false_e)
-                continue;
-            if (target->funcs.supports(target, targetName, kernelName, &k) == VX_SUCCESS)
-            {
-                vx_kernel kernel = &target->kernels[k];
-                vxPrintNNEFKernel(kernel);
-                if (kernel->enabled == vx_true_e)
-                {
-                    kernel->affinity = context->priority_targets[t];
-                    kern = kernel;
-                    ownIncrementReference(&kern->base, VX_EXTERNAL);
-                    break;
-                }
-            }
-        }
-        if (kern == NULL)
-        {
-            kern = (vx_kernel_t *)ownGetErrorObject(context, VX_ERROR_INVALID_PARAMETERS);
-        }
-        else
-        {
-            VX_PRINT(VX_ZONE_KERNEL, "Found Kernel enum %d, name %s on target %s\n",
-                kern->enumeration,
-                kern->name,
-                context->targets[kern->affinity].name);
-        }
-    }
-    else
-    {
-        VX_PRINT(VX_ZONE_ERROR, "Invalid context %p\n", context);
-    }
-    return (vx_kernel)kern;
-}
-
  /*! \brief The Entry point into a user defined kernel module */
 static vx_kernel vxPublishNNEFKernels(vx_context context, vx_int32 input_num, vx_int32 output_num, const vx_char * kernel_name)
 {
@@ -296,63 +214,57 @@ static vx_kernel vxPublishNNEFKernels(vx_context context, vx_int32 input_num, vx
     vx_int32 i = 0;
     vx_kernel kernel;
 
-    kernel = vxGetNNEFKernelByName(context, kernel_name);
-    status = vxGetStatus((vx_reference)kernel);
+    vx_int32 num_params = input_num + output_num;
+    vx_param_description_t *nnef_kernel_params = (vx_param_description_t *)malloc(num_params * sizeof(vx_param_description_t));
 
-    // did not get kernel by name, then add kernel
-    if (status == VX_ERROR_INVALID_PARAMETERS)
+    // input tensor type
+    for (i = 0; i < input_num; i++)
     {
-        vx_int32 num_params = input_num + output_num;
-        vx_param_description_t *nnef_kernel_params = (vx_param_description_t *)malloc(num_params * sizeof(vx_param_description_t));
-
-        // input tensor type
-        for (i = 0; i < input_num; i++)
-        {
-            nnef_kernel_params[i].direction = VX_INPUT;
-            nnef_kernel_params[i].data_type = VX_TYPE_TENSOR;
-            nnef_kernel_params[i].state = VX_PARAMETER_STATE_REQUIRED;
-        }
-
-        // output tensor type
-        for (i = input_num; i < num_params; i++)
-        {
-            nnef_kernel_params[i].direction = VX_OUTPUT;
-            nnef_kernel_params[i].data_type = VX_TYPE_TENSOR;
-            nnef_kernel_params[i].state = VX_PARAMETER_STATE_REQUIRED;
-        }
-
-        static vx_int32 kernel_enum = VX_KERNEL_BASE(VX_ID_USER, VX_LIBRARY_KHR_BASE);
-
-        // set NNEF kernel description
-        kernel = vxAddUserKernel(context, kernel_name, kernel_enum++, vxNNEFKernel,
-                                 num_params, vxNNEFValidator, vxNNEFInitializer, vxNNEFDeinitializer);
-        kernel->kernel_object_deinitialize = vxNNEFKernelDeinitializer;
-        if (kernel)
-        {
-            vx_uint32 p = 0;
-            for (p = 0; p < num_params; p++)
-            {
-                status = vxAddParameterToKernel(kernel, p,
-                                                nnef_kernel_params[p].direction,
-                                                nnef_kernel_params[p].data_type,
-                                                nnef_kernel_params[p].state);
-            }
-            if (status != VX_SUCCESS)
-            {
-                vxRemoveKernel(kernel);
-            }
-            else
-            {
-                status = vxFinalizeKernel(kernel);
-            }
-            if (status != VX_SUCCESS)
-            {
-                printf("Failed to publish kernel %s\n", "Import.khronos.openvx.nnef");
-            }
-        }
-        if (NULL != nnef_kernel_params)
-            free(nnef_kernel_params);
+        nnef_kernel_params[i].direction = VX_INPUT;
+        nnef_kernel_params[i].data_type = VX_TYPE_TENSOR;
+        nnef_kernel_params[i].state = VX_PARAMETER_STATE_REQUIRED;
     }
+
+    // output tensor type
+    for (i = input_num; i < num_params; i++)
+    {
+        nnef_kernel_params[i].direction = VX_OUTPUT;
+        nnef_kernel_params[i].data_type = VX_TYPE_TENSOR;
+        nnef_kernel_params[i].state = VX_PARAMETER_STATE_REQUIRED;
+    }
+
+    static vx_int32 kernel_enum = VX_KERNEL_BASE(VX_ID_USER, VX_LIBRARY_KHR_BASE);
+
+    // set NNEF kernel description
+    kernel = vxAddUserKernel(context, kernel_name, kernel_enum++, vxNNEFKernel,
+                                num_params, vxNNEFValidator, vxNNEFInitializer, vxNNEFDeinitializer);
+    kernel->kernel_object_deinitialize = vxNNEFKernelDeinitializer;
+
+    if (kernel)
+    {
+        vx_uint32 p = 0;
+        for (p = 0; p < num_params; p++)
+        {
+            status = vxAddParameterToKernel(kernel, p,
+                                            nnef_kernel_params[p].direction,
+                                            nnef_kernel_params[p].data_type,
+                                            nnef_kernel_params[p].state);
+        }
+        if (status != VX_SUCCESS)
+        {
+            vxRemoveKernel(kernel);
+        }
+        else
+        {
+            status = vxFinalizeKernel(kernel);
+        }
+        if (status != VX_SUCCESS)
+        {
+            printf("Failed to publish kernel %s\n", "Import.khronos.openvx.nnef");
+        }
+    }
+    if (NULL != nnef_kernel_params)
+        free(nnef_kernel_params);
 
     return kernel;
 }
