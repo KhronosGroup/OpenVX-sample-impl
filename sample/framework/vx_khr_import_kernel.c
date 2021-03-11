@@ -208,7 +208,7 @@ static vx_status VX_CALLBACK vxNNEFKernel(vx_node node, const vx_reference *para
 }
 
  /*! \brief The Entry point into a user defined kernel module */
-static vx_kernel vxPublishNNEFKernels(vx_context context, vx_int32 input_num, vx_int32 output_num, const vx_char * kernel_name)
+static vx_kernel CreateNNEFKernel(vx_context context, vx_int32 input_num, vx_int32 output_num, const vx_char * kernel_name)
 {
     vx_status status = VX_SUCCESS;
     vx_int32 i = 0;
@@ -314,6 +314,8 @@ VX_API_ENTRY vx_kernel VX_API_CALL vxImportKernelFromURL(vx_context context, con
 
     vx_char perror[MAXLEN] = "";
     vx_char kernel_name[MAXLEN] = "";
+    vx_char pLastSlash[MAXLEN] = "";
+    static vx_int32 counter = 1;
 
     vx_int32 input_num = 0, output_num = 0, num = 0;
     const vx_char** inputs = NULL, **outputs = NULL;
@@ -347,13 +349,14 @@ VX_API_ENTRY vx_kernel VX_API_CALL vxImportKernelFromURL(vx_context context, con
     nnef_graph_input_names(nnef_graph, inputs);
     nnef_graph_output_names(nnef_graph, outputs);
 
-    strcpy(kernel_name, "Import.khronos.openvx.nnef.");
-    vx_char *pLastSlash = strrchr(url, '/');
-    const vx_char *pszBaseName = pLastSlash ? pLastSlash + 1 : url;
-    // Add basename to kernel_name
+    strcpy(kernel_name, "nnef.import.");
+    sprintf(pLastSlash, "%d", counter);
+    const vx_char *pszBaseName = pLastSlash;
+    // Now the kernel names will be 'nnef.import.1', 'nnef.import.2', etc
     strcat(kernel_name, pszBaseName);
+    counter++;
 
-    kernel = vxPublishNNEFKernels(context, input_num, output_num, kernel_name);
+    kernel = CreateNNEFKernel(context, input_num, output_num, kernel_name);
     
     kernel->attributes.localDataPtr = nnef_graph;
 
