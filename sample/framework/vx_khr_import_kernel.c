@@ -260,7 +260,7 @@ static vx_kernel CreateNNEFKernel(vx_context context, vx_int32 input_num, vx_int
         }
         if (status != VX_SUCCESS)
         {
-            printf("Failed to publish kernel %s\n", "Import.khronos.openvx.nnef");
+            printf("Failed to publish kernel %s\n", kernel_name);
         }
     }
     if (NULL != nnef_kernel_params)
@@ -349,12 +349,7 @@ VX_API_ENTRY vx_kernel VX_API_CALL vxImportKernelFromURL(vx_context context, con
     nnef_graph_input_names(nnef_graph, inputs);
     nnef_graph_output_names(nnef_graph, outputs);
 
-    strcpy(kernel_name, "nnef.import.");
-    sprintf(pLastSlash, "%d", counter);
-    const vx_char *pszBaseName = pLastSlash;
-    // Now the kernel names will be 'nnef.import.1', 'nnef.import.2', etc
-    strcat(kernel_name, pszBaseName);
-    counter++;
+    sprintf(kernel_name, "nnef.import.%d", counter++);
 
     kernel = CreateNNEFKernel(context, input_num, output_num, kernel_name);
     
