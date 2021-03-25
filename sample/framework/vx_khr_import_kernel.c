@@ -314,7 +314,6 @@ VX_API_ENTRY vx_kernel VX_API_CALL vxImportKernelFromURL(vx_context context, con
 
     vx_char perror[MAXLEN] = "";
     vx_char kernel_name[MAXLEN] = "";
-    vx_char pLastSlash[MAXLEN] = "";
     static vx_int32 counter = 1;
 
     vx_int32 input_num = 0, output_num = 0, num = 0;
