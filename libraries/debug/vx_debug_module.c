@@ -89,7 +89,6 @@ static vx_uint32 num_kernels = dimof(kernels);
             if (status == VX_SUCCESS)
             {
                 status = vxFinalizeKernel(kernel);
-                status |= vxReleaseKernel(&kernel);
                 if (status != VX_SUCCESS)
                 {
                     vxAddLogEntry((vx_reference)context, status, "Failed to finalize kernel[%u]=%s\n",k, kernels[k]->name);
