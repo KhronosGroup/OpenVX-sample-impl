@@ -2,7 +2,7 @@
 [![Build Status](https://travis-ci.com/KhronosGroup/OpenVX-sample-impl.svg?branch=openvx_1.2)](https://travis-ci.com/KhronosGroup/OpenVX-sample-impl)
 [![codecov](https://codecov.io/gh/KhronosGroup/OpenVX-sample-impl/branch/openvx_1.3/graph/badge.svg)](https://codecov.io/gh/KhronosGroup/OpenVX-sample-impl)
 
-<p align="center"><img width="60%" src="https://upload.wikimedia.org/wikipedia/en/thumb/d/dd/OpenVX_logo.svg/1920px-OpenVX_logo.svg.png" /></p>
+<p align="center"><img width="30%" src="https://raw.githubusercontent.com/GPUOpen-ProfessionalCompute-Libraries/MIVisionX/master/docs/images/OpenVX_logo.png" /></p>
 
 # OpenVX 1.3 Sample Implementation
 
