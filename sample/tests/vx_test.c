@@ -775,7 +775,6 @@ vx_status vx_test_framework_delay_graph(int argc, char *argv[])
                                     vxuCheckImage(context, images[1], 0xBE, &errors) == VX_SUCCESS &&
                                     vxuCheckImage(context, images[2], 0xBE, &errors) == VX_SUCCESS)
                                 {
-                                    ALARM("Passed!");
                                     status = VX_SUCCESS;
                                 }
                                 else
