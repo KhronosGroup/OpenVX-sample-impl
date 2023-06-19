@@ -635,7 +635,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxMapTensorPatch(vx_tensor tensor, vx_size nu
     stride[0] = ownSizeOfType(tensor->data_type);
     for (vx_uint32 i = 1; i < number_of_dims; i++)
     {
-        stride[i] = stride[i - 1] * (view_end[i] - view_start[i]);
+        stride[i] = stride[i - 1] * (view_end[i - 1] - view_start[i - 1]);
     }
     //vx_map_id * map_id, vx_size * stride, void ** ptr
     size = ComputePatchSize(view_start, view_end, number_of_dims);
