@@ -1,4 +1,4 @@
-# 
+#
 
 # Copyright (c) 2012-2017 The Khronos Group Inc.
 #
@@ -21,6 +21,9 @@ TARGET      := openvx
 DEFFILE     := openvx.def
 TARGETTYPE  := dsmo
 IDIRS       += $(HOST_ROOT)/$(OPENVX_SRC)/include $(HOST_ROOT)/debug $(XML2_INC)
+ifneq (,$(findstring OPENVX_CONFORMANCE_NNEF_IMPORT,$(SYSDEFS)))
+IDIRS       += $(HOST_ROOT)/kernels/NNEF-Tools/parser/cpp/include/
+endif
 CSOURCES    :=  $(call all-c-files)
 STATIC_LIBS := openvx-helper vx_debug utils-lib
 SYS_SHARED_LIBS += $(XML2_LIBS)

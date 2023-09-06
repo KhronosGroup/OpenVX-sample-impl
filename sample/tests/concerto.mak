@@ -1,4 +1,4 @@
-# 
+#
 
 # Copyright (c) 2012-2017 The Khronos Group Inc.
 #
@@ -22,10 +22,13 @@ TARGET      := vx_test
 TARGETTYPE  := exe
 CSOURCES    := $(TARGET).c
 SHARED_LIBS := openvx vxu
+ifneq (,$(findstring OPENVX_CONFORMANCE_NNEF_IMPORT,$(SYSDEFS)))
+SHARED_LIBS += nnef-lib
+endif
 STATIC_LIBS := vx_xyz_lib openvx-debug-lib openvx-extras-lib openvx-helper
 IDIRS       += $(HOST_ROOT)/examples $(HOST_ROOT)/$(OPENVX_SRC)/include
 TESTPRGM    := $(TARGET)
-TESTOPTS    := 
+TESTOPTS    :=
 TESTPATH    := raw
 include $(FINALE)
 
@@ -35,10 +38,13 @@ TARGET      := vx_bug13510
 TARGETTYPE  := exe
 CSOURCES    := $(TARGET).c
 SHARED_LIBS := openvx vxu
+ifneq (,$(findstring OPENVX_CONFORMANCE_NNEF_IMPORT,$(SYSDEFS)))
+SHARED_LIBS += nnef-lib
+endif
 STATIC_LIBS := openvx-debug-lib openvx-extras-lib openvx-helper
 IDIRS       += $(HOST_ROOT)/examples $(HOST_ROOT)/$(OPENVX_SRC)/include
 TESTPRGM    := $(TARGET)
-TESTOPTS    := 
+TESTOPTS    :=
 TESTPATH    := raw
 include $(FINALE)
 
@@ -48,10 +54,13 @@ TARGET      := vx_bug13517
 TARGETTYPE  := exe
 CSOURCES    := $(TARGET).c
 SHARED_LIBS := openvx vxu
+ifneq (,$(findstring OPENVX_CONFORMANCE_NNEF_IMPORT,$(SYSDEFS)))
+SHARED_LIBS += nnef-lib
+endif
 STATIC_LIBS := openvx-debug-lib openvx-extras-lib openvx-helper
 IDIRS       += $(HOST_ROOT)/examples $(HOST_ROOT)/$(OPENVX_SRC)/include
 TESTPRGM    := $(TARGET)
-TESTOPTS    := 
+TESTOPTS    :=
 TESTPATH    := raw
 include $(FINALE)
 
@@ -61,10 +70,13 @@ TARGET      := vx_bug13518
 TARGETTYPE  := exe
 CSOURCES    := $(TARGET).c
 SHARED_LIBS := openvx vxu
-STATIC_LIBS := openvx-debug-lib openvx-extras-lib openvx-helper
+ifneq (,$(findstring OPENVX_CONFORMANCE_NNEF_IMPORT,$(SYSDEFS)))
+SHARED_LIBS += nnef-lib
+endif
+TATIC_LIBS := openvx-debug-lib openvx-extras-lib openvx-helper
 IDIRS       += $(HOST_ROOT)/examples $(HOST_ROOT)/$(OPENVX_SRC)/include
 TESTPRGM    := $(TARGET)
-TESTOPTS    := 
+TESTOPTS    :=
 TESTPATH    := raw
 include $(FINALE)
 
@@ -81,7 +93,7 @@ SHARED_LIBS := openvx vxu $(SDL_LIBS)
 STATIC_LIBS := openvx-debug-lib openvx-extras-lib openvx-helper
 IDIRS       += $(HOST_ROOT)/examples $(HOST_ROOT)/$(OPENVX_SRC)/include
 TESTPRGM    := $(TARGET)
-TESTOPTS    := 
+TESTOPTS    :=
 TESTPATH    := raw
 include $(FINALE)
 endif

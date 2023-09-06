@@ -1,4 +1,4 @@
-# 
+#
 
 # Copyright (c) 2012-2017 The Khronos Group Inc.
 #
@@ -41,6 +41,9 @@ CSOURCES    := vx_graph_factory.c vx_factory_corners.c vx_factory_pipeline.c vx_
 IDIRS       := $(HOST_ROOT)/$(OPENVX_SRC)/include $(HOST_ROOT)/$(OPENVX_SRC)/extensions/include
 STATIC_LIBS := vx_xyz_lib openvx-debug-lib openvx-helper
 SHARED_LIBS := openvx
+ifneq (,$(findstring OPENVX_CONFORMANCE_NNEF_IMPORT,$(SYSDEFS)))
+SHARED_LIBS += nnef-lib
+endif
 SYS_SHARED_LIBS := $(XML2_LIB)
 include $(FINALE)
 
@@ -49,7 +52,7 @@ include $(PRELUDE)
 TARGET      := vx_example_code
 TARGETTYPE  := library
 CSOURCES    := vx_imagepatch.c vx_delaygraph.c vx_super_res.c  vx_independent.c
-CSOURCES    += vx_matrix_access.c vx_parameters.c vx_kernels.c 
+CSOURCES    += vx_matrix_access.c vx_parameters.c vx_kernels.c
 CSOURCES    += vx_single_node_graph.c vx_introspection.c vx_multi_node_graph.c
 CSOURCES    += vx_convolution.c vx_warps.c vx_callback.c vx_extensions.c
 include $(FINALE)

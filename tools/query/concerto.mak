@@ -1,4 +1,4 @@
-# 
+#
 
 # Copyright (c) 2012-2017 The Khronos Group Inc.
 #
@@ -20,6 +20,9 @@ include $(PRELUDE)
 TARGET      := vx_query
 TARGETTYPE  := exe
 SHARED_LIBS := openvx vxu
+ifneq (,$(findstring OPENVX_CONFORMANCE_NNEF_IMPORT,$(SYSDEFS)))
+SHARED_LIBS += nnef-lib
+endif
 STATIC_LIBS := openvx-helper
 CSOURCES    := vx_query.c
 include $(FINALE)
