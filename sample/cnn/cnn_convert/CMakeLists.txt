@@ -21,6 +21,6 @@ set( TARGET_NAME cnn_convert )
 add_executable (${TARGET_NAME} cnn_convert.cpp )
 
 install ( TARGETS ${TARGET_NAME} 
-          RUNTIME DESTINATION bin
-          ARCHIVE DESTINATION bin
-          LIBRARY DESTINATION bin )
+          RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+          ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+          LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} )
