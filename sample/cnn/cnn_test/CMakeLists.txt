@@ -30,6 +30,6 @@ add_executable (${TARGET_NAME} test.cpp )
 target_link_libraries( ${TARGET_NAME} openvx vxu cnn_network )
 
 install ( TARGETS ${TARGET_NAME} 
-          RUNTIME DESTINATION bin
-          ARCHIVE DESTINATION bin
-          LIBRARY DESTINATION bin )
+          RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+          ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+          LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} )

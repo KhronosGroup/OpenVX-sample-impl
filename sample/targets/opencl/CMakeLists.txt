@@ -48,8 +48,8 @@ if ( EXPERIMENTAL_USE_OPENCL )
     target_link_libraries( ${TARGET_NAME} openvx )
 
     install ( TARGETS ${TARGET_NAME} 
-              RUNTIME DESTINATION bin
-              ARCHIVE DESTINATION lib
-              LIBRARY DESTINATION bin )
+              RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+              ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+              LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} )
 		  
 endif ( EXPERIMENTAL_USE_OPENCL )

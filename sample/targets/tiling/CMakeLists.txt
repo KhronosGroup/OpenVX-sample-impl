@@ -43,8 +43,8 @@ endif (CYGWIN)
 target_link_libraries( ${TARGET_NAME} openvx-debug-lib openvx-extras-lib openvx-helper openvx-tiling_chaining-lib openvx vxu half)
 
 install ( TARGETS ${TARGET_NAME} 
-          RUNTIME DESTINATION bin
-          ARCHIVE DESTINATION lib
-          LIBRARY DESTINATION bin )
+          RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+          ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+          LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} )
 		  
 set_target_properties( ${TARGET_NAME} PROPERTIES FOLDER ${SAMPLE_TARGETS_FOLDER} )
