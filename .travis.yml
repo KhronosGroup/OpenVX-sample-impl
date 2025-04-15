@@ -1,6 +1,6 @@
 language: c
 sudo: false
-dist: xenial
+dist: focal
 
 os:
   - linux
@@ -16,6 +16,7 @@ addons:
             - lcov
   
 branches:
+  - openvx_1.3.1
   - openvx_1.3
 
 before_script:

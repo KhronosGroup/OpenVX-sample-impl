@@ -237,8 +237,8 @@ static vx_status vxConDeptU8S16(void *src_base,void *dst_base,vx_uint32 height,v
 {
     vx_int32 x,y;
 
-    vx_uint32 roiw16 = width >= 15 ? height - 15 : 0;
-    vx_uint32 roiw8 = width >= 7 ? height - 7 : 0;
+    vx_uint32 roiw16 = width >= 15 ? width - 15 : 0;
+    vx_uint32 roiw8 = width >= 7 ? width - 7 : 0;
 
     int16x8_t sh=vdupq_n_s16(shift);
 
@@ -282,8 +282,7 @@ static vx_status vxConDeptS16U8(void *src_base,void *dst_base,vx_uint32 height,v
 {
     vx_int32 x,y;
 
-    vx_uint32 roiw16 = width >= 15 ? height - 15 : 0;
-    vx_uint32 roiw8 = width >= 7 ? height - 7 : 0;
+    vx_uint32 roiw16 = width >= 15 ? width - 15 : 0;
 
     int16x8_t sh=vdupq_n_s16(-shift);
 
