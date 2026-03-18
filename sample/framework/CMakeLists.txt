@@ -85,8 +85,8 @@ target_link_libraries( ${TARGET_NAME} openvx-helper utils-lib vx_debug ${LINK_AD
 endif (OPENVX_CONFORMANCE_NNEF_IMPORT)
 
 install ( TARGETS ${TARGET_NAME} 
-          RUNTIME DESTINATION bin
-          ARCHIVE DESTINATION lib
-          LIBRARY DESTINATION bin )
+          RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+          ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+          LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} )
 		  
 set_target_properties( ${TARGET_NAME} PROPERTIES FOLDER ${SAMPLE_FOLDER} )

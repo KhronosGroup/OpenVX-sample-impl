@@ -48,9 +48,9 @@ endif (CYGWIN)
 target_link_libraries( ${TARGET_NAME_2} openvx-helper openvx-extras_k-lib openvx )
 
 install ( TARGETS ${TARGET_NAME_1} ${TARGET_NAME_2}
-          RUNTIME DESTINATION bin
-          ARCHIVE DESTINATION bin
-          LIBRARY DESTINATION bin )
+          RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+          ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+          LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} )
 		  
 set_target_properties( ${TARGET_NAME_1} PROPERTIES FOLDER ${LIBRARIES_EXTRAS_FOLDER} )
 set_target_properties( ${TARGET_NAME_2} PROPERTIES FOLDER ${LIBRARIES_EXTRAS_FOLDER} )

@@ -31,8 +31,8 @@ add_executable (${TARGET_NAME} ${SOURCE_FILES})
 target_link_libraries( ${TARGET_NAME} openvx-helper openvx vxu )
 
 install ( TARGETS ${TARGET_NAME} 
-          RUNTIME DESTINATION bin
-          ARCHIVE DESTINATION bin
-          LIBRARY DESTINATION bin )
+          RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+          ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+          LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} )
 
 set_target_properties( ${TARGET_NAME} PROPERTIES FOLDER ${TOOLS_FOLDER} )

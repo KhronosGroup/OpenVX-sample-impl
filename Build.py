@@ -96,6 +96,8 @@ def main():
     # C Flags
     parser.add_option("--c_flags", dest="c_flags", help="Set C Compiler Flags -DCMAKE_C_FLAGS=" " [Default empty]", default='')
     parser.add_option("--cpp_flags", dest="cpp_flags", help="Set CPP Compiler Flags -DCMAKE_CXX_FLAGS=" " [Default empty]", default='')
+    # machine install to /usr/local/.... paths
+    parser.add_option("--machine_install", dest="machine_install", help="Install to machine to preferred destination path", default=False, action='store_true')
 
     options, args = parser.parse_args()
     if options.env_vars != "False":
@@ -163,12 +165,13 @@ def main():
         os.makedirs(tail)
         os.chdir(tail)
 
-    install_dir = os.path.join(outputDir, "install", os_enum.toString(operatingSys), arch_enum.toString(arch))
-    if operatingSys == os_enum.Win:
-        # Add \\${BUILD_TYPE} in order to support "Debug" \ "Release" build in visual studio
-        install_dir += '\\${BUILD_TYPE}'
-    else:
-        install_dir = os.path.join(install_dir, configuration_enum.toString(conf))
+    if not options.machine_install:
+        install_dir = os.path.join(outputDir, "install", os_enum.toString(operatingSys), arch_enum.toString(arch))
+        if operatingSys == os_enum.Win:
+            # Add \\${BUILD_TYPE} in order to support "Debug" \ "Release" build in visual studio
+            install_dir += '\\${BUILD_TYPE}'
+        else:
+            install_dir = os.path.join(install_dir, configuration_enum.toString(conf))
 
     cmake_generator_command = ''
     # if the user set generator
@@ -180,7 +183,8 @@ def main():
     cmd = ['cmake']
     cmd += [cmakeDir]
     cmd += ['-DCMAKE_BUILD_TYPE=' + configuration_enum.toString(conf)]
-    cmd += ['-DCMAKE_INSTALL_PREFIX=' + install_dir]
+    if not options.machine_install:
+        cmd += ['-DCMAKE_INSTALL_PREFIX=' + install_dir]
     if operatingSys == os_enum.Android:
         cmd += ['-DANDROID=1']
     if arch == arch_enum.x64:
