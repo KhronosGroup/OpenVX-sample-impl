@@ -46,9 +46,9 @@ static vx_bool vxIsValidThresholdDataType(vx_enum data_type)
     return ret;
 }
 
-VX_API_ENTRY vx_status VX_API_CALL vxReleaseThreshold(vx_threshold *t)
+VX_API_ENTRY vx_status VX_API_CALL vxReleaseThreshold(vx_threshold *thresh)
 {
-    return ownReleaseReferenceInt((vx_reference *)t, VX_TYPE_THRESHOLD, VX_EXTERNAL, NULL);
+    return ownReleaseReferenceInt((vx_reference *)thresh, VX_TYPE_THRESHOLD, VX_EXTERNAL, NULL);
 }
 
 VX_API_ENTRY vx_threshold VX_API_CALL vxCreateThreshold(vx_context context, vx_enum thresh_type, vx_enum data_type)
@@ -119,25 +119,25 @@ VX_API_ENTRY vx_threshold VX_API_CALL vxCreateThreshold(vx_context context, vx_e
     return threshold;
 }
 
-VX_API_ENTRY vx_status VX_API_CALL vxSetThresholdAttribute(vx_threshold threshold, vx_enum attribute, const void *ptr, vx_size size)
+VX_API_ENTRY vx_status VX_API_CALL vxSetThresholdAttribute(vx_threshold thresh, vx_enum attribute, const void *ptr, vx_size size)
 {
     vx_status status = VX_SUCCESS;
-    if (ownIsValidSpecificReference(&threshold->base, VX_TYPE_THRESHOLD) == vx_true_e)
+    if (ownIsValidSpecificReference(&thresh->base, VX_TYPE_THRESHOLD) == vx_true_e)
     {
         switch (attribute)
         {
             case VX_THRESHOLD_THRESHOLD_VALUE:
                 if (VX_CHECK_PARAM(ptr, size, vx_int32, 0x3) &&
-                    (threshold->thresh_type == VX_THRESHOLD_TYPE_BINARY))
+                    (thresh->thresh_type == VX_THRESHOLD_TYPE_BINARY))
                 {
-                    threshold->value.S32 = *(vx_int32 *)ptr;
-                    ownWroteToReference(&threshold->base);
+                    thresh->value.S32 = *(vx_int32 *)ptr;
+                    ownWroteToReference(&thresh->base);
                 }
                 else if(VX_CHECK_PARAM(ptr, size, vx_pixel_value_t, 0x3) &&
-                        (threshold->thresh_type == VX_THRESHOLD_TYPE_BINARY))
+                        (thresh->thresh_type == VX_THRESHOLD_TYPE_BINARY))
                 {
-                    threshold->value = *(vx_pixel_value_t *)ptr;
-                    ownWroteToReference(&threshold->base);
+                    thresh->value = *(vx_pixel_value_t *)ptr;
+                    ownWroteToReference(&thresh->base);
                 }
                 else
                 {
@@ -146,16 +146,16 @@ VX_API_ENTRY vx_status VX_API_CALL vxSetThresholdAttribute(vx_threshold threshol
                 break;
             case VX_THRESHOLD_THRESHOLD_LOWER:
                 if (VX_CHECK_PARAM(ptr, size, vx_int32, 0x3) &&
-                    (threshold->thresh_type == VX_THRESHOLD_TYPE_RANGE))
+                    (thresh->thresh_type == VX_THRESHOLD_TYPE_RANGE))
                 {
-                    threshold->lower.S32 = *(vx_int32 *)ptr;
-                    ownWroteToReference(&threshold->base);
+                    thresh->lower.S32 = *(vx_int32 *)ptr;
+                    ownWroteToReference(&thresh->base);
                 }
                 else if(VX_CHECK_PARAM(ptr, size, vx_pixel_value_t, 0x3) &&
-                        (threshold->thresh_type == VX_THRESHOLD_TYPE_RANGE))
+                        (thresh->thresh_type == VX_THRESHOLD_TYPE_RANGE))
                 {
-                    threshold->lower = *(vx_pixel_value_t *)ptr;
-                    ownWroteToReference(&threshold->base);
+                    thresh->lower = *(vx_pixel_value_t *)ptr;
+                    ownWroteToReference(&thresh->base);
                 }
                 else
                 {
@@ -164,16 +164,16 @@ VX_API_ENTRY vx_status VX_API_CALL vxSetThresholdAttribute(vx_threshold threshol
                 break;
             case VX_THRESHOLD_THRESHOLD_UPPER:
                 if (VX_CHECK_PARAM(ptr, size, vx_int32, 0x3) &&
-                    (threshold->thresh_type == VX_THRESHOLD_TYPE_RANGE))
+                    (thresh->thresh_type == VX_THRESHOLD_TYPE_RANGE))
                 {
-                    threshold->upper.S32 = *(vx_int32 *)ptr;
-                    ownWroteToReference(&threshold->base);
+                    thresh->upper.S32 = *(vx_int32 *)ptr;
+                    ownWroteToReference(&thresh->base);
                 }
                 else if(VX_CHECK_PARAM(ptr, size, vx_pixel_value_t, 0x3) &&
-                        (threshold->thresh_type == VX_THRESHOLD_TYPE_RANGE))
+                        (thresh->thresh_type == VX_THRESHOLD_TYPE_RANGE))
                 {
-                    threshold->upper = *(vx_pixel_value_t *)ptr;
-                    ownWroteToReference(&threshold->base);
+                    thresh->upper = *(vx_pixel_value_t *)ptr;
+                    ownWroteToReference(&thresh->base);
                 }
                 else
                 {
@@ -183,13 +183,13 @@ VX_API_ENTRY vx_status VX_API_CALL vxSetThresholdAttribute(vx_threshold threshol
             case VX_THRESHOLD_TRUE_VALUE:
                 if (VX_CHECK_PARAM(ptr, size, vx_int32, 0x3))
                 {
-                    threshold->true_value.S32 = *(vx_int32 *)ptr;
-                    ownWroteToReference(&threshold->base);
+                    thresh->true_value.S32 = *(vx_int32 *)ptr;
+                    ownWroteToReference(&thresh->base);
                 }
                 else if(VX_CHECK_PARAM(ptr, size, vx_pixel_value_t, 0x3))
                 {
-                    threshold->true_value = *(vx_pixel_value_t *)ptr;
-                    ownWroteToReference(&threshold->base);
+                    thresh->true_value = *(vx_pixel_value_t *)ptr;
+                    ownWroteToReference(&thresh->base);
                 }
                 else
                 {
@@ -199,13 +199,13 @@ VX_API_ENTRY vx_status VX_API_CALL vxSetThresholdAttribute(vx_threshold threshol
             case VX_THRESHOLD_FALSE_VALUE:
                 if (VX_CHECK_PARAM(ptr, size, vx_int32, 0x3))
                 {
-                    threshold->false_value.S32 = *(vx_int32 *)ptr;
-                    ownWroteToReference(&threshold->base);
+                    thresh->false_value.S32 = *(vx_int32 *)ptr;
+                    ownWroteToReference(&thresh->base);
                 }
                 else if(VX_CHECK_PARAM(ptr, size, vx_pixel_value_t, 0x3))
                 {
-                    threshold->false_value = *(vx_pixel_value_t *)ptr;
-                    ownWroteToReference(&threshold->base);
+                    thresh->false_value = *(vx_pixel_value_t *)ptr;
+                    ownWroteToReference(&thresh->base);
                 }
                 else
                 {
@@ -225,25 +225,25 @@ VX_API_ENTRY vx_status VX_API_CALL vxSetThresholdAttribute(vx_threshold threshol
     return status;
 }
 
-VX_API_ENTRY vx_status VX_API_CALL vxQueryThreshold(vx_threshold threshold, vx_enum attribute, void *ptr, vx_size size)
+VX_API_ENTRY vx_status VX_API_CALL vxQueryThreshold(vx_threshold thresh, vx_enum attribute, void *ptr, vx_size size)
 {
     vx_status status = VX_SUCCESS;
-    if (ownIsValidSpecificReference(&threshold->base, VX_TYPE_THRESHOLD) == vx_true_e)
+    if (ownIsValidSpecificReference(&thresh->base, VX_TYPE_THRESHOLD) == vx_true_e)
     {
         switch (attribute)
         {
             case VX_THRESHOLD_THRESHOLD_VALUE:
                 if (VX_CHECK_PARAM(ptr, size, vx_int32, 0x3) &&
-                    (threshold->thresh_type == VX_THRESHOLD_TYPE_BINARY))
+                    (thresh->thresh_type == VX_THRESHOLD_TYPE_BINARY))
                 {
-                    *(vx_int32 *)ptr = threshold->value.S32;
-                    ownReadFromReference(&threshold->base);
+                    *(vx_int32 *)ptr = thresh->value.S32;
+                    ownReadFromReference(&thresh->base);
                 }
                 else if(VX_CHECK_PARAM(ptr, size, vx_pixel_value_t, 0x3) &&
-                        (threshold->thresh_type == VX_THRESHOLD_TYPE_BINARY))
+                        (thresh->thresh_type == VX_THRESHOLD_TYPE_BINARY))
                 {
-                    *(vx_pixel_value_t *)ptr = threshold->value;
-                    ownReadFromReference(&threshold->base);
+                    *(vx_pixel_value_t *)ptr = thresh->value;
+                    ownReadFromReference(&thresh->base);
                 }
                 else
                 {
@@ -252,16 +252,16 @@ VX_API_ENTRY vx_status VX_API_CALL vxQueryThreshold(vx_threshold threshold, vx_e
                 break;
             case VX_THRESHOLD_THRESHOLD_LOWER:
                 if (VX_CHECK_PARAM(ptr, size, vx_int32, 0x3) &&
-                    (threshold->thresh_type == VX_THRESHOLD_TYPE_RANGE))
+                    (thresh->thresh_type == VX_THRESHOLD_TYPE_RANGE))
                 {
-                    *(vx_int32 *)ptr = threshold->lower.S32;
-                    ownReadFromReference(&threshold->base);
+                    *(vx_int32 *)ptr = thresh->lower.S32;
+                    ownReadFromReference(&thresh->base);
                 }
                 else if(VX_CHECK_PARAM(ptr, size, vx_pixel_value_t, 0x3) &&
-                        (threshold->thresh_type == VX_THRESHOLD_TYPE_RANGE))
+                        (thresh->thresh_type == VX_THRESHOLD_TYPE_RANGE))
                 {
-                    *(vx_pixel_value_t *)ptr = threshold->lower;
-                    ownReadFromReference(&threshold->base);
+                    *(vx_pixel_value_t *)ptr = thresh->lower;
+                    ownReadFromReference(&thresh->base);
                 }
                 else
                 {
@@ -270,16 +270,16 @@ VX_API_ENTRY vx_status VX_API_CALL vxQueryThreshold(vx_threshold threshold, vx_e
                 break;
             case VX_THRESHOLD_THRESHOLD_UPPER:
                 if (VX_CHECK_PARAM(ptr, size, vx_int32, 0x3) &&
-                    (threshold->thresh_type == VX_THRESHOLD_TYPE_RANGE))
+                    (thresh->thresh_type == VX_THRESHOLD_TYPE_RANGE))
                 {
-                    *(vx_int32 *)ptr = threshold->upper.S32;
-                    ownReadFromReference(&threshold->base);
+                    *(vx_int32 *)ptr = thresh->upper.S32;
+                    ownReadFromReference(&thresh->base);
                 }
                 else if(VX_CHECK_PARAM(ptr, size, vx_pixel_value_t, 0x3) &&
-                        (threshold->thresh_type == VX_THRESHOLD_TYPE_RANGE))
+                        (thresh->thresh_type == VX_THRESHOLD_TYPE_RANGE))
                 {
-                    *(vx_pixel_value_t *)ptr = threshold->upper;
-                    ownReadFromReference(&threshold->base);
+                    *(vx_pixel_value_t *)ptr = thresh->upper;
+                    ownReadFromReference(&thresh->base);
                 }
                 else
                 {
@@ -289,13 +289,13 @@ VX_API_ENTRY vx_status VX_API_CALL vxQueryThreshold(vx_threshold threshold, vx_e
             case VX_THRESHOLD_TRUE_VALUE:
                 if (VX_CHECK_PARAM(ptr, size, vx_int32, 0x3))
                 {
-                    *(vx_int32 *)ptr = threshold->true_value.S32;
-                    ownReadFromReference(&threshold->base);
+                    *(vx_int32 *)ptr = thresh->true_value.S32;
+                    ownReadFromReference(&thresh->base);
                 }
                 else if(VX_CHECK_PARAM(ptr, size, vx_pixel_value_t, 0x3))
                 {
-                    *(vx_pixel_value_t *)ptr = threshold->true_value;
-                    ownReadFromReference(&threshold->base);
+                    *(vx_pixel_value_t *)ptr = thresh->true_value;
+                    ownReadFromReference(&thresh->base);
                 }
                 else
                 {
@@ -305,13 +305,13 @@ VX_API_ENTRY vx_status VX_API_CALL vxQueryThreshold(vx_threshold threshold, vx_e
             case VX_THRESHOLD_FALSE_VALUE:
                 if (VX_CHECK_PARAM(ptr, size, vx_int32, 0x3))
                 {
-                    *(vx_int32 *)ptr = threshold->false_value.S32;
-                    ownReadFromReference(&threshold->base);
+                    *(vx_int32 *)ptr = thresh->false_value.S32;
+                    ownReadFromReference(&thresh->base);
                 }
                 else if(VX_CHECK_PARAM(ptr, size, vx_pixel_value_t, 0x3))
                 {
-                    *(vx_pixel_value_t *)ptr = threshold->false_value;
-                    ownReadFromReference(&threshold->base);
+                    *(vx_pixel_value_t *)ptr = thresh->false_value;
+                    ownReadFromReference(&thresh->base);
                 }
                 else
                 {
@@ -321,7 +321,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxQueryThreshold(vx_threshold threshold, vx_e
             case VX_THRESHOLD_DATA_TYPE:
                 if (VX_CHECK_PARAM(ptr, size, vx_enum, 0x3))
                 {
-                    *(vx_enum *)ptr = threshold->data_type;
+                    *(vx_enum *)ptr = thresh->data_type;
                 }
                 else
                 {
@@ -331,7 +331,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxQueryThreshold(vx_threshold threshold, vx_e
             case VX_THRESHOLD_TYPE:
                 if (VX_CHECK_PARAM(ptr, size, vx_enum, 0x3))
                 {
-                    *(vx_enum *)ptr = threshold->thresh_type;
+                    *(vx_enum *)ptr = thresh->thresh_type;
                 }
                 else
                 {
@@ -341,7 +341,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxQueryThreshold(vx_threshold threshold, vx_e
             case VX_THRESHOLD_INPUT_FORMAT:
                 if (VX_CHECK_PARAM(ptr, size, vx_df_image, 0x3))
                 {
-                    *(vx_df_image *)ptr = threshold->input_format;
+                    *(vx_df_image *)ptr = thresh->input_format;
                 }
                 else
                 {
@@ -351,7 +351,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxQueryThreshold(vx_threshold threshold, vx_e
             case VX_THRESHOLD_OUTPUT_FORMAT:
                 if (VX_CHECK_PARAM(ptr, size, vx_df_image, 0x3))
                 {
-                     *(vx_df_image *)ptr = threshold->output_format;
+                     *(vx_df_image *)ptr = thresh->output_format;
                 }
                 else
                 {
@@ -558,7 +558,7 @@ VX_API_ENTRY vx_threshold VX_API_CALL vxCreateVirtualThresholdForImage(vx_graph 
     return threshold;
 }
 
-VX_API_ENTRY vx_status VX_API_CALL vxCopyThresholdOutput(vx_threshold threshold,
+VX_API_ENTRY vx_status VX_API_CALL vxCopyThresholdOutput(vx_threshold thresh,
                                                          vx_pixel_value_t * true_value_ptr,
                                                          vx_pixel_value_t * false_value_ptr,
                                                          vx_enum usage,
@@ -566,16 +566,16 @@ VX_API_ENTRY vx_status VX_API_CALL vxCopyThresholdOutput(vx_threshold threshold,
 {
     vx_status status = VX_ERROR_INVALID_REFERENCE;
 
-    if (ownIsValidSpecificReference(&threshold->base, VX_TYPE_THRESHOLD) == vx_false_e)
+    if (ownIsValidSpecificReference(&thresh->base, VX_TYPE_THRESHOLD) == vx_false_e)
     {
         VX_PRINT(VX_ZONE_ERROR, "Invalid reference for threshold\n");
         status = VX_ERROR_INVALID_REFERENCE;
         return status;
     }
 
-    if (threshold->base.is_virtual == vx_true_e)
+    if (thresh->base.is_virtual == vx_true_e)
     {
-        if (threshold->base.is_accessible == vx_false_e)
+        if (thresh->base.is_accessible == vx_false_e)
         {
             VX_PRINT(VX_ZONE_ERROR, "Can not access a virtual threshold\n");
             status = VX_ERROR_OPTIMIZED_AWAY;
@@ -601,7 +601,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxCopyThresholdOutput(vx_threshold threshold,
             {
                 return VX_ERROR_INVALID_PARAMETERS;
             }
-            true_value_ptr = (vx_pixel_value_t *)clEnqueueMapBuffer(threshold->base.context->opencl_command_queue,
+            true_value_ptr = (vx_pixel_value_t *)clEnqueueMapBuffer(thresh->base.context->opencl_command_queue,
                 opencl_buf, CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, 0, size,
                 0, NULL, NULL, &cerr);
             VX_PRINT(VX_ZONE_CONTEXT, "OPENCL: vxCopyThresholdOutput: clEnqueueMapBuffer(%p,%d) => %p (%d)\n",
@@ -622,7 +622,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxCopyThresholdOutput(vx_threshold threshold,
             {
                 return VX_ERROR_INVALID_PARAMETERS;
             }
-            false_value_ptr = (vx_pixel_value_t *)clEnqueueMapBuffer(threshold->base.context->opencl_command_queue,
+            false_value_ptr = (vx_pixel_value_t *)clEnqueueMapBuffer(thresh->base.context->opencl_command_queue,
                 opencl_buf, CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, 0, size,
                 0, NULL, NULL, &cerr);
             VX_PRINT(VX_ZONE_CONTEXT, "OPENCL: vxCopyThresholdOutput: clEnqueueMapBuffer(%p,%d) => %p (%d)\n",
@@ -640,34 +640,34 @@ VX_API_ENTRY vx_status VX_API_CALL vxCopyThresholdOutput(vx_threshold threshold,
     {
         if (usage == VX_READ_ONLY)
         {
-            ownSemWait(&threshold->base.lock);
+            ownSemWait(&thresh->base.lock);
             vx_size size = sizeof(vx_pixel_value_t);
             if (true_value_ptr)
             {
-                memcpy(true_value_ptr, &threshold->true_value, size);
+                memcpy(true_value_ptr, &thresh->true_value, size);
             }
             if (false_value_ptr)
             {
-                memcpy(false_value_ptr, &threshold->false_value, size);
+                memcpy(false_value_ptr, &thresh->false_value, size);
             }
-            ownSemPost(&threshold->base.lock);
-            ownReadFromReference(&threshold->base);
+            ownSemPost(&thresh->base.lock);
+            ownReadFromReference(&thresh->base);
             status = VX_SUCCESS;
         }
         else if (usage == VX_WRITE_ONLY)
         {
-            ownSemWait(&threshold->base.lock);
+            ownSemWait(&thresh->base.lock);
             vx_size size = sizeof(vx_pixel_value_t);
             if (true_value_ptr)
             {
-                memcpy(&threshold->true_value, true_value_ptr, size);
+                memcpy(&thresh->true_value, true_value_ptr, size);
             }
             if (false_value_ptr)
             {
-                memcpy(&threshold->false_value, false_value_ptr, size);
+                memcpy(&thresh->false_value, false_value_ptr, size);
             }
-            ownSemPost(&threshold->base.lock);
-            ownWroteToReference(&threshold->base);
+            ownSemPost(&thresh->base.lock);
+            ownWroteToReference(&thresh->base);
             status = VX_SUCCESS;
         }
         else
@@ -687,15 +687,15 @@ VX_API_ENTRY vx_status VX_API_CALL vxCopyThresholdOutput(vx_threshold threshold,
     {
         if (true_value_ptr_given)
         {
-            clEnqueueUnmapMemObject(threshold->base.context->opencl_command_queue,
+            clEnqueueUnmapMemObject(thresh->base.context->opencl_command_queue,
                 (cl_mem)true_value_ptr_given, true_value_ptr, 0, NULL, NULL);
-            clFinish(threshold->base.context->opencl_command_queue);
+            clFinish(thresh->base.context->opencl_command_queue);
         }
         if (false_value_ptr_given)
         {
-            clEnqueueUnmapMemObject(threshold->base.context->opencl_command_queue,
+            clEnqueueUnmapMemObject(thresh->base.context->opencl_command_queue,
                 (cl_mem)false_value_ptr_given, false_value_ptr, 0, NULL, NULL);
-            clFinish(threshold->base.context->opencl_command_queue);
+            clFinish(thresh->base.context->opencl_command_queue);
         }
     }
 #endif
@@ -704,7 +704,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxCopyThresholdOutput(vx_threshold threshold,
 }
 
 
-VX_API_ENTRY vx_status VX_API_CALL vxCopyThresholdRange(vx_threshold threshold,
+VX_API_ENTRY vx_status VX_API_CALL vxCopyThresholdRange(vx_threshold thresh,
                                                         vx_pixel_value_t * lower_value_ptr,
                                                         vx_pixel_value_t * upper_value_ptr,
                                                         vx_enum usage,
@@ -712,16 +712,16 @@ VX_API_ENTRY vx_status VX_API_CALL vxCopyThresholdRange(vx_threshold threshold,
 {
     vx_status status = VX_ERROR_INVALID_REFERENCE;
 
-    if (ownIsValidSpecificReference(&threshold->base, VX_TYPE_THRESHOLD) == vx_false_e)
+    if (ownIsValidSpecificReference(&thresh->base, VX_TYPE_THRESHOLD) == vx_false_e)
     {
         VX_PRINT(VX_ZONE_ERROR, "Invalid reference for threshold\n");
         status = VX_ERROR_INVALID_REFERENCE;
         return status;
     }
 
-    if (threshold->base.is_virtual == vx_true_e)
+    if (thresh->base.is_virtual == vx_true_e)
     {
-        if (threshold->base.is_accessible == vx_false_e)
+        if (thresh->base.is_accessible == vx_false_e)
         {
             VX_PRINT(VX_ZONE_ERROR, "Can not access a virtual threshold\n");
             status = VX_ERROR_OPTIMIZED_AWAY;
@@ -747,7 +747,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxCopyThresholdRange(vx_threshold threshold,
             {
                 return VX_ERROR_INVALID_PARAMETERS;
             }
-            lower_value_ptr = (vx_pixel_value_t *)clEnqueueMapBuffer(threshold->base.context->opencl_command_queue,
+            lower_value_ptr = (vx_pixel_value_t *)clEnqueueMapBuffer(thresh->base.context->opencl_command_queue,
                 opencl_buf, CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, 0, size,
                 0, NULL, NULL, &cerr);
             VX_PRINT(VX_ZONE_CONTEXT, "OPENCL: vxCopyThresholdRange: clEnqueueMapBuffer(%p,%d) => %p (%d)\n",
@@ -768,7 +768,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxCopyThresholdRange(vx_threshold threshold,
             {
                 return VX_ERROR_INVALID_PARAMETERS;
             }
-            upper_value_ptr = (vx_pixel_value_t *)clEnqueueMapBuffer(threshold->base.context->opencl_command_queue,
+            upper_value_ptr = (vx_pixel_value_t *)clEnqueueMapBuffer(thresh->base.context->opencl_command_queue,
                 opencl_buf, CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, 0, size,
                 0, NULL, NULL, &cerr);
             VX_PRINT(VX_ZONE_CONTEXT, "OPENCL: vxCopyThresholdRange: clEnqueueMapBuffer(%p,%d) => %p (%d)\n",
@@ -786,34 +786,34 @@ VX_API_ENTRY vx_status VX_API_CALL vxCopyThresholdRange(vx_threshold threshold,
     {
         if (usage == VX_READ_ONLY)
         {
-            ownSemWait(&threshold->base.lock);
+            ownSemWait(&thresh->base.lock);
             vx_size size = sizeof(vx_pixel_value_t);
             if (lower_value_ptr)
             {
-                memcpy(lower_value_ptr, &threshold->lower, size);
+                memcpy(lower_value_ptr, &thresh->lower, size);
             }
             if (upper_value_ptr)
             {
-                memcpy(upper_value_ptr, &threshold->upper, size);
+                memcpy(upper_value_ptr, &thresh->upper, size);
             }
-            ownSemPost(&threshold->base.lock);
-            ownReadFromReference(&threshold->base);
+            ownSemPost(&thresh->base.lock);
+            ownReadFromReference(&thresh->base);
             status = VX_SUCCESS;
         }
         else if (usage == VX_WRITE_ONLY)
         {
-            ownSemWait(&threshold->base.lock);
+            ownSemWait(&thresh->base.lock);
             vx_size size = sizeof(vx_pixel_value_t);
             if (lower_value_ptr)
             {
-                memcpy(&threshold->lower, lower_value_ptr, size);
+                memcpy(&thresh->lower, lower_value_ptr, size);
             }
             if (upper_value_ptr)
             {
-                memcpy(&threshold->upper, upper_value_ptr, size);
+                memcpy(&thresh->upper, upper_value_ptr, size);
             }
-            ownSemPost(&threshold->base.lock);
-            ownWroteToReference(&threshold->base);
+            ownSemPost(&thresh->base.lock);
+            ownWroteToReference(&thresh->base);
             status = VX_SUCCESS;
         }
         else
@@ -833,15 +833,15 @@ VX_API_ENTRY vx_status VX_API_CALL vxCopyThresholdRange(vx_threshold threshold,
     {
         if (lower_value_ptr_given)
         {
-            clEnqueueUnmapMemObject(threshold->base.context->opencl_command_queue,
+            clEnqueueUnmapMemObject(thresh->base.context->opencl_command_queue,
                 (cl_mem)lower_value_ptr_given, lower_value_ptr, 0, NULL, NULL);
-            clFinish(threshold->base.context->opencl_command_queue);
+            clFinish(thresh->base.context->opencl_command_queue);
         }
         if (upper_value_ptr_given)
         {
-            clEnqueueUnmapMemObject(threshold->base.context->opencl_command_queue,
+            clEnqueueUnmapMemObject(thresh->base.context->opencl_command_queue,
                 (cl_mem)upper_value_ptr_given, upper_value_ptr, 0, NULL, NULL);
-            clFinish(threshold->base.context->opencl_command_queue);
+            clFinish(thresh->base.context->opencl_command_queue);
         }
     }
 #endif
@@ -850,7 +850,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxCopyThresholdRange(vx_threshold threshold,
 }
 
 
-VX_API_ENTRY vx_status VX_API_CALL vxCopyThresholdValue(vx_threshold threshold,
+VX_API_ENTRY vx_status VX_API_CALL vxCopyThresholdValue(vx_threshold thresh,
                                                         vx_pixel_value_t * value_ptr,
                                                         vx_enum usage,
                                                         vx_enum user_mem_type
@@ -858,16 +858,16 @@ VX_API_ENTRY vx_status VX_API_CALL vxCopyThresholdValue(vx_threshold threshold,
 {
     vx_status status = VX_ERROR_INVALID_REFERENCE;
 
-    if (ownIsValidSpecificReference(&threshold->base, VX_TYPE_THRESHOLD) == vx_false_e)
+    if (ownIsValidSpecificReference(&thresh->base, VX_TYPE_THRESHOLD) == vx_false_e)
     {
         VX_PRINT(VX_ZONE_ERROR, "Invalid reference for threshold\n");
         status = VX_ERROR_INVALID_REFERENCE;
         return status;
     }
 
-    if (threshold->base.is_virtual == vx_true_e)
+    if (thresh->base.is_virtual == vx_true_e)
     {
-        if (threshold->base.is_accessible == vx_false_e)
+        if (thresh->base.is_accessible == vx_false_e)
         {
             VX_PRINT(VX_ZONE_ERROR, "Can not access a virtual threshold\n");
             status = VX_ERROR_OPTIMIZED_AWAY;
@@ -890,7 +890,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxCopyThresholdValue(vx_threshold threshold,
         {
             return VX_ERROR_INVALID_PARAMETERS;
         }
-        value_ptr = (vx_pixel_value_t *)clEnqueueMapBuffer(threshold->base.context->opencl_command_queue,
+        value_ptr = (vx_pixel_value_t *)clEnqueueMapBuffer(thresh->base.context->opencl_command_queue,
             opencl_buf, CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, 0, size,
             0, NULL, NULL, &cerr);
         VX_PRINT(VX_ZONE_CONTEXT, "OPENCL: vxCopyThresholdValue: clEnqueueMapBuffer(%p,%d) => %p (%d)\n",
@@ -907,26 +907,26 @@ VX_API_ENTRY vx_status VX_API_CALL vxCopyThresholdValue(vx_threshold threshold,
     {
         if (usage == VX_READ_ONLY)
         {
-            ownSemWait(&threshold->base.lock);
+            ownSemWait(&thresh->base.lock);
             vx_size size = sizeof(vx_pixel_value_t);
             if (value_ptr)
             {
-                memcpy(value_ptr, &threshold->value, size);
+                memcpy(value_ptr, &thresh->value, size);
             }
-            ownSemPost(&threshold->base.lock);
-            ownReadFromReference(&threshold->base);
+            ownSemPost(&thresh->base.lock);
+            ownReadFromReference(&thresh->base);
             status = VX_SUCCESS;
         }
         else if (usage == VX_WRITE_ONLY)
         {
-            ownSemWait(&threshold->base.lock);
+            ownSemWait(&thresh->base.lock);
             vx_size size = sizeof(vx_pixel_value_t);
             if (value_ptr)
             {
-                memcpy(&threshold->value, value_ptr, size);
+                memcpy(&thresh->value, value_ptr, size);
             }
-            ownSemPost(&threshold->base.lock);
-            ownWroteToReference(&threshold->base);
+            ownSemPost(&thresh->base.lock);
+            ownWroteToReference(&thresh->base);
             status = VX_SUCCESS;
         }
         else
@@ -944,9 +944,9 @@ VX_API_ENTRY vx_status VX_API_CALL vxCopyThresholdValue(vx_threshold threshold,
 #ifdef OPENVX_USE_OPENCL_INTEROP
     if (user_mem_type_given == VX_MEMORY_TYPE_OPENCL_BUFFER)
     {
-        clEnqueueUnmapMemObject(threshold->base.context->opencl_command_queue,
+        clEnqueueUnmapMemObject(thresh->base.context->opencl_command_queue,
             (cl_mem)value_ptr_given, value_ptr, 0, NULL, NULL);
-        clFinish(threshold->base.context->opencl_command_queue);
+        clFinish(thresh->base.context->opencl_command_queue);
     }
 #endif
 

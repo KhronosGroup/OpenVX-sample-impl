@@ -46,7 +46,7 @@ if (CYGWIN)
     set_target_properties( ${TARGET_NAME} PROPERTIES LINK_FLAGS ${CMAKE_CURRENT_SOURCE_DIR}/${DEF_FILE} )
 endif (CYGWIN)
 
-target_link_libraries( ${TARGET_NAME} openvx openvx-helper )
+target_link_libraries( ${TARGET_NAME} openvx )
 
 if (OPENVX_USE_OPENCL_INTEROP)
     target_link_libraries( openvx ${OpeCL_LIBRARIES})

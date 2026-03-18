@@ -39,85 +39,85 @@ void ownNodeSetParameter(vx_node node, vx_uint32 index, vx_reference value)
     node->parameters[index] = (vx_reference_t *)value;
 }
 
-VX_API_ENTRY vx_node VX_API_CALL vxCreateGenericNode(vx_graph g, vx_kernel k)
+VX_API_ENTRY vx_node VX_API_CALL vxCreateGenericNode(vx_graph graph, vx_kernel kernel)
 {
     vx_node_t *node = NULL;
-    vx_graph_t *graph = (vx_graph_t *)g;
-    vx_kernel_t *kernel = (vx_kernel_t *)k;
+    vx_graph_t *graph_ptr = (vx_graph_t *)graph;
+    vx_kernel_t *kernel_ptr = (vx_kernel_t *)kernel;
 
-    if (ownIsValidSpecificReference(&graph->base, VX_TYPE_GRAPH) == vx_true_e)
+    if (ownIsValidSpecificReference(&graph_ptr->base, VX_TYPE_GRAPH) == vx_true_e)
     {
-        if (ownIsValidSpecificReference(&kernel->base, VX_TYPE_KERNEL) == vx_true_e)
+        if (ownIsValidSpecificReference(&kernel_ptr->base, VX_TYPE_KERNEL) == vx_true_e)
         {
             vx_uint32 n = 0;
-            ownSemWait(&graph->base.lock);
+            ownSemWait(&graph_ptr->base.lock);
             for (n = 0; n < VX_INT_MAX_REF; n++)
             {
-                if (graph->nodes[n] == NULL)
+                if (graph_ptr->nodes[n] == NULL)
                 {
-                    node = (vx_node)ownCreateReference(graph->base.context, VX_TYPE_NODE, VX_EXTERNAL, &graph->base);
+                    node = (vx_node)ownCreateReference(graph_ptr->base.context, VX_TYPE_NODE, VX_EXTERNAL, &graph_ptr->base);
                     if (vxGetStatus((vx_reference)node) == VX_SUCCESS && node->base.type == VX_TYPE_NODE)
                     {
                         /* reference the abstract kernel. */
-                        node->kernel = kernel;
-                        node->affinity = kernel->affinity;
+                        node->kernel = kernel_ptr;
+                        node->affinity = kernel_ptr->affinity;
 
                         /* show that there are potentially multiple nodes using this kernel. */
-                        ownIncrementReference(&kernel->base, VX_INTERNAL);
+                        ownIncrementReference(&kernel_ptr->base, VX_INTERNAL);
 
                         /* copy the attributes over */
-                        memcpy(&node->attributes, &kernel->attributes, sizeof(vx_kernel_attr_t));
+                        memcpy(&node->attributes, &kernel_ptr->attributes, sizeof(vx_kernel_attr_t));
 
                         /* setup our forward and back references to the node/graph */
-                        graph->nodes[n] = node;
-                        node->graph = graph;
+                        graph_ptr->nodes[n] = node;
+                        node->graph = graph_ptr;
                         ownIncrementReference(&node->base, VX_INTERNAL); /* one for the graph */
 
                         /* increase the count of nodes in the graph. */
-                        graph->numNodes++;
+                        graph_ptr->numNodes++;
 
-                        ownInitPerf(&graph->nodes[n]->perf);
+                        ownInitPerf(&graph_ptr->nodes[n]->perf);
 
                         /* force a re-verify */
-                        graph->reverify = graph->verified;
-                        graph->verified = vx_false_e;
-                        graph->state = VX_GRAPH_STATE_UNVERIFIED;
+                        graph_ptr->reverify = graph_ptr->verified;
+                        graph_ptr->verified = vx_false_e;
+                        graph_ptr->state = VX_GRAPH_STATE_UNVERIFIED;
 
                         VX_PRINT(VX_ZONE_NODE, "Created Node %p %s affinity:%s\n", node, node->kernel->name, node->base.context->targets[node->affinity].name);
                     }
                     break; /* succeed or fail, break. */
                 }
             }
-            ownSemPost(&graph->base.lock);
+            ownSemPost(&graph_ptr->base.lock);
             ownPrintReference((vx_reference )node);
         }
         else
         {
-            VX_PRINT(VX_ZONE_ERROR, "Kernel %p was invalid!\n", kernel);
-            vxAddLogEntry((vx_reference)g, VX_ERROR_INVALID_REFERENCE, "Kernel %p was invalid!\n", kernel);
-            node = (vx_node_t *)ownGetErrorObject(graph->base.context, VX_ERROR_INVALID_REFERENCE);
+            VX_PRINT(VX_ZONE_ERROR, "Kernel %p was invalid!\n", kernel_ptr);
+            vxAddLogEntry((vx_reference)graph, VX_ERROR_INVALID_REFERENCE, "Kernel %p was invalid!\n", kernel_ptr);
+            node = (vx_node_t *)ownGetErrorObject(graph_ptr->base.context, VX_ERROR_INVALID_REFERENCE);
         }
     }
     else {
-        VX_PRINT(VX_ZONE_ERROR, "Graph %p was invalid!\n", graph);
-        vxAddLogEntry((vx_reference)g, VX_ERROR_INVALID_REFERENCE, "Graph %p as invalid!\n", graph);
+        VX_PRINT(VX_ZONE_ERROR, "Graph %p was invalid!\n", graph_ptr);
+        vxAddLogEntry((vx_reference)graph, VX_ERROR_INVALID_REFERENCE, "Graph %p as invalid!\n", graph_ptr);
     }
 
     return (vx_node)node;
 }
 
-VX_API_ENTRY vx_status VX_API_CALL vxQueryNode(vx_node n, vx_enum attribute, void *ptr, vx_size size)
+VX_API_ENTRY vx_status VX_API_CALL vxQueryNode(vx_node node, vx_enum attribute, void *ptr, vx_size size)
 {
     vx_status status = VX_SUCCESS;
-    vx_node_t *node = (vx_node_t *)n;
-    if (ownIsValidSpecificReference(&node->base, VX_TYPE_NODE) == vx_true_e)
+    vx_node_t *node_ptr = (vx_node_t *)node;
+    if (ownIsValidSpecificReference(&node_ptr->base, VX_TYPE_NODE) == vx_true_e)
     {
         switch (attribute)
         {
             case VX_NODE_PERFORMANCE:
                 if (VX_CHECK_PARAM(ptr, size, vx_perf_t, 0x3))
                 {
-                    memcpy(ptr, &node->perf, size);
+                    memcpy(ptr, &node_ptr->perf, size);
                 }
                 else
                 {
@@ -127,7 +127,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxQueryNode(vx_node n, vx_enum attribute, voi
             case VX_NODE_STATUS:
                 if (VX_CHECK_PARAM(ptr, size, vx_status, 0x3))
                 {
-                    *(vx_status *)ptr = node->status;
+                    *(vx_status *)ptr = node_ptr->status;
                 }
                 else
                 {
@@ -137,7 +137,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxQueryNode(vx_node n, vx_enum attribute, voi
             case VX_NODE_LOCAL_DATA_SIZE:
                 if (VX_CHECK_PARAM(ptr, size, vx_size, 0x3))
                 {
-                    *(vx_size *)ptr = node->attributes.localDataSize;
+                    *(vx_size *)ptr = node_ptr->attributes.localDataSize;
                 }
                 else
                 {
@@ -147,7 +147,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxQueryNode(vx_node n, vx_enum attribute, voi
             case VX_NODE_LOCAL_DATA_PTR:
                 if (VX_CHECK_PARAM(ptr, size, vx_ptr_t, 0x3))
                 {
-                    *(vx_ptr_t *)ptr = node->attributes.localDataPtr;
+                    *(vx_ptr_t *)ptr = node_ptr->attributes.localDataPtr;
                 }
                 else
                 {
@@ -158,7 +158,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxQueryNode(vx_node n, vx_enum attribute, voi
             case VX_NODE_GLOBAL_DATA_SIZE:
                 if (VX_CHECK_PARAM(ptr, size, vx_size, 0x3))
                 {
-                    *(vx_size *)ptr = node->attributes.globalDataSize;
+                    *(vx_size *)ptr = node_ptr->attributes.globalDataSize;
                 }
                 else
                 {
@@ -168,7 +168,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxQueryNode(vx_node n, vx_enum attribute, voi
             case VX_NODE_GLOBAL_DATA_PTR:
                 if (VX_CHECK_PARAM(ptr, size, vx_ptr_t, 0x3))
                 {
-                    *(vx_ptr_t *)ptr = node->attributes.globalDataPtr;
+                    *(vx_ptr_t *)ptr = node_ptr->attributes.globalDataPtr;
                 }
                 else
                 {
@@ -179,8 +179,8 @@ VX_API_ENTRY vx_status VX_API_CALL vxQueryNode(vx_node n, vx_enum attribute, voi
             case VX_NODE_BORDER:
                 if (VX_CHECK_PARAM(ptr, size, vx_border_t, 0x3))
                 {
-                    VX_PRINT(VX_ZONE_NODE, "Border mode %x set!\n", node->attributes.borders.mode);
-                    memcpy((vx_border_t *)ptr, &node->attributes.borders, sizeof(vx_border_t));
+                    VX_PRINT(VX_ZONE_NODE, "Border mode %x set!\n", node_ptr->attributes.borders.mode);
+                    memcpy((vx_border_t *)ptr, &node_ptr->attributes.borders, sizeof(vx_border_t));
                 }
                 else
                 {
@@ -191,7 +191,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxQueryNode(vx_node n, vx_enum attribute, voi
             case VX_NODE_INPUT_NEIGHBORHOOD:
                 if (VX_CHECK_PARAM(ptr, size, vx_neighborhood_size_t, 0x3))
                 {
-                    memcpy(ptr, &node->kernel->attributes.nhbdinfo, size);
+                    memcpy(ptr, &node_ptr->kernel->attributes.nhbdinfo, size);
                 }
                 else
                 {
@@ -201,7 +201,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxQueryNode(vx_node n, vx_enum attribute, voi
             case VX_NODE_OUTPUT_TILE_BLOCK_SIZE:
                 if (VX_CHECK_PARAM(ptr, size, vx_tile_block_size_t, 0x3))
                 {
-                    memcpy(ptr, &node->kernel->attributes.blockinfo, size);
+                    memcpy(ptr, &node_ptr->kernel->attributes.blockinfo, size);
                 }
                 else
                 {
@@ -211,7 +211,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxQueryNode(vx_node n, vx_enum attribute, voi
             case VX_NODE_TILE_MEMORY_SIZE:
                 if (VX_CHECK_PARAM(ptr, size, vx_size, 0x3))
                 {
-                    *(vx_size *)ptr = node->attributes.tileDataSize;
+                    *(vx_size *)ptr = node_ptr->attributes.tileDataSize;
                 }
                 else
                 {
@@ -222,7 +222,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxQueryNode(vx_node n, vx_enum attribute, voi
             case VX_NODE_PARAMETERS:
                 if (VX_CHECK_PARAM(ptr, size, vx_uint32, 0x3))
                 {
-                    vx_uint32 numParams = node->kernel->signature.num_parameters;
+                    vx_uint32 numParams = node_ptr->kernel->signature.num_parameters;
                     VX_PRINT(VX_ZONE_NODE, "Number of node parameters is %d\n", numParams);
                     memcpy((vx_uint32*)ptr, &numParams, sizeof(numParams));
                 }
@@ -234,7 +234,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxQueryNode(vx_node n, vx_enum attribute, voi
             case VX_NODE_IS_REPLICATED:
                 if (VX_CHECK_PARAM(ptr, size, vx_bool, 0x3))
                 {
-                    vx_bool is_replicated = node->is_replicated;
+                    vx_bool is_replicated = node_ptr->is_replicated;
                     if (vx_true_e == is_replicated)
                         VX_PRINT(VX_ZONE_NODE, "Node is replicated\n");
                     else
@@ -248,13 +248,13 @@ VX_API_ENTRY vx_status VX_API_CALL vxQueryNode(vx_node n, vx_enum attribute, voi
                 break;
             case VX_NODE_REPLICATE_FLAGS:
             {
-                vx_size sz = sizeof(vx_bool)*node->kernel->signature.num_parameters;
+                vx_size sz = sizeof(vx_bool)*node_ptr->kernel->signature.num_parameters;
                 if (size == sz && ((vx_size)ptr & 0x3) == 0)
                 {
                     vx_uint32 i = 0;
-                    vx_uint32 numParams = node->kernel->signature.num_parameters;
+                    vx_uint32 numParams = node_ptr->kernel->signature.num_parameters;
                     for (i = 0; i < numParams; i++)
-                        ((vx_bool*)ptr)[i] = node->replicated_flags[i];
+                        ((vx_bool*)ptr)[i] = node_ptr->replicated_flags[i];
                 }
                 else
                 {
@@ -265,7 +265,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxQueryNode(vx_node n, vx_enum attribute, voi
             case VX_NODE_VALID_RECT_RESET:
                 if (VX_CHECK_PARAM(ptr, size, vx_bool, 0x3))
                 {
-                    vx_bool valid_rect_reset = node->attributes.valid_rect_reset;
+                    vx_bool valid_rect_reset = node_ptr->attributes.valid_rect_reset;
                     if (vx_true_e == valid_rect_reset)
                         VX_PRINT(VX_ZONE_NODE, "Valid rect to be reset to full image\n");
                     else
@@ -281,7 +281,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxQueryNode(vx_node n, vx_enum attribute, voi
             case VX_NODE_CL_COMMAND_QUEUE:
                 if (VX_CHECK_PARAM(ptr, size, cl_command_queue, 0x3))
                 {
-                    *(cl_command_queue *)ptr = node->base.context->opencl_command_queue;
+                    *(cl_command_queue *)ptr = node_ptr->base.context->opencl_command_queue;
                 }
                 else
                 {
@@ -302,25 +302,25 @@ VX_API_ENTRY vx_status VX_API_CALL vxQueryNode(vx_node n, vx_enum attribute, voi
     return status;
 }
 
-VX_API_ENTRY vx_status VX_API_CALL vxSetNodeAttribute(vx_node n, vx_enum attribute, const void *ptr, vx_size size)
+VX_API_ENTRY vx_status VX_API_CALL vxSetNodeAttribute(vx_node node, vx_enum attribute, const void *ptr, vx_size size)
 {
     vx_status status = VX_SUCCESS;
-    vx_node_t *node = (vx_node_t *)n;
-    if (ownIsValidSpecificReference(&node->base, VX_TYPE_NODE) == vx_true_e)
+    vx_node_t *node_ptr = (vx_node_t *)node;
+    if (ownIsValidSpecificReference(&node_ptr->base, VX_TYPE_NODE) == vx_true_e)
     {
-        if (node->graph->verified == vx_true_e)
+        if (node_ptr->graph->verified == vx_true_e)
         {
             return VX_ERROR_NOT_SUPPORTED;
         }
         switch (attribute)
         {
             case VX_NODE_LOCAL_DATA_SIZE:
-                if (node->local_data_change_is_enabled)
+                if (node_ptr->local_data_change_is_enabled)
                 {
                     if (VX_CHECK_PARAM(ptr, size, vx_size, 0x3))
                     {
-                        node->attributes.localDataSize = *(vx_size *)ptr;
-                        node->local_data_set_by_implementation = vx_false_e;
+                        node_ptr->attributes.localDataSize = *(vx_size *)ptr;
+                        node_ptr->local_data_set_by_implementation = vx_false_e;
                     }
                     else
                     {
@@ -333,12 +333,12 @@ VX_API_ENTRY vx_status VX_API_CALL vxSetNodeAttribute(vx_node n, vx_enum attribu
                 }
                 break;
             case VX_NODE_LOCAL_DATA_PTR:
-                if (node->local_data_change_is_enabled)
+                if (node_ptr->local_data_change_is_enabled)
                 {
                     if (VX_CHECK_PARAM(ptr, size, vx_ptr_t, 0x3))
                     {
-                        node->attributes.localDataPtr = *(vx_ptr_t *)ptr;
-                        node->local_data_set_by_implementation = vx_false_e;
+                        node_ptr->attributes.localDataPtr = *(vx_ptr_t *)ptr;
+                        node_ptr->local_data_set_by_implementation = vx_false_e;
                     }
                     else
                     {
@@ -354,14 +354,14 @@ VX_API_ENTRY vx_status VX_API_CALL vxSetNodeAttribute(vx_node n, vx_enum attribu
                 if (VX_CHECK_PARAM(ptr, size, vx_border_t, 0x3))
                 {
 #ifdef OPENVX_KHR_TILING
-                    if (node->attributes.borders.mode == VX_BORDER_MODE_SELF)
+                    if (node_ptr->attributes.borders.mode == VX_BORDER_MODE_SELF)
                     {
                         status = VX_ERROR_INVALID_VALUE;
                     }
                     else
 #endif
                     {
-                        memcpy(&node->attributes.borders, (vx_border_t *)ptr, sizeof(vx_border_t));
+                        memcpy(&node_ptr->attributes.borders, (vx_border_t *)ptr, sizeof(vx_border_t));
                     }
                 }
                 else
@@ -436,9 +436,9 @@ void ownDestructNode(vx_reference ref)
     ownReleaseReferenceInt((vx_reference *)&node->kernel, VX_TYPE_KERNEL, VX_INTERNAL, NULL);
 }
 
-VX_API_ENTRY vx_status VX_API_CALL vxReleaseNode(vx_node *n)
+VX_API_ENTRY vx_status VX_API_CALL vxReleaseNode(vx_node *node)
 {
-    return ownReleaseReferenceInt((vx_reference *)n, VX_TYPE_NODE, VX_EXTERNAL, NULL);
+    return ownReleaseReferenceInt((vx_reference *)node, VX_TYPE_NODE, VX_EXTERNAL, NULL);
 }
 
 vx_status ownRemoveNodeInt(vx_node *n)
@@ -479,50 +479,50 @@ vx_status ownRemoveNodeInt(vx_node *n)
     return status;
 }
 
-VX_API_ENTRY vx_status VX_API_CALL vxRemoveNode(vx_node *n)
+VX_API_ENTRY vx_status VX_API_CALL vxRemoveNode(vx_node *node)
 {
-    vx_node_t *node = (vx_node_t *)(n?*n:0);
+    vx_node_t *node_ptr = (vx_node_t *)(node?*node:0);
     vx_status status =  VX_ERROR_INVALID_REFERENCE;
-    if (node && ownIsValidSpecificReference(&node->base, VX_TYPE_NODE))
+    if (node_ptr && ownIsValidSpecificReference(&node_ptr->base, VX_TYPE_NODE))
     {
-        status = ownRemoveNodeInt(n);
+        status = ownRemoveNodeInt(node);
         if(status == VX_SUCCESS) {
-            status = ownReleaseReferenceInt((vx_reference *)&node, VX_TYPE_NODE, VX_EXTERNAL, NULL);
+            status = ownReleaseReferenceInt((vx_reference *)&node_ptr, VX_TYPE_NODE, VX_EXTERNAL, NULL);
             if(status == VX_SUCCESS) {
-                *n = NULL;
+                *node = NULL;
             }
         }
     }
     return status;
 }
 
-VX_API_ENTRY vx_status VX_API_CALL vxAssignNodeCallback(vx_node n, vx_nodecomplete_f callback)
+VX_API_ENTRY vx_status VX_API_CALL vxAssignNodeCallback(vx_node node, vx_nodecomplete_f callback)
 {
     vx_status status = VX_ERROR_INVALID_REFERENCE;
-    vx_node_t *node = (vx_node_t *)n;
-    if (ownIsValidSpecificReference(&node->base, VX_TYPE_NODE) == vx_true_e)
+    vx_node_t *node_ptr = (vx_node_t *)node;
+    if (ownIsValidSpecificReference(&node_ptr->base, VX_TYPE_NODE) == vx_true_e)
     {
-        if ((callback) && (node->callback))
+        if ((callback) && (node_ptr->callback))
         {
-            VX_PRINT(VX_ZONE_ERROR, "Attempting to overriding existing callback %p on Node %s!\n", node->callback, node->kernel->name);
+            VX_PRINT(VX_ZONE_ERROR, "Attempting to overriding existing callback %p on Node %s!\n", node_ptr->callback, node_ptr->kernel->name);
             status = VX_ERROR_NOT_SUPPORTED;
         }
         else
         {
-            node->callback = callback;
+            node_ptr->callback = callback;
             status = VX_SUCCESS;
         }
     }
     return status;
 }
 
-VX_API_ENTRY vx_nodecomplete_f VX_API_CALL vxRetrieveNodeCallback(vx_node n)
+VX_API_ENTRY vx_nodecomplete_f VX_API_CALL vxRetrieveNodeCallback(vx_node node)
 {
-    vx_node_t *node = (vx_node_t *)n;
+    vx_node_t *node_ptr = (vx_node_t *)node;
     vx_nodecomplete_f cb = NULL;
-    if (ownIsValidSpecificReference(&node->base, VX_TYPE_NODE) == vx_true_e)
+    if (ownIsValidSpecificReference(&node_ptr->base, VX_TYPE_NODE) == vx_true_e)
     {
-        cb = node->callback;
+        cb = node_ptr->callback;
     }
     return cb;
 }

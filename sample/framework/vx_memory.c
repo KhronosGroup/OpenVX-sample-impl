@@ -67,7 +67,7 @@ vx_bool ownAllocateMemory(vx_context context, vx_memory_t *memory)
             {
                 memory->strides[p][VX_DIM_X] = 0;
                 /* the size of each row in the x-dimension, in integer number of bytes (rounded up from bits) */
-                size = ((size_t)abs(memory->stride_x_bits[p]) * (vx_size)memory->dims[p][VX_DIM_X] + 7ul) / 8ul;
+                size = ((size_t)(memory->stride_x_bits[p]) * (vx_size)memory->dims[p][VX_DIM_X] + 7ul) / 8ul;
                 for (d = 2; d < memory->ndims; d++)
                 {
                     memory->strides[p][d] = (vx_int32)size;

@@ -60,15 +60,15 @@ void ownDestructRemap(vx_reference ref)
     ownFreeMemory(remap->base.context, &remap->memory);
 }
 
-VX_API_ENTRY vx_status VX_API_CALL vxReleaseRemap(vx_remap *r)
+VX_API_ENTRY vx_status VX_API_CALL vxReleaseRemap(vx_remap *table)
 {
-    return ownReleaseReferenceInt((vx_reference *)r, VX_TYPE_REMAP, VX_EXTERNAL, NULL);
+    return ownReleaseReferenceInt((vx_reference *)table, VX_TYPE_REMAP, VX_EXTERNAL, NULL);
 }
 
-VX_API_ENTRY vx_status VX_API_CALL vxQueryRemap(vx_remap remap, vx_enum attribute, void *ptr, vx_size size)
+VX_API_ENTRY vx_status VX_API_CALL vxQueryRemap(vx_remap table, vx_enum attribute, void *ptr, vx_size size)
 {
     vx_status status = VX_SUCCESS;
-    if (ownIsValidSpecificReference(&remap->base, VX_TYPE_REMAP) == vx_false_e)
+    if (ownIsValidSpecificReference(&table->base, VX_TYPE_REMAP) == vx_false_e)
         return VX_ERROR_INVALID_REFERENCE;
 
     switch (attribute)
@@ -76,7 +76,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxQueryRemap(vx_remap remap, vx_enum attribut
         case VX_REMAP_SOURCE_WIDTH:
             if (VX_CHECK_PARAM(ptr, size, vx_uint32, 0x3))
             {
-                *(vx_uint32 *)ptr = remap->src_width;
+                *(vx_uint32 *)ptr = table->src_width;
             }
             else
             {
@@ -86,7 +86,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxQueryRemap(vx_remap remap, vx_enum attribut
         case VX_REMAP_SOURCE_HEIGHT:
             if (VX_CHECK_PARAM(ptr, size, vx_uint32, 0x3))
             {
-                *(vx_uint32 *)ptr = remap->src_height;
+                *(vx_uint32 *)ptr = table->src_height;
             }
             else
             {
@@ -96,7 +96,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxQueryRemap(vx_remap remap, vx_enum attribut
         case VX_REMAP_DESTINATION_WIDTH:
             if (VX_CHECK_PARAM(ptr, size, vx_uint32, 0x3))
             {
-                *(vx_uint32 *)ptr = remap->dst_width;
+                *(vx_uint32 *)ptr = table->dst_width;
             }
             else
             {
@@ -106,7 +106,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxQueryRemap(vx_remap remap, vx_enum attribut
         case VX_REMAP_DESTINATION_HEIGHT:
             if (VX_CHECK_PARAM(ptr, size, vx_uint32, 0x3))
             {
-                *(vx_uint32 *)ptr = remap->dst_height;
+                *(vx_uint32 *)ptr = table->dst_height;
             }
             else
             {
@@ -608,7 +608,7 @@ exit:
 }
 
 
-VX_API_ENTRY vx_status VX_API_CALL vxUnmapRemapPatch(vx_remap remap, vx_map_id map_id)
+VX_API_ENTRY vx_status VX_API_CALL vxUnmapRemapPatch(vx_remap remap, const vx_map_id map_id)
 {
     vx_status status = VX_FAILURE;
 

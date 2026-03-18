@@ -584,21 +584,21 @@ VX_API_ENTRY vx_status VX_API_CALL vxSetMetaFormatAttribute(vx_meta_format meta,
     return status;
 }
 
-VX_API_ENTRY vx_status VX_API_CALL vxSetMetaFormatFromReference(vx_meta_format meta, vx_reference examplar)
+VX_API_ENTRY vx_status VX_API_CALL vxSetMetaFormatFromReference(vx_meta_format meta, vx_reference exemplar)
 {
     vx_status status = VX_SUCCESS;
 
     if (ownIsValidSpecificReference(&meta->base, VX_TYPE_META_FORMAT) == vx_false_e)
         return VX_ERROR_INVALID_REFERENCE;
 
-    if (ownIsValidReference(examplar) == vx_false_e)
+    if (ownIsValidReference(exemplar) == vx_false_e)
         return VX_ERROR_INVALID_REFERENCE;
 
-    switch (examplar->type)
+    switch (exemplar->type)
     {
     case VX_TYPE_TENSOR:
     {
-        vx_tensor tensor = (vx_tensor)examplar;
+        vx_tensor tensor = (vx_tensor)exemplar;
         meta->type = VX_TYPE_TENSOR;
         meta->dim.tensor.data_type = tensor->data_type;
         meta->dim.tensor.fixed_point_position = tensor->fixed_point_position;
@@ -608,7 +608,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxSetMetaFormatFromReference(vx_meta_format m
     }
     case VX_TYPE_IMAGE:
     {
-        vx_image image = (vx_image)examplar;
+        vx_image image = (vx_image)exemplar;
         meta->type = VX_TYPE_IMAGE;
         meta->dim.image.width = image->width;
         meta->dim.image.height = image->height;
@@ -617,7 +617,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxSetMetaFormatFromReference(vx_meta_format m
     }
     case VX_TYPE_ARRAY:
     {
-        vx_array array = (vx_array)examplar;
+        vx_array array = (vx_array)exemplar;
         meta->type = VX_TYPE_ARRAY;
         meta->dim.array.item_type = array->item_type;
         meta->dim.array.capacity = array->capacity;
@@ -625,7 +625,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxSetMetaFormatFromReference(vx_meta_format m
     }
     case VX_TYPE_PYRAMID:
     {
-        vx_pyramid pyramid = (vx_pyramid)examplar;
+        vx_pyramid pyramid = (vx_pyramid)exemplar;
         meta->type = VX_TYPE_PYRAMID;
         meta->dim.pyramid.width = pyramid->width;
         meta->dim.pyramid.height = pyramid->height;
@@ -636,14 +636,14 @@ VX_API_ENTRY vx_status VX_API_CALL vxSetMetaFormatFromReference(vx_meta_format m
     }
     case VX_TYPE_SCALAR:
     {
-        vx_scalar scalar = (vx_scalar)examplar;
+        vx_scalar scalar = (vx_scalar)exemplar;
         meta->type = VX_TYPE_SCALAR;
         meta->dim.scalar.type = scalar->data_type;
         break;
     }
     case VX_TYPE_MATRIX:
     {
-        vx_matrix matrix = (vx_matrix)examplar;
+        vx_matrix matrix = (vx_matrix)exemplar;
         meta->type = VX_TYPE_MATRIX;
         meta->dim.matrix.type = matrix->data_type;
         meta->dim.matrix.cols = matrix->columns;
@@ -652,7 +652,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxSetMetaFormatFromReference(vx_meta_format m
     }
     case VX_TYPE_DISTRIBUTION:
     {
-        vx_distribution distribution = (vx_distribution)examplar;
+        vx_distribution distribution = (vx_distribution)exemplar;
         meta->type = VX_TYPE_DISTRIBUTION;
         meta->dim.distribution.bins = distribution->memory.dims[0][VX_DIM_X];
         meta->dim.distribution.offset = distribution->offset_x;
@@ -661,7 +661,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxSetMetaFormatFromReference(vx_meta_format m
     }
     case VX_TYPE_REMAP:
     {
-        vx_remap remap = (vx_remap)examplar;
+        vx_remap remap = (vx_remap)exemplar;
         meta->type = VX_TYPE_REMAP;
         meta->dim.remap.src_width = remap->src_width;
         meta->dim.remap.src_height = remap->src_height;
@@ -671,7 +671,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxSetMetaFormatFromReference(vx_meta_format m
     }
     case VX_TYPE_LUT:
     {
-        vx_lut_t *lut = (vx_lut_t *)examplar;
+        vx_lut_t *lut = (vx_lut_t *)exemplar;
         meta->type = VX_TYPE_LUT;
         meta->dim.lut.type = lut->item_type;
         meta->dim.lut.count = lut->num_items;
@@ -679,7 +679,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxSetMetaFormatFromReference(vx_meta_format m
     }
     case VX_TYPE_THRESHOLD:
     {
-        vx_threshold threshold = (vx_threshold)examplar;
+        vx_threshold threshold = (vx_threshold)exemplar;
         meta->type = VX_TYPE_THRESHOLD;
         meta->dim.threshold.type = threshold->thresh_type;
         break;
@@ -687,7 +687,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxSetMetaFormatFromReference(vx_meta_format m
 #if defined(OPENVX_USE_USER_DATA_OBJECT)
     case VX_TYPE_USER_DATA_OBJECT:
     {
-        vx_user_data_object user_data_object = (vx_user_data_object)examplar;
+        vx_user_data_object user_data_object = (vx_user_data_object)exemplar;
         meta->type = VX_TYPE_USER_DATA_OBJECT;
         meta->dim.user_data_object.size = user_data_object->size;
         meta->dim.user_data_object.type_name[0] = 0;
@@ -700,7 +700,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxSetMetaFormatFromReference(vx_meta_format m
 #endif
     case VX_TYPE_OBJECT_ARRAY:
     {
-        vx_object_array objarray = (vx_object_array)examplar;
+        vx_object_array objarray = (vx_object_array)exemplar;
         vx_reference item = objarray->items[0];
         meta->type = VX_TYPE_OBJECT_ARRAY;
         meta->dim.object_array.item_type = objarray->item_type;

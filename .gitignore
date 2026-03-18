@@ -1,3 +1,4 @@
-/build-cts
 /build
+/build-*
 /install
+/raw/o*

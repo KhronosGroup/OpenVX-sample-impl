@@ -582,38 +582,38 @@ VX_API_ENTRY vx_context VX_API_CALL vxCreateContext(void)
     return (vx_context)context;
 }
 
-VX_API_ENTRY vx_status VX_API_CALL vxReleaseContext(vx_context *c)
+VX_API_ENTRY vx_status VX_API_CALL vxReleaseContext(vx_context *context)
 {
     vx_status status = VX_SUCCESS;
-    vx_context context = (c?*c:0);
+    vx_context context_ptr = (context ? *context : 0);
     vx_uint32 r,m,a;
     vx_uint32 t;
 
-    if (c) *c = 0;
+    if (context) *context = 0;
     ownSemWait(&context_lock);
-    if (ownIsValidContext(context) == vx_true_e)
+    if (ownIsValidContext(context_ptr) == vx_true_e)
     {
-        if (ownDecrementReference(&context->base, VX_EXTERNAL) == 0)
+        if (ownDecrementReference(&context_ptr->base, VX_EXTERNAL) == 0)
         {
 #ifdef OPENVX_USE_OPENCL_INTEROP
-            if(context->opencl_command_queue) {
-                clReleaseCommandQueue(context->opencl_command_queue);
-                context->opencl_command_queue = NULL;
+            if(context_ptr->opencl_command_queue) {
+                clReleaseCommandQueue(context_ptr->opencl_command_queue);
+                context_ptr->opencl_command_queue = NULL;
             }
-            if(context->opencl_context) {
-                clReleaseContext(context->opencl_context);
-                context->opencl_context = NULL;
+            if(context_ptr->opencl_context) {
+                clReleaseContext(context_ptr->opencl_context);
+                context_ptr->opencl_context = NULL;
             }
 #endif
-            ownDestroyThreadpool(&context->workers);
-            context->proc.running = vx_false_e;
-            ownPopQueue(&context->proc.input);
-            ownJoinThread(context->proc.thread, NULL);
-            ownDeinitQueue(&context->proc.output);
-            ownDeinitQueue(&context->proc.input);
+            ownDestroyThreadpool(&context_ptr->workers);
+            context_ptr->proc.running = vx_false_e;
+            ownPopQueue(&context_ptr->proc.input);
+            ownJoinThread(context_ptr->proc.thread, NULL);
+            ownDeinitQueue(&context_ptr->proc.output);
+            ownDeinitQueue(&context_ptr->proc.input);
 
             /* Deregister any log callbacks if there is any registered */
-            vxRegisterLogCallback(context, NULL, vx_false_e);
+            vxRegisterLogCallback(context_ptr, NULL, vx_false_e);
 
             /*! \internal Garbage Collect All References */
             /* Details:
@@ -627,7 +627,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxReleaseContext(vx_context *c)
              */
             for (r = 0; r < VX_INT_MAX_REF; r++)
             {
-                vx_reference_t *ref = context->reftable[r];
+                vx_reference_t *ref = context_ptr->reftable[r];
 
                 /* Warnings should only come when users have not released all external references */
                 if (ref && ref->external_count > 0) {
@@ -652,57 +652,60 @@ VX_API_ENTRY vx_status VX_API_CALL vxReleaseContext(vx_context *c)
 
             for (m = 0; m < VX_INT_MAX_MODULES; m++)
             {
-                ownSemWait(&context->modules[m].lock);
-                if (context->modules[m].handle)
+                ownSemWait(&context_ptr->modules[m].lock);
+                if (context_ptr->modules[m].handle)
                 {
-                    ownUnloadModule(context->modules[m].handle);
-                    memset(context->modules[m].name, 0, sizeof(context->modules[m].name));
-                    context->modules[m].handle = VX_MODULE_INIT;
+                    if (context_ptr->modules[m].reg_publish == NULL)
+                        ownUnloadModule(context_ptr->modules[m].handle);
+                    context_ptr->modules[m].reg_publish   = NULL;
+                    context_ptr->modules[m].reg_unpublish = NULL;
+                    memset(context_ptr->modules[m].name, 0, sizeof(context_ptr->modules[m].name));
+                    context_ptr->modules[m].handle = VX_MODULE_INIT;
                 }
-                ownSemPost(&context->modules[m].lock);
-                ownDestroySem(&context->modules[m].lock);
+                ownSemPost(&context_ptr->modules[m].lock);
+                ownDestroySem(&context_ptr->modules[m].lock);
             }
 
             /* de-initialize and unload each target */
-            for (t = 0u; t < context->num_targets; t++)
+            for (t = 0u; t < context_ptr->num_targets; t++)
             {
-                if (context->targets[t].enabled == vx_true_e)
+                if (context_ptr->targets[t].enabled == vx_true_e)
                 {
-                    context->targets[t].funcs.deinit(&context->targets[t]);
-                    ownUnloadTarget(context, t, vx_true_e);
-                    context->targets[t].enabled = vx_false_e;
+                    context_ptr->targets[t].funcs.deinit(&context_ptr->targets[t]);
+                    ownUnloadTarget(context_ptr, t, vx_true_e);
+                    context_ptr->targets[t].enabled = vx_false_e;
                 }
             }
 
             /* Remove all outstanding accessors. */
-            for (a = 0; a < dimof(context->accessors); ++a)
-                if (context->accessors[a].used)
-                    ownRemoveAccessor(context, a);
+            for (a = 0; a < dimof(context_ptr->accessors); ++a)
+                if (context_ptr->accessors[a].used)
+                    ownRemoveAccessor(context_ptr, a);
 
             /* Check for outstanding mappings */
-            for (a = 0; a < dimof(context->memory_maps); ++a)
+            for (a = 0; a < dimof(context_ptr->memory_maps); ++a)
             {
-                if (context->memory_maps[a].used)
+                if (context_ptr->memory_maps[a].used)
                 {
                     VX_PRINT(VX_ZONE_ERROR, "Memory map %d not unmapped\n", a);
-                    ownMemoryUnmap(context, a);
+                    ownMemoryUnmap(context_ptr, a);
                 }
             }
 
-            ownDestroySem(&context->memory_maps_lock);
+            ownDestroySem(&context_ptr->memory_maps_lock);
 
             /* By now, all external and internal references should be removed */
             for (r = 0; r < VX_INT_MAX_REF; r++)
             {
-                if(context->reftable[r])
+                if(context_ptr->reftable[r])
                     VX_PRINT(VX_ZONE_ERROR,"Reference %d not removed\n", r);
             }
 
             /*! \internal wipe away the context memory first */
             /* Normally destroy sem is part of release reference, but can't for context */
-            ownDestroySem(&((vx_reference )context)->lock);
-            memset(context, 0, sizeof(vx_context_t));
-            free((void *)context);
+            ownDestroySem(&((vx_reference )context_ptr)->lock);
+            memset(context_ptr, 0, sizeof(vx_context_t));
+            free((void *)context_ptr);
             ownDestroySem(&global_lock);
             ownSemPost(&context_lock);
             ownDestroySem(&context_lock);
@@ -711,7 +714,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxReleaseContext(vx_context *c)
         }
         else
         {
-            VX_PRINT(VX_ZONE_WARNING, "Context still has %u holders\n", ownTotalReferenceCount(&context->base));
+            VX_PRINT(VX_ZONE_WARNING, "Context still has %u holders\n", ownTotalReferenceCount(&context_ptr->base));
         }
     } else {
         status = VX_ERROR_INVALID_REFERENCE;
@@ -1181,7 +1184,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxGetUserStructEnumByName(vx_context context,
     return status;
 }
 
-VX_API_ENTRY vx_enum VX_API_CALL vxRegisterUserStructWithName(vx_context context, vx_size size, const vx_char *type_name)
+VX_API_ENTRY vx_enum VX_API_CALL vxRegisterUserStructWithName(vx_context context, vx_size size, const vx_char* type_name)
 {
     vx_enum type = VX_TYPE_INVALID;
     vx_uint32 i = 0;

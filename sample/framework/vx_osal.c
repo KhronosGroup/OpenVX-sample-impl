@@ -617,10 +617,7 @@ void ownDestroyQueue(vx_queue_t **pq)
     }
 }
 
-vx_queue_t *ownCreateQueue(vx_uint32 numItems, vx_size itemSize) {
-    (void)numItems;
-    (void)itemSize;
-
+vx_queue_t *ownCreateQueue(void) {
     vx_queue_t *q = VX_CALLOC(vx_queue_t);
     if (q) ownInitQueue(q);
     return q;

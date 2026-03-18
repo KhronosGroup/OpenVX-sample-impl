@@ -81,9 +81,9 @@ vx_status vxReleaseDistributionInt(vx_distribution *distribution)
     return ownReleaseReferenceInt((vx_reference *)distribution, VX_TYPE_DISTRIBUTION, VX_INTERNAL, &ownDestructDistribution);
 }
 
-VX_API_ENTRY vx_status VX_API_CALL vxReleaseDistribution(vx_distribution *d)
+VX_API_ENTRY vx_status VX_API_CALL vxReleaseDistribution(vx_distribution *distribution)
 {
-    return ownReleaseReferenceInt((vx_reference *)d, VX_TYPE_DISTRIBUTION, VX_EXTERNAL, &ownDestructDistribution);
+    return ownReleaseReferenceInt((vx_reference *)distribution, VX_TYPE_DISTRIBUTION, VX_EXTERNAL, &ownDestructDistribution);
 }
 
 VX_API_ENTRY vx_status VX_API_CALL vxQueryDistribution(vx_distribution distribution, vx_enum attribute, void *ptr, vx_size size)
@@ -234,7 +234,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxCommitDistribution(vx_distribution distribu
     return status;
 }
 
-VX_API_ENTRY vx_status VX_API_CALL vxCopyDistribution(vx_distribution distribution, void *user_ptr, vx_enum usage, vx_enum mem_type)
+VX_API_ENTRY vx_status VX_API_CALL vxCopyDistribution(vx_distribution distribution, void *user_ptr, vx_enum usage, vx_enum user_mem_type)
 {
     vx_status status = VX_FAILURE;
     vx_size size = 0;
@@ -250,7 +250,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxCopyDistribution(vx_distribution distributi
 
     /* bad parameters */
     if (((usage != VX_READ_ONLY) && (usage != VX_WRITE_ONLY)) ||
-        (user_ptr == NULL) || (mem_type != VX_MEMORY_TYPE_HOST))
+        (user_ptr == NULL) || (user_mem_type != VX_MEMORY_TYPE_HOST))
     {
         status = VX_ERROR_INVALID_PARAMETERS;
         VX_PRINT(VX_ZONE_ERROR, "Invalid parameters to copy distribution\n");
@@ -263,8 +263,8 @@ VX_API_ENTRY vx_status VX_API_CALL vxCopyDistribution(vx_distribution distributi
 
 #ifdef OPENVX_USE_OPENCL_INTEROP
     void * user_ptr_given = user_ptr;
-    vx_enum mem_type_given = mem_type;
-    if (mem_type == VX_MEMORY_TYPE_OPENCL_BUFFER)
+    vx_enum mem_type_given = user_mem_type;
+    if (user_mem_type == VX_MEMORY_TYPE_OPENCL_BUFFER)
     {
         // get ptr from OpenCL buffer for HOST
         size_t size = 0;
@@ -285,7 +285,6 @@ VX_API_ENTRY vx_status VX_API_CALL vxCopyDistribution(vx_distribution distributi
         {
             return VX_ERROR_INVALID_PARAMETERS;
         }
-        mem_type = VX_MEMORY_TYPE_HOST;
     }
 #endif
 
@@ -411,7 +410,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxMapDistribution(vx_distribution distributio
     return status;
 }
 
-VX_API_ENTRY vx_status VX_API_CALL vxUnmapDistribution(vx_distribution distribution, vx_map_id map_id)
+VX_API_ENTRY vx_status VX_API_CALL vxUnmapDistribution(vx_distribution distribution, const vx_map_id map_id)
 {
     vx_status status = VX_FAILURE;
     vx_size size = 0;

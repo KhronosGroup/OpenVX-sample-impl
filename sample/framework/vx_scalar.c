@@ -81,7 +81,7 @@ void vxPrintScalarValue(vx_scalar scalar)
     return;
 } /* vxPrintScalarValue() */
 
-VX_API_ENTRY vx_scalar VX_API_CALL vxCreateScalar(vx_context context, vx_enum data_type, const void* ptr)
+VX_API_ENTRY vx_scalar VX_API_CALL vxCreateScalar(vx_context context, vx_enum data_type, const void *ptr)
 {
     vx_scalar scalar = NULL;
 
@@ -182,12 +182,12 @@ VX_API_ENTRY vx_scalar VX_API_CALL vxCreateVirtualScalar(vx_graph graph, vx_enum
     return (vx_scalar)scalar;
 }
 
-VX_API_ENTRY vx_status VX_API_CALL vxReleaseScalar(vx_scalar *s)
+VX_API_ENTRY vx_status VX_API_CALL vxReleaseScalar(vx_scalar *scalar)
 {
-    return ownReleaseReferenceInt((vx_reference *)s, VX_TYPE_SCALAR, VX_EXTERNAL, NULL);
+    return ownReleaseReferenceInt((vx_reference *)scalar, VX_TYPE_SCALAR, VX_EXTERNAL, NULL);
 } /* vxReleaseScalar() */
 
-VX_API_ENTRY vx_status VX_API_CALL vxQueryScalar(vx_scalar scalar, vx_enum attribute, void* ptr, vx_size size)
+VX_API_ENTRY vx_status VX_API_CALL vxQueryScalar(vx_scalar scalar, vx_enum attribute, void *ptr, vx_size size)
 {
     vx_status status = VX_SUCCESS;
     vx_scalar_t* pscalar = (vx_scalar_t*)scalar;
@@ -304,7 +304,7 @@ static vx_status own_host_mem_to_scalar(vx_scalar scalar, void* user_ptr)
     return status;
 } /* own_host_mem_to_scalar() */
 
-VX_API_ENTRY vx_status VX_API_CALL vxCopyScalar(vx_scalar scalar, void* user_ptr, vx_enum usage, vx_enum user_mem_type)
+VX_API_ENTRY vx_status VX_API_CALL vxCopyScalar(vx_scalar scalar, void *user_ptr, vx_enum usage, vx_enum user_mem_type)
 {
     vx_status status = VX_SUCCESS;
 

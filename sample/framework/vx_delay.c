@@ -212,14 +212,14 @@ void ownDestructDelay(vx_reference ref) {
     }
 }
 
-VX_API_ENTRY vx_status VX_API_CALL vxReleaseDelay(vx_delay *d)
+VX_API_ENTRY vx_status VX_API_CALL vxReleaseDelay(vx_delay *delay)
 {
-    return ownReleaseReferenceInt((vx_reference *)d, VX_TYPE_DELAY, VX_EXTERNAL, &ownDestructDelay);
+    return ownReleaseReferenceInt((vx_reference *)delay, VX_TYPE_DELAY, VX_EXTERNAL, &ownDestructDelay);
 }
 
 VX_API_ENTRY vx_delay VX_API_CALL vxCreateDelay(vx_context context,
                               vx_reference exemplar,
-                              vx_size count)
+                              vx_size num_slots)
 {
     vx_delay delay = NULL;
     vx_enum invalid_types[] = {
@@ -258,12 +258,12 @@ VX_API_ENTRY vx_delay VX_API_CALL vxCreateDelay(vx_context context,
     {
         vx_size i = 0;
         delay->pyr = NULL;
-        delay->set = (vx_delay_param_t *)calloc(count, sizeof(vx_delay_param_t));
-        delay->refs = (vx_reference *)calloc(count, sizeof(vx_reference));
+        delay->set = (vx_delay_param_t *)calloc(num_slots, sizeof(vx_delay_param_t));
+        delay->refs = (vx_reference *)calloc(num_slots, sizeof(vx_reference));
         delay->type = exemplar->type;
-        delay->count = count;
-        VX_PRINT(VX_ZONE_DELAY, "Creating Delay of %u objects of type %x!\n", count, exemplar->type);
-        for (i = 0; i < count; i++)
+        delay->count = num_slots;
+        VX_PRINT(VX_ZONE_DELAY, "Creating Delay of %u objects of type %x!\n", num_slots, exemplar->type);
+        for (i = 0; i < num_slots; i++)
         {
             vx_bool ref_bool = vx_true_e;
             switch (exemplar->type)
@@ -366,11 +366,11 @@ VX_API_ENTRY vx_delay VX_API_CALL vxCreateDelay(vx_context context,
                 delay->pyr[j] = pyrdelay;
                 if (vxGetStatus((vx_reference)pyrdelay) == VX_SUCCESS && pyrdelay->base.type == VX_TYPE_DELAY)
                 {
-                    pyrdelay->set = (vx_delay_param_t *)calloc(count, sizeof(vx_delay_param_t));
-                    pyrdelay->refs = (vx_reference *)calloc(count, sizeof(vx_reference));
+                    pyrdelay->set = (vx_delay_param_t *)calloc(num_slots, sizeof(vx_delay_param_t));
+                    pyrdelay->refs = (vx_reference *)calloc(num_slots, sizeof(vx_reference));
                     pyrdelay->type = VX_TYPE_IMAGE;
-                    pyrdelay->count = count;
-                    for (i = 0; i < count; i++)
+                    pyrdelay->count = num_slots;
+                    for (i = 0; i < num_slots; i++)
                     {
                         pyrdelay->refs[i] = (vx_reference)vxGetPyramidLevel((vx_pyramid)delay->refs[i], (vx_uint32)j);
                         /* set the object as a delay element */
@@ -388,7 +388,7 @@ VX_API_ENTRY vx_delay VX_API_CALL vxCreateDelay(vx_context context,
             vx_object_array objarray = (vx_object_array )exemplar;
             if (objarray->num_items != 0)
             {
-                for (i = 0; i < count; i++)
+                for (i = 0; i < num_slots; i++)
                 {
                     delay->refs[i] = (vx_reference)vxCreateObjectArray(context,
                                                                        objarray->items[0],

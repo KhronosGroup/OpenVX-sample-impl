@@ -536,10 +536,9 @@ void ownContaminateGraphs(vx_reference ref)
 /* PUBLIC FUNCTIONS */
 /******************************************************************************/
 
-VX_API_ENTRY vx_graph VX_API_CALL vxCreateGraph(vx_context c)
+VX_API_ENTRY vx_graph VX_API_CALL vxCreateGraph(vx_context context)
 {
     vx_graph_t * graph = NULL;
-    vx_context_t *context = (vx_context_t *)c;
 
     if (ownIsValidContext(context) == vx_true_e)
     {
@@ -659,9 +658,9 @@ void ownDestructGraph(vx_reference ref)
     ownDestroySem(&graph->lock);
 }
 
-VX_API_ENTRY vx_status VX_API_CALL vxReleaseGraph(vx_graph *g)
+VX_API_ENTRY vx_status VX_API_CALL vxReleaseGraph(vx_graph *graph)
 {
-    return ownReleaseReferenceInt((vx_reference *)g, VX_TYPE_GRAPH, VX_EXTERNAL, NULL);
+    return ownReleaseReferenceInt((vx_reference *)graph, VX_TYPE_GRAPH, VX_EXTERNAL, NULL);
 }
 
 /* Do a topological in-place sort of the nodes in list, with current
@@ -2680,19 +2679,19 @@ VX_API_ENTRY vx_status VX_API_CALL vxProcessGraph(vx_graph graph)
     }
 }
 
-VX_API_ENTRY vx_status VX_API_CALL vxAddParameterToGraph(vx_graph graph, vx_parameter param)
+VX_API_ENTRY vx_status VX_API_CALL vxAddParameterToGraph(vx_graph graph, vx_parameter parameter)
 {
     vx_status status = VX_ERROR_INVALID_REFERENCE;
     if ((ownIsValidSpecificReference(&graph->base, VX_TYPE_GRAPH) == vx_true_e) &&
-        (ownIsValidSpecificReference(&param->base, VX_TYPE_PARAMETER) == vx_true_e))
+        (ownIsValidSpecificReference(&parameter->base, VX_TYPE_PARAMETER) == vx_true_e))
     {
-        graph->parameters[graph->numParams].node = param->node;
-        graph->parameters[graph->numParams].index = param->index;
+        graph->parameters[graph->numParams].node = parameter->node;
+        graph->parameters[graph->numParams].index = parameter->index;
         graph->numParams++;
         status = VX_SUCCESS;
     }
     else if ((ownIsValidSpecificReference(&graph->base, VX_TYPE_GRAPH) == vx_true_e) &&
-              (ownIsValidSpecificReference(&param->base, VX_TYPE_PARAMETER) == vx_false_e))
+              (ownIsValidSpecificReference(&parameter->base, VX_TYPE_PARAMETER) == vx_false_e))
     {
         /* insert an empty parameter */
         graph->parameters[graph->numParams].node = NULL;

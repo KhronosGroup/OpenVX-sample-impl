@@ -22,6 +22,7 @@
  */
 
 #include <stdio.h>
+#include <string.h>
 #include <assert.h>
 #include <VX/vx.h>
 #include <VX/vx_lib_debug.h>
@@ -50,14 +51,16 @@ vx_node vxCopyArrayNode(vx_graph graph, vx_array input, vx_array output)
     return vxCreateNodeByStructure(graph, VX_KERNEL_DEBUG_COPY_ARRAY, params, dimof(params));
 }
 
-vx_node vxFWriteImageNode(vx_graph graph, vx_image image, vx_char name[VX_MAX_FILE_NAME])
+vx_node vxFWriteImageNode(vx_graph graph, vx_image image, const vx_char *name)
 {
     vx_status status = VX_SUCCESS;
     vx_node node = 0;
     vx_context context = vxGetContext((vx_reference)graph);
     vx_array filepath = vxCreateArray(context, VX_TYPE_CHAR, VX_MAX_FILE_NAME);
     if (vxGetStatus((vx_reference)filepath) == VX_SUCCESS) {
-        status = vxAddArrayItems(filepath, VX_MAX_FILE_NAME, &name[0], sizeof(name[0]));
+        vx_char namebuf[VX_MAX_FILE_NAME] = {0};
+        strncpy(namebuf, name, VX_MAX_FILE_NAME - 1);
+        status = vxAddArrayItems(filepath, VX_MAX_FILE_NAME, namebuf, sizeof(namebuf[0]));
         if (status == VX_SUCCESS)
         {
             vx_reference params[] = {
@@ -72,14 +75,16 @@ vx_node vxFWriteImageNode(vx_graph graph, vx_image image, vx_char name[VX_MAX_FI
     return node;
 }
 
-vx_node vxFWriteArrayNode(vx_graph graph, vx_array arr, vx_char name[VX_MAX_FILE_NAME])
+vx_node vxFWriteArrayNode(vx_graph graph, vx_array arr, const vx_char *name)
 {
     vx_status status = VX_SUCCESS;
     vx_node node = 0;
     vx_context context = vxGetContext((vx_reference)graph);
     vx_array filepath = vxCreateArray(context, VX_TYPE_CHAR, VX_MAX_FILE_NAME);
     if (vxGetStatus((vx_reference)filepath) == VX_SUCCESS) {
-        status = vxAddArrayItems(filepath, VX_MAX_FILE_NAME, &name[0], sizeof(name[0]));
+        vx_char namebuf[VX_MAX_FILE_NAME] = {0};
+        strncpy(namebuf, name, VX_MAX_FILE_NAME - 1);
+        status = vxAddArrayItems(filepath, VX_MAX_FILE_NAME, namebuf, sizeof(namebuf[0]));
         if (status == VX_SUCCESS)
         {
             vx_reference params[] = {
@@ -94,14 +99,16 @@ vx_node vxFWriteArrayNode(vx_graph graph, vx_array arr, vx_char name[VX_MAX_FILE
     return node;
 }
 
-vx_node vxFReadImageNode(vx_graph graph, vx_char name[VX_MAX_FILE_NAME], vx_image image)
+vx_node vxFReadImageNode(vx_graph graph, const vx_char *name, vx_image image)
 {
     vx_status status = VX_SUCCESS;
     vx_node node = 0;
     vx_context context = vxGetContext((vx_reference)graph);
     vx_array filepath = vxCreateArray(context, VX_TYPE_CHAR, VX_MAX_FILE_NAME);
     if (vxGetStatus((vx_reference)filepath) == VX_SUCCESS) {
-        status = vxAddArrayItems(filepath, VX_MAX_FILE_NAME, &name[0], sizeof(name[0]));
+        vx_char namebuf[VX_MAX_FILE_NAME] = {0};
+        strncpy(namebuf, name, VX_MAX_FILE_NAME - 1);
+        status = vxAddArrayItems(filepath, VX_MAX_FILE_NAME, namebuf, sizeof(namebuf[0]));
         if (status == VX_SUCCESS)
         {
             vx_reference params[] = {
@@ -116,14 +123,16 @@ vx_node vxFReadImageNode(vx_graph graph, vx_char name[VX_MAX_FILE_NAME], vx_imag
     return node;
 }
 
-vx_node vxFReadArrayNode(vx_graph graph, vx_char name[VX_MAX_FILE_NAME], vx_array arr)
+vx_node vxFReadArrayNode(vx_graph graph, const vx_char *name, vx_array arr)
 {
     vx_status status = VX_SUCCESS;
     vx_node node = 0;
     vx_context context = vxGetContext((vx_reference)graph);
     vx_array filepath = vxCreateArray(context, VX_TYPE_CHAR, VX_MAX_FILE_NAME);
     if (vxGetStatus((vx_reference)filepath) == VX_SUCCESS) {
-        status = vxAddArrayItems(filepath, VX_MAX_FILE_NAME, &name[0], sizeof(name[0]));
+        vx_char namebuf[VX_MAX_FILE_NAME] = {0};
+        strncpy(namebuf, name, VX_MAX_FILE_NAME - 1);
+        status = vxAddArrayItems(filepath, VX_MAX_FILE_NAME, namebuf, sizeof(namebuf[0]));
         if (status == VX_SUCCESS)
         {
             vx_reference params[] = {
@@ -250,7 +259,7 @@ vx_status vxuCopyArray(vx_context context, vx_array src, vx_array dst)
     return status;
 }
 
-vx_status vxuFReadImage(vx_context context, vx_char name[VX_MAX_FILE_NAME], vx_image image)
+vx_status vxuFReadImage(vx_context context, const vx_char *name, vx_image image)
 {
     vx_status status = VX_FAILURE;
     vx_graph graph = vxCreateGraph(context);
@@ -271,7 +280,7 @@ vx_status vxuFReadImage(vx_context context, vx_char name[VX_MAX_FILE_NAME], vx_i
     return status;
 }
 
-vx_status vxuFWriteImage(vx_context context, vx_image image, vx_char name[VX_MAX_FILE_NAME])
+vx_status vxuFWriteImage(vx_context context, vx_image image, const vx_char *name)
 {
     vx_status status = VX_FAILURE;
     vx_graph graph = vxCreateGraph(context);
@@ -292,7 +301,7 @@ vx_status vxuFWriteImage(vx_context context, vx_image image, vx_char name[VX_MAX
     return status;
 }
 
-vx_status vxuFWriteArray(vx_context context, vx_array arr, vx_char name[VX_MAX_FILE_NAME])
+vx_status vxuFWriteArray(vx_context context, vx_array arr, const vx_char *name)
 {
     vx_status status = VX_FAILURE;
     vx_graph graph = vxCreateGraph(context);

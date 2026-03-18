@@ -65,10 +65,10 @@ VX_API_ENTRY vx_convolution VX_API_CALL vxCreateConvolution(vx_context context, 
     return convolution;
 }
 
-VX_API_ENTRY vx_status VX_API_CALL vxQueryConvolution(vx_convolution convolution, vx_enum attribute, void *ptr, vx_size size)
+VX_API_ENTRY vx_status VX_API_CALL vxQueryConvolution(vx_convolution conv, vx_enum attribute, void *ptr, vx_size size)
 {
     vx_status status = VX_SUCCESS;
-    if (ownIsValidSpecificReference(&convolution->base.base, VX_TYPE_CONVOLUTION) == vx_false_e)
+    if (ownIsValidSpecificReference(&conv->base.base, VX_TYPE_CONVOLUTION) == vx_false_e)
     {
         return VX_ERROR_INVALID_REFERENCE;
     }
@@ -77,7 +77,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxQueryConvolution(vx_convolution convolution
         case VX_CONVOLUTION_ROWS:
             if (VX_CHECK_PARAM(ptr, size, vx_size, 0x3))
             {
-                *(vx_size *)ptr = convolution->base.rows;
+                *(vx_size *)ptr = conv->base.rows;
             }
             else
             {
@@ -87,7 +87,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxQueryConvolution(vx_convolution convolution
         case VX_CONVOLUTION_COLUMNS:
             if (VX_CHECK_PARAM(ptr, size, vx_size, 0x3))
             {
-                *(vx_size *)ptr = convolution->base.columns;
+                *(vx_size *)ptr = conv->base.columns;
             }
             else
             {
@@ -97,7 +97,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxQueryConvolution(vx_convolution convolution
         case VX_CONVOLUTION_SCALE:
             if (VX_CHECK_PARAM(ptr, size, vx_uint32, 0x3))
             {
-                *(vx_uint32 *)ptr = convolution->scale;
+                *(vx_uint32 *)ptr = conv->scale;
             }
             else
             {
@@ -107,7 +107,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxQueryConvolution(vx_convolution convolution
         case VX_CONVOLUTION_SIZE:
             if (VX_CHECK_PARAM(ptr, size, vx_size, 0x3))
             {
-                *(vx_size *)ptr = convolution->base.columns * convolution->base.rows * sizeof(vx_int16);
+                *(vx_size *)ptr = conv->base.columns * conv->base.rows * sizeof(vx_int16);
             }
             else
             {
@@ -131,10 +131,10 @@ static vx_bool vxIsPowerOfTwo(vx_uint32 a)
         return vx_false_e;
 }
 
-VX_API_ENTRY vx_status VX_API_CALL vxSetConvolutionAttribute(vx_convolution convolution, vx_enum attribute, const void *ptr, vx_size size)
+VX_API_ENTRY vx_status VX_API_CALL vxSetConvolutionAttribute(vx_convolution conv, vx_enum attribute, const void *ptr, vx_size size)
 {
     vx_status status = VX_SUCCESS;
-    if (ownIsValidSpecificReference(&convolution->base.base, VX_TYPE_CONVOLUTION) == vx_false_e)
+    if (ownIsValidSpecificReference(&conv->base.base, VX_TYPE_CONVOLUTION) == vx_false_e)
     {
         return VX_ERROR_INVALID_REFERENCE;
     }
@@ -147,7 +147,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxSetConvolutionAttribute(vx_convolution conv
                 if (vxIsPowerOfTwo(scale) == vx_true_e)
                 {
                     VX_PRINT(VX_ZONE_INFO, "Convolution Scale assigned to %u\n", scale);
-                    convolution->scale = scale;
+                    conv->scale = scale;
                 }
                 else
                 {
@@ -211,23 +211,24 @@ VX_API_ENTRY vx_status VX_API_CALL vxWriteConvolutionCoefficients(vx_convolution
     return status;
 }
 
-vx_status VX_API_CALL vxCopyConvolutionCoefficients(vx_convolution convolution, void *ptr, vx_enum usage, vx_enum mem_type)
+VX_API_ENTRY vx_status VX_API_CALL vxCopyConvolutionCoefficients(vx_convolution conv, void *user_ptr, vx_enum usage, vx_enum user_mem_type)
 {
     vx_status status = VX_ERROR_INVALID_REFERENCE;
-    (void)mem_type;
+    void *ptr = user_ptr;
+    (void)user_mem_type;
 
-    if (ownIsValidSpecificReference(&convolution->base.base, VX_TYPE_CONVOLUTION) == vx_true_e)
+    if (ownIsValidSpecificReference(&conv->base.base, VX_TYPE_CONVOLUTION) == vx_true_e)
     {
-        if (ownAllocateMemory(convolution->base.base.context, &convolution->base.memory) == vx_true_e)
+        if (ownAllocateMemory(conv->base.base.context, &conv->base.memory) == vx_true_e)
         {
 #ifdef OPENVX_USE_OPENCL_INTEROP
-            void * ptr_given = ptr;
-            vx_enum mem_type_given = mem_type;
-            if (mem_type == VX_MEMORY_TYPE_OPENCL_BUFFER)
+            void * ptr_given = user_ptr;
+            vx_enum mem_type_given = user_mem_type;
+            if (user_mem_type == VX_MEMORY_TYPE_OPENCL_BUFFER)
             {
                 // get ptr from OpenCL buffer for HOST
                 size_t size = 0;
-                cl_mem opencl_buf = (cl_mem)ptr;
+                cl_mem opencl_buf = (cl_mem)user_ptr;
                 cl_int cerr = clGetMemObjectInfo(opencl_buf, CL_MEM_SIZE, sizeof(size_t), &size, NULL);
                 VX_PRINT(VX_ZONE_CONTEXT, "OPENCL: vxCopyConvolutionCoefficients: clGetMemObjectInfo(%p) => (%d)\n",
                     opencl_buf, cerr);
@@ -235,7 +236,7 @@ vx_status VX_API_CALL vxCopyConvolutionCoefficients(vx_convolution convolution, 
                 {
                     return VX_ERROR_INVALID_PARAMETERS;
                 }
-                ptr = clEnqueueMapBuffer(convolution->base.base.context->opencl_command_queue,
+                ptr = clEnqueueMapBuffer(conv->base.base.context->opencl_command_queue,
                     opencl_buf, CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, 0, size,
                     0, NULL, NULL, &cerr);
                 VX_PRINT(VX_ZONE_CONTEXT, "OPENCL: vxCopyConvolutionCoefficients: clEnqueueMapBuffer(%p,%d) => %p (%d)\n",
@@ -244,35 +245,34 @@ vx_status VX_API_CALL vxCopyConvolutionCoefficients(vx_convolution convolution, 
                 {
                     return VX_ERROR_INVALID_PARAMETERS;
                 }
-                mem_type = VX_MEMORY_TYPE_HOST;
             }
 #endif
 
             if (usage == VX_READ_ONLY)
             {
-                ownSemWait(&convolution->base.base.lock);
+                ownSemWait(&conv->base.base.lock);
                 if (ptr)
                 {
-                    vx_size size = convolution->base.memory.strides[0][1] *
-                                   convolution->base.memory.dims[0][1];
-                    memcpy(ptr, convolution->base.memory.ptrs[0], size);
+                    vx_size size = conv->base.memory.strides[0][1] *
+                                   conv->base.memory.dims[0][1];
+                    memcpy(ptr, conv->base.memory.ptrs[0], size);
                 }
-                ownSemPost(&convolution->base.base.lock);
-                ownReadFromReference(&convolution->base.base);
+                ownSemPost(&conv->base.base.lock);
+                ownReadFromReference(&conv->base.base);
                 status = VX_SUCCESS;
             }
             else if (usage == VX_WRITE_ONLY)
             {
-                ownSemWait(&convolution->base.base.lock);
+                ownSemWait(&conv->base.base.lock);
                 if (ptr)
                 {
-                    vx_size size = convolution->base.memory.strides[0][1] *
-                                   convolution->base.memory.dims[0][1];
+                    vx_size size = conv->base.memory.strides[0][1] *
+                                   conv->base.memory.dims[0][1];
 
-                    memcpy(convolution->base.memory.ptrs[0], ptr, size);
+                    memcpy(conv->base.memory.ptrs[0], ptr, size);
                 }
-                ownSemPost(&convolution->base.base.lock);
-                ownWroteToReference(&convolution->base.base);
+                ownSemPost(&conv->base.base.lock);
+                ownWroteToReference(&conv->base.base);
                 status = VX_SUCCESS;
             }
             else
@@ -284,9 +284,9 @@ vx_status VX_API_CALL vxCopyConvolutionCoefficients(vx_convolution convolution, 
 #ifdef OPENVX_USE_OPENCL_INTEROP
             if (mem_type_given == VX_MEMORY_TYPE_OPENCL_BUFFER)
             {
-                clEnqueueUnmapMemObject(convolution->base.base.context->opencl_command_queue,
+                clEnqueueUnmapMemObject(conv->base.base.context->opencl_command_queue,
                     (cl_mem)ptr_given, ptr, 0, NULL, NULL);
-                clFinish(convolution->base.base.context->opencl_command_queue);
+                clFinish(conv->base.base.context->opencl_command_queue);
             }
 #endif
         }

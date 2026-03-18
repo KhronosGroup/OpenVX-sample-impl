@@ -60,7 +60,9 @@ set (ADD_CXX_FLAGS              "${ADD_COMMON_C_FLAGS}" )
 # Linker switches
 
 if (NOT CYGWIN)
-  if (NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+  if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+    set (INIT_LINKER_FLAGS          "-Wl,-no_warn_duplicate_libraries" )
+  else ()
     set (INIT_LINKER_FLAGS          "-Wl,--enable-new-dtags" ) # --enable-new-dtags sets RUNPATH to the same value as RPATH
   endif ()
 endif (NOT CYGWIN)

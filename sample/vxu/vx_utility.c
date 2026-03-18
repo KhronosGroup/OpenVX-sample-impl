@@ -32,13 +32,13 @@ static vx_status setNodeTarget(vx_node node)
     return vxSetNodeTarget(node, context->imm_target_enum, context->imm_target_string);
 }
 
-VX_API_ENTRY vx_status VX_API_CALL vxuColorConvert(vx_context context, vx_image src, vx_image dst)
+VX_API_ENTRY vx_status VX_API_CALL vxuColorConvert(vx_context context, vx_image input, vx_image output)
 {
     vx_status status = VX_FAILURE;
     vx_graph graph = vxCreateGraph(context);
     if (vxGetStatus((vx_reference)graph) == VX_SUCCESS)
     {
-        vx_node node = vxColorConvertNode(graph, src, dst);
+        vx_node node = vxColorConvertNode(graph, input, output);
         if (vxGetStatus((vx_reference)node)==VX_SUCCESS)
         {
             status = setNodeTarget(node);
@@ -55,13 +55,13 @@ VX_API_ENTRY vx_status VX_API_CALL vxuColorConvert(vx_context context, vx_image 
     return status;
 }
 
-VX_API_ENTRY vx_status VX_API_CALL vxuChannelExtract(vx_context context, vx_image src, vx_enum channel, vx_image dst)
+VX_API_ENTRY vx_status VX_API_CALL vxuChannelExtract(vx_context context, vx_image input, vx_enum channel, vx_image output)
 {
     vx_status status = VX_FAILURE;
     vx_graph graph = vxCreateGraph(context);
     if (vxGetStatus((vx_reference)graph) == VX_SUCCESS)
     {
-        vx_node node = vxChannelExtractNode(graph, src, channel, dst);
+        vx_node node = vxChannelExtractNode(graph, input, channel, output);
         if (vxGetStatus((vx_reference)node)==VX_SUCCESS)
         {
             status = setNodeTarget(node);
@@ -168,13 +168,13 @@ static vx_status vx_useImmediateBorderMode(vx_context context, vx_node node, con
     return status;
 }
 
-VX_API_ENTRY vx_status VX_API_CALL vxuSobel3x3(vx_context context, vx_image src, vx_image output_x, vx_image output_y)
+VX_API_ENTRY vx_status VX_API_CALL vxuSobel3x3(vx_context context, vx_image input, vx_image output_x, vx_image output_y)
 {
     vx_status status = VX_FAILURE;
     vx_graph graph = vxCreateGraph(context);
     if (vxGetStatus((vx_reference)graph) == VX_SUCCESS)
     {
-        vx_node node = vxSobel3x3Node(graph, src, output_x, output_y);
+        vx_node node = vxSobel3x3Node(graph, input, output_x, output_y);
         if (vxGetStatus((vx_reference)node)==VX_SUCCESS)
         {
             status = vx_useImmediateBorderMode(context, node, border_modes_3, dimof(border_modes_3));
@@ -193,13 +193,13 @@ VX_API_ENTRY vx_status VX_API_CALL vxuSobel3x3(vx_context context, vx_image src,
     return status;
 }
 
-VX_API_ENTRY vx_status VX_API_CALL vxuMagnitude(vx_context context, vx_image grad_x, vx_image grad_y, vx_image dst)
+VX_API_ENTRY vx_status VX_API_CALL vxuMagnitude(vx_context context, vx_image grad_x, vx_image grad_y, vx_image mag)
 {
     vx_status status = VX_FAILURE;
     vx_graph graph = vxCreateGraph(context);
     if (vxGetStatus((vx_reference)graph) == VX_SUCCESS)
     {
-        vx_node node = vxMagnitudeNode(graph, grad_x, grad_y, dst);
+        vx_node node = vxMagnitudeNode(graph, grad_x, grad_y, mag);
         if (vxGetStatus((vx_reference)node)==VX_SUCCESS)
         {
             status = setNodeTarget(node);
@@ -216,13 +216,13 @@ VX_API_ENTRY vx_status VX_API_CALL vxuMagnitude(vx_context context, vx_image gra
     return status;
 }
 
-VX_API_ENTRY vx_status VX_API_CALL vxuPhase(vx_context context, vx_image grad_x, vx_image grad_y, vx_image dst)
+VX_API_ENTRY vx_status VX_API_CALL vxuPhase(vx_context context, vx_image grad_x, vx_image grad_y, vx_image orientation)
 {
     vx_status status = VX_FAILURE;
     vx_graph graph = vxCreateGraph(context);
     if (vxGetStatus((vx_reference)graph) == VX_SUCCESS)
     {
-        vx_node node = vxPhaseNode(graph, grad_x, grad_y, dst);
+        vx_node node = vxPhaseNode(graph, grad_x, grad_y, orientation);
         if (vxGetStatus((vx_reference)node)==VX_SUCCESS)
         {
             status = setNodeTarget(node);
@@ -799,17 +799,17 @@ VX_API_ENTRY vx_status VX_API_CALL vxuWeightedAverage(vx_context context, vx_ima
     return status;
 }
 
-VX_API_ENTRY vx_status VX_API_CALL vxuConvertDepth(vx_context context, vx_image input, vx_image output, vx_enum policy, vx_int32 shift_val)
+VX_API_ENTRY vx_status VX_API_CALL vxuConvertDepth(vx_context context, vx_image input, vx_image output, vx_enum policy, vx_int32 shift)
 {
     vx_status status = VX_FAILURE;
     vx_graph graph = vxCreateGraph(context);
 
     if (vxGetStatus((vx_reference)graph) == VX_SUCCESS)
     {
-        vx_scalar shift = vxCreateScalar(context, VX_TYPE_INT32, &shift_val);
-        vx_node node = vxConvertDepthNode(graph, input, output, policy, shift);
+        vx_scalar shift_scalar = vxCreateScalar(context, VX_TYPE_INT32, &shift);
+        vx_node node = vxConvertDepthNode(graph, input, output, policy, shift_scalar);
         if ( (VX_SUCCESS == vxGetStatus((vx_reference)node)) &&
-             (VX_SUCCESS == vxGetStatus((vx_reference)shift)) )
+             (VX_SUCCESS == vxGetStatus((vx_reference)shift_scalar)) )
         {
             status = setNodeTarget(node);
             if (status == VX_SUCCESS)
@@ -821,7 +821,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxuConvertDepth(vx_context context, vx_image 
             vxReleaseNode(&node);
         }
         vxReleaseGraph(&graph);
-        vxReleaseScalar(&shift);
+        vxReleaseScalar(&shift_scalar);
     }
 
     return status;
@@ -946,13 +946,13 @@ VX_API_ENTRY vx_status VX_API_CALL vxuXor(vx_context context, vx_image in1, vx_i
     return status;
 }
 
-VX_API_ENTRY vx_status VX_API_CALL vxuNot(vx_context context, vx_image input, vx_image out)
+VX_API_ENTRY vx_status VX_API_CALL vxuNot(vx_context context, vx_image input, vx_image output)
 {
     vx_status status = VX_FAILURE;
     vx_graph graph = vxCreateGraph(context);
     if (vxGetStatus((vx_reference)graph) == VX_SUCCESS)
     {
-        vx_node node = vxNotNode(graph, input, out);
+        vx_node node = vxNotNode(graph, input, output);
         if (vxGetStatus((vx_reference)node)==VX_SUCCESS)
         {
             status = setNodeTarget(node);
@@ -969,17 +969,17 @@ VX_API_ENTRY vx_status VX_API_CALL vxuNot(vx_context context, vx_image input, vx
     return status;
 }
 
-VX_API_ENTRY vx_status VX_API_CALL vxuMultiply(vx_context context, vx_image in1, vx_image in2, vx_float32 scale_val, vx_enum overflow_policy, vx_enum rounding_policy, vx_image out)
+VX_API_ENTRY vx_status VX_API_CALL vxuMultiply(vx_context context, vx_image in1, vx_image in2, vx_float32 scale, vx_enum overflow_policy, vx_enum rounding_policy, vx_image out)
 {
     vx_status status = VX_FAILURE;
     vx_graph graph = vxCreateGraph(context);
 
     if (vxGetStatus((vx_reference)graph) == VX_SUCCESS)
     {
-        vx_scalar scale = vxCreateScalar(context, VX_TYPE_FLOAT32, &scale_val);
-        vx_node node = vxMultiplyNode(graph, in1, in2, scale, overflow_policy, rounding_policy, out);
+        vx_scalar scale_scalar = vxCreateScalar(context, VX_TYPE_FLOAT32, &scale);
+        vx_node node = vxMultiplyNode(graph, in1, in2, scale_scalar, overflow_policy, rounding_policy, out);
         if ( (VX_SUCCESS == vxGetStatus((vx_reference)node)) &&
-             (VX_SUCCESS == vxGetStatus((vx_reference)scale)) )
+             (VX_SUCCESS == vxGetStatus((vx_reference)scale_scalar)) )
         {
             status = setNodeTarget(node);
             if (status == VX_SUCCESS)
@@ -991,7 +991,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxuMultiply(vx_context context, vx_image in1,
             vxReleaseNode(&node);
         }
         vxReleaseGraph(&graph);
-        vxReleaseScalar(&scale);
+        vxReleaseScalar(&scale_scalar);
     }
 
     return status;
@@ -1296,13 +1296,13 @@ VX_API_ENTRY vx_status VX_API_CALL vxuHarrisCorners(vx_context context, vx_image
     return status;
 }
 
-VX_API_ENTRY vx_status VX_API_CALL vxuFastCorners(vx_context context, vx_image input, vx_scalar sens, vx_bool nonmax, vx_array corners, vx_scalar num_corners)
+VX_API_ENTRY vx_status VX_API_CALL vxuFastCorners(vx_context context, vx_image input, vx_scalar strength_thresh, vx_bool nonmax_suppression, vx_array corners, vx_scalar num_corners)
 {
     vx_status status = VX_FAILURE;
     vx_graph graph = vxCreateGraph(context);
     if (vxGetStatus((vx_reference)graph) == VX_SUCCESS)
     {
-        vx_node node = vxFastCornersNode(graph, input, sens, nonmax, corners, num_corners);
+        vx_node node = vxFastCornersNode(graph, input, strength_thresh, nonmax_suppression, corners, num_corners);
         if (vxGetStatus((vx_reference)node)==VX_SUCCESS)
         {
             status = setNodeTarget(node);
@@ -1569,7 +1569,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxuCopy(vx_context context, vx_reference inpu
     return status;
 }
 
-vx_status VX_API_CALL vxuHOGCells(vx_context context, vx_image input, vx_int32 cell_width, vx_int32 cell_height, vx_int32 num_bins, vx_tensor magnitudes, vx_tensor bins)
+VX_API_ENTRY vx_status VX_API_CALL vxuHOGCells(vx_context context, vx_image input, vx_int32 cell_width, vx_int32 cell_height, vx_int32 num_bins, vx_tensor magnitudes, vx_tensor bins)
 {
     vx_status status = VX_FAILURE;
     vx_graph graph = vxCreateGraph(context);
@@ -1590,7 +1590,7 @@ vx_status VX_API_CALL vxuHOGCells(vx_context context, vx_image input, vx_int32 c
     return status;
 }
 
-vx_status VX_API_CALL vxuHOGFeatures(vx_context context, vx_image input, vx_tensor magnitudes, vx_tensor bins, const vx_hog_t *params, vx_size hog_param_size, vx_tensor features)
+VX_API_ENTRY vx_status VX_API_CALL vxuHOGFeatures(vx_context context, vx_image input, vx_tensor magnitudes, vx_tensor bins, const vx_hog_t *params, vx_size hog_param_size, vx_tensor features)
 {
     vx_status status = VX_FAILURE;
     vx_graph graph = vxCreateGraph(context);

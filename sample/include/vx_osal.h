@@ -134,7 +134,7 @@ void ownInitQueue(vx_queue_t *q);
 /*! \brief
  * \ingroup group_int_osal
  */
-vx_queue_t *ownCreateQueue();
+vx_queue_t *ownCreateQueue(void);
 
 /*! \brief
  * \ingroup group_int_osal

@@ -136,7 +136,7 @@ VX_API_ENTRY vx_tensor VX_API_CALL vxCreateTensor(
 
 VX_API_ENTRY vx_tensor VX_API_CALL vxCreateTensorFromHandle(vx_context context, vx_size number_of_dims, const vx_size *dims,
     vx_enum data_type, vx_int8 fixed_point_position,
-    const vx_size *stride, void * ptr, vx_enum memory_type)
+    const vx_size * stride, void * ptr, vx_enum memory_type)
 {
     vx_tensor tensor = NULL;
 
@@ -263,10 +263,10 @@ VX_API_ENTRY vx_status VX_API_CALL vxSwapTensorHandle(vx_tensor tensor, void* ne
     return status;
 }
 
-VX_API_ENTRY vx_object_array VX_API_CALL vxCreateImageObjectArrayFromTensor(vx_tensor tensor, const vx_rectangle_t *rect, vx_size array_size, vx_size stride, vx_df_image image_format)
+VX_API_ENTRY vx_object_array VX_API_CALL vxCreateImageObjectArrayFromTensor(vx_tensor tensor, const vx_rectangle_t *rect, vx_size array_size, vx_size jump, vx_df_image image_format)
 {
     (void)array_size;
-    (void)stride;
+    (void)jump;
 
 	vx_object_array images = (vx_object_array)ownCreateReference(tensor->base.context, VX_TYPE_OBJECT_ARRAY, VX_EXTERNAL, (vx_reference)tensor->base.context);//  TODO scope?
 
@@ -370,10 +370,10 @@ exit:
 
 
 
-VX_API_ENTRY vx_tensor VX_API_CALL vxCreateTensorFromView(vx_tensor tensor, vx_size number_of_dimensions, const vx_size * view_start, const vx_size * view_end)
+VX_API_ENTRY vx_tensor VX_API_CALL vxCreateTensorFromView(vx_tensor tensor, vx_size number_of_dims, const vx_size * view_start, const vx_size * view_end)
 {
     vx_tensor subtensor = NULL;
-    (void)number_of_dimensions;
+    (void)number_of_dims;
 
     if ((ownIsValidTensor(tensor) == vx_true_e) && (NULL != view_start) && (NULL != view_end))
     {
@@ -681,7 +681,7 @@ exit:
     return status;
 }
 
-VX_API_ENTRY vx_status VX_API_CALL vxUnmapTensorPatch(vx_tensor tensor, vx_map_id map_id)
+VX_API_ENTRY vx_status VX_API_CALL vxUnmapTensorPatch(vx_tensor tensor, const vx_map_id map_id)
 {
     vx_status status = VX_FAILURE;
 
@@ -758,7 +758,7 @@ exit:
     return status;
 }
 
-VX_API_ENTRY vx_status VX_API_CALL vxCopyTensorPatch(vx_tensor tensor, vx_size number_of_dimensions, const vx_size * view_start, const vx_size * view_end,
+VX_API_ENTRY vx_status VX_API_CALL vxCopyTensorPatch(vx_tensor tensor, vx_size number_of_dims, const vx_size * view_start, const vx_size * view_end,
         const vx_size * user_stride, void * user_ptr, vx_enum usage, vx_enum user_memory_type)
 {
     vx_status status = VX_FAILURE;
@@ -796,14 +796,14 @@ VX_API_ENTRY vx_status VX_API_CALL vxCopyTensorPatch(vx_tensor tensor, vx_size n
         }
     }
 
-    if (tensor->number_of_dimensions < number_of_dimensions || number_of_dimensions ==0)
+    if (tensor->number_of_dimensions < number_of_dims || number_of_dims ==0)
     {
         VX_PRINT(VX_ZONE_ERROR, "Invalid number of patch dimensions\n");
         status = VX_ERROR_INVALID_PARAMETERS;
         goto exit;
 
     }
-    if (CheckSizes(tensor->dimensions, view_start, view_end, number_of_dimensions) != 0)
+    if (CheckSizes(tensor->dimensions, view_start, view_end, number_of_dims) != 0)
     {
         VX_PRINT(VX_ZONE_ERROR, "Invalid view\n");
         status = VX_ERROR_INVALID_PARAMETERS;
@@ -842,11 +842,11 @@ VX_API_ENTRY vx_status VX_API_CALL vxCopyTensorPatch(vx_tensor tensor, vx_size n
     //element_size = ownSizeOfType(tensor->data_type);
     vx_uint8* user_curr_ptr = (vx_uint8*)user_ptr;
     vx_uint8* tensor_ptr = (vx_uint8*)tensor->addr;
-    vx_size patch_size = ComputePatchSize (view_start, view_end, number_of_dimensions);
+    vx_size patch_size = ComputePatchSize (view_start, view_end, number_of_dims);
     for (vx_size i = 0; i < patch_size; i++) {
         vx_size patch_pos = 0;
         vx_size tensor_pos = 0;
-        ComputePositionsFromIndex(i,view_start, view_end, tensor->stride, user_stride, number_of_dimensions, &tensor_pos, &patch_pos);
+        ComputePositionsFromIndex(i,view_start, view_end, tensor->stride, user_stride, number_of_dims, &tensor_pos, &patch_pos);
         if (usage == VX_READ_ONLY)
             memcpy (user_curr_ptr + patch_pos, tensor_ptr + tensor_pos, tensor->stride[0]);
         else

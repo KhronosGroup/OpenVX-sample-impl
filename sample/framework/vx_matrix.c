@@ -29,12 +29,12 @@ VX_API_ENTRY vx_status VX_API_CALL vxReleaseMatrix(vx_matrix *mat)
     return ownReleaseReferenceInt((vx_reference *)mat, VX_TYPE_MATRIX, VX_EXTERNAL, NULL);
 }
 
-VX_API_ENTRY vx_matrix VX_API_CALL vxCreateMatrix(vx_context context, vx_enum data_type, vx_size columns, vx_size rows)
+VX_API_ENTRY vx_matrix VX_API_CALL vxCreateMatrix(vx_context c, vx_enum data_type, vx_size columns, vx_size rows)
 {
     vx_matrix matrix = NULL;
     vx_size dim = 0ul;
 
-    if (ownIsValidContext(context) == vx_false_e)
+    if (ownIsValidContext(c) == vx_false_e)
         return 0;
 
     if ((data_type == VX_TYPE_INT8) || (data_type == VX_TYPE_UINT8))
@@ -56,16 +56,16 @@ VX_API_ENTRY vx_matrix VX_API_CALL vxCreateMatrix(vx_context context, vx_enum da
     if (dim == 0ul)
     {
         VX_PRINT(VX_ZONE_ERROR, "Invalid data type\n");
-        vxAddLogEntry(&context->base, VX_ERROR_INVALID_TYPE, "Invalid data type\n");
-        return (vx_matrix)ownGetErrorObject(context, VX_ERROR_INVALID_TYPE);
+        vxAddLogEntry(&c->base, VX_ERROR_INVALID_TYPE, "Invalid data type\n");
+        return (vx_matrix)ownGetErrorObject(c, VX_ERROR_INVALID_TYPE);
     }
     if ((columns == 0ul) || (rows == 0ul))
     {
         VX_PRINT(VX_ZONE_ERROR, "Invalid dimensions to matrix\n");
-        vxAddLogEntry(&context->base, VX_ERROR_INVALID_DIMENSION, "Invalid dimensions to matrix\n");
-        return (vx_matrix)ownGetErrorObject(context, VX_ERROR_INVALID_DIMENSION);
+        vxAddLogEntry(&c->base, VX_ERROR_INVALID_DIMENSION, "Invalid dimensions to matrix\n");
+        return (vx_matrix)ownGetErrorObject(c, VX_ERROR_INVALID_DIMENSION);
     }
-    matrix = (vx_matrix)ownCreateReference(context, VX_TYPE_MATRIX, VX_EXTERNAL, &context->base);
+    matrix = (vx_matrix)ownCreateReference(c, VX_TYPE_MATRIX, VX_EXTERNAL, &c->base);
     if (vxGetStatus((vx_reference)matrix) == VX_SUCCESS && matrix->base.type == VX_TYPE_MATRIX)
     {
         matrix->data_type = data_type;
@@ -179,10 +179,10 @@ VX_API_ENTRY vx_matrix VX_API_CALL vxCreateMatrixFromPatternAndOrigin(vx_context
     }
     return matrix;
 }
-VX_API_ENTRY vx_status VX_API_CALL vxQueryMatrix(vx_matrix matrix, vx_enum attribute, void *ptr, vx_size size)
+VX_API_ENTRY vx_status VX_API_CALL vxQueryMatrix(vx_matrix mat, vx_enum attribute, void *ptr, vx_size size)
 {
     vx_status status = VX_SUCCESS;
-    if (ownIsValidSpecificReference(&matrix->base, VX_TYPE_MATRIX) == vx_false_e)
+    if (ownIsValidSpecificReference(&mat->base, VX_TYPE_MATRIX) == vx_false_e)
     {
         return VX_ERROR_INVALID_REFERENCE;
     }
@@ -191,7 +191,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxQueryMatrix(vx_matrix matrix, vx_enum attri
         case VX_MATRIX_TYPE:
             if (VX_CHECK_PARAM(ptr, size, vx_enum, 0x3))
             {
-                *(vx_enum *)ptr = matrix->data_type;
+                *(vx_enum *)ptr = mat->data_type;
             }
             else
             {
@@ -201,7 +201,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxQueryMatrix(vx_matrix matrix, vx_enum attri
         case VX_MATRIX_ROWS:
             if (VX_CHECK_PARAM(ptr, size, vx_size, 0x3))
             {
-                *(vx_size *)ptr = matrix->rows;
+                *(vx_size *)ptr = mat->rows;
             }
             else
             {
@@ -211,7 +211,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxQueryMatrix(vx_matrix matrix, vx_enum attri
         case VX_MATRIX_COLUMNS:
             if (VX_CHECK_PARAM(ptr, size, vx_size, 0x3))
             {
-                *(vx_size *)ptr = matrix->columns;
+                *(vx_size *)ptr = mat->columns;
             }
             else
             {
@@ -221,7 +221,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxQueryMatrix(vx_matrix matrix, vx_enum attri
         case VX_MATRIX_SIZE:
             if (VX_CHECK_PARAM(ptr, size, vx_size, 0x3))
             {
-                *(vx_size *)ptr = matrix->columns * matrix->rows * matrix->memory.dims[0][0];
+                *(vx_size *)ptr = mat->columns * mat->rows * mat->memory.dims[0][0];
             }
             else
             {
@@ -231,7 +231,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxQueryMatrix(vx_matrix matrix, vx_enum attri
         case VX_MATRIX_ORIGIN:
             if (VX_CHECK_PARAM(ptr, size, vx_coordinates2d_t, 0x3))
             {
-                *(vx_coordinates2d_t*)ptr = matrix->origin;
+                *(vx_coordinates2d_t*)ptr = mat->origin;
             }
             else
             {
@@ -241,7 +241,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxQueryMatrix(vx_matrix matrix, vx_enum attri
         case VX_MATRIX_PATTERN:
             if (VX_CHECK_PARAM(ptr, size, vx_enum, 0x3))
             {
-                *(vx_enum*)ptr = matrix->pattern;
+                *(vx_enum*)ptr = mat->pattern;
             }
             else
             {
@@ -317,23 +317,24 @@ VX_API_ENTRY vx_status VX_API_CALL vxWriteMatrix(vx_matrix matrix, const void *a
     return status;
 }
 
-vx_status VX_API_CALL vxCopyMatrix(vx_matrix matrix, void *ptr, vx_enum usage, vx_enum mem_type)
+VX_API_ENTRY vx_status VX_API_CALL vxCopyMatrix(vx_matrix matrix, void *user_ptr, vx_enum usage, vx_enum user_mem_type)
 {
     vx_status status = VX_ERROR_INVALID_REFERENCE;
-    (void)mem_type;
+    void *ptr = user_ptr;
+    (void)user_mem_type;
 
     if (ownIsValidSpecificReference(&matrix->base, VX_TYPE_MATRIX) == vx_true_e)
     {
         if (ownAllocateMemory(matrix->base.context, &matrix->memory) == vx_true_e)
         {
 #ifdef OPENVX_USE_OPENCL_INTEROP
-            void * ptr_given = ptr;
-            vx_enum mem_type_given = mem_type;
-            if (mem_type == VX_MEMORY_TYPE_OPENCL_BUFFER)
+            void * ptr_given = user_ptr;
+            vx_enum mem_type_given = user_mem_type;
+            if (user_mem_type == VX_MEMORY_TYPE_OPENCL_BUFFER)
             {
                 // get ptr from OpenCL buffer for HOST
                 size_t size = 0;
-                cl_mem opencl_buf = (cl_mem)ptr;
+                cl_mem opencl_buf = (cl_mem)user_ptr;
                 cl_int cerr = clGetMemObjectInfo(opencl_buf, CL_MEM_SIZE, sizeof(size_t), &size, NULL);
                 VX_PRINT(VX_ZONE_CONTEXT, "OPENCL: vxCopyMatrix: clGetMemObjectInfo(%p) => (%d)\n",
                     opencl_buf, cerr);

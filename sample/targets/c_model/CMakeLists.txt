@@ -44,7 +44,7 @@ if (CYGWIN)
     set_target_properties( ${TARGET_NAME} PROPERTIES LINK_FLAGS ${CMAKE_CURRENT_SOURCE_DIR}/${DEF_FILE} )
 endif (CYGWIN)
 
-target_link_libraries( ${TARGET_NAME} openvx-debug-lib openvx-extras-lib openvx-helper openvx-c_model-lib openvx vxu half)
+target_link_libraries( ${TARGET_NAME} openvx-debug-lib openvx-extras-lib openvx-c_model-lib openvx vxu half)
 
 install ( TARGETS ${TARGET_NAME} 
           RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}

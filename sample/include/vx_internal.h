@@ -602,7 +602,7 @@ typedef struct _vx_scalar {
     vx_size data_len;
 } vx_scalar_t;
 
-typedef struct _vx_tensor_t {
+typedef struct _vx_tensor {
     /*! \brief The internal reference object. */
     vx_reference_t base;
     /*! \brief The memory layout definition */
@@ -617,10 +617,10 @@ typedef struct _vx_tensor_t {
     vx_enum data_type;
     /*! \brief Fixed point position */
     vx_int8 fixed_point_position;
-    struct _vx_tensor_t *subtensors[VX_INT_MAX_REF];
+    struct _vx_tensor *subtensors[VX_INT_MAX_REF];
     /*! \brief A pointer to a parent md data object. */
     //vx_tensor  parent;
-    struct _vx_tensor_t* parent;
+    struct _vx_tensor* parent;
     vx_image  subimages[VX_INT_MAX_REF];
 } vx_tensor_t;
 /*! \brief The internal representation of the attributes associated with a run-time parameter.
@@ -895,6 +895,10 @@ typedef struct _vx_module_t {
     vx_uint32 ref_count;
     /*! \brief The module lock which is used to protect access to "in-fly" data. */
     vx_sem_t lock;
+    /*! \brief Registered publish function (for non-dynamic modules). */
+    vx_publish_kernels_f   reg_publish;
+    /*! \brief Registered unpublish function (for non-dynamic modules). */
+    vx_unpublish_kernels_f reg_unpublish;
 } vx_module_t;
 
 /*! \brief The internal representation of a target.

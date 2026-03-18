@@ -180,7 +180,7 @@ vx_node vxCopyArrayNode(vx_graph graph, vx_array input, vx_array output);
  * \note Graph Mode Function.
  * \ingroup group_vision_function_fwrite_image
  */
-vx_node vxFWriteImageNode(vx_graph graph, vx_image image, vx_char name[VX_MAX_FILE_NAME]);
+vx_node vxFWriteImageNode(vx_graph graph, vx_image image, const vx_char *name);
 
 /*! \brief [Graph] Writes the source array to the file.
  * \param [in] graph The handle to the graph.
@@ -189,7 +189,7 @@ vx_node vxFWriteImageNode(vx_graph graph, vx_image image, vx_char name[VX_MAX_FI
  * \note Graph Mode Function.
  * \ingroup group_vision_function_fwrite_array
  */
-vx_node vxFWriteArrayNode(vx_graph graph, vx_array array, vx_char name[VX_MAX_FILE_NAME]);
+vx_node vxFWriteArrayNode(vx_graph graph, vx_array array, const vx_char *name);
 
 /*! \brief [Graph] Writes the source image to the file.
  * \param [in] graph The handle to the graph.
@@ -198,7 +198,7 @@ vx_node vxFWriteArrayNode(vx_graph graph, vx_array array, vx_char name[VX_MAX_FI
  * \note Graph Mode Function.
  * \ingroup group_vision_function_fread_image
  */
-vx_node vxFReadImageNode(vx_graph graph, vx_char name[VX_MAX_FILE_NAME], vx_image image);
+vx_node vxFReadImageNode(vx_graph graph, const vx_char *name, vx_image image);
 
 /*! \brief [Graph] Writes the source array to the file.
  * \param [in] graph The handle to the graph.
@@ -207,7 +207,7 @@ vx_node vxFReadImageNode(vx_graph graph, vx_char name[VX_MAX_FILE_NAME], vx_imag
  * \note Graph Mode Function.
  * \ingroup group_vision_function_fread_array
  */
-vx_node vxFReadArrayNode(vx_graph graph, vx_char name[VX_MAX_FILE_NAME], vx_array array);
+vx_node vxFReadArrayNode(vx_graph graph, const vx_char *name, vx_array array);
 
 /*! \brief [Graph] Adds 1 to each uint8 pixel. This will clamp at 255.
  * \param [in] graph The handle to the graph.
@@ -296,7 +296,7 @@ vx_status vxuCopyArray(vx_context context, vx_array src, vx_array dst);
  * \note Immediate Mode Function.
  * \ingroup group_vision_function_fwrite_image
  */
-vx_status vxuFWriteImage(vx_context context, vx_image image, vx_char name[VX_MAX_FILE_NAME]);
+vx_status vxuFWriteImage(vx_context context, vx_image image, const vx_char *name);
 
 /*! \brief [Immediate] Writes the source array to the file.
  * \param [in] array The input array.
@@ -304,7 +304,7 @@ vx_status vxuFWriteImage(vx_context context, vx_image image, vx_char name[VX_MAX
  * \note Immediate Mode Function.
  * \ingroup group_vision_function_fwrite_array
  */
-vx_status vxuFWriteArray(vx_context context, vx_array array, vx_char name[VX_MAX_FILE_NAME]);
+vx_status vxuFWriteArray(vx_context context, vx_array array, const vx_char *name);
 
 /*! \brief [Immediate] Reads the source image from the file.
  * \param [in] name The name of the file.
@@ -312,7 +312,7 @@ vx_status vxuFWriteArray(vx_context context, vx_array array, vx_char name[VX_MAX
   * \note Immediate Mode Function.
  * \ingroup group_vision_function_fread_image
  */
-vx_status vxuFReadImage(vx_context context, vx_char name[VX_MAX_FILE_NAME], vx_image image);
+vx_status vxuFReadImage(vx_context context, const vx_char *name, vx_image image);
 
 /*! \brief [Immediate] Reads the source array from the file.
  * \param [in] name The name of the file.
@@ -320,7 +320,7 @@ vx_status vxuFReadImage(vx_context context, vx_char name[VX_MAX_FILE_NAME], vx_i
  * \note Immediate Mode Function.
  * \ingroup group_vision_function_fread_array
  */
-vx_status vxuFReadArray(vx_context context, vx_char name[VX_MAX_FILE_NAME], vx_array array);
+vx_status vxuFReadArray(vx_context context, const vx_char *name, vx_array array);
 
 /*! \brief [Immediate] Adds 1 to each uint8 pixel. This will clamp at 255.
  * \param [in,out] image The image to increment.

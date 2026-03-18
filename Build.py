@@ -90,6 +90,7 @@ def main():
     # Provisional extensions
     parser.add_option("--tiling", dest="tiling", help="Add -DOPENVX_USE_TILING=ON to support the tiling extension", default=False, action='store_true')
     parser.add_option("--s16", dest="s16", help="Add -DOPENVX_USE_S16=ON to have an extended support for S16", default=False, action='store_true')
+    parser.add_option("--u1", dest="u1", help="Add -DOPENVX_USE_U1=ON to enable binary (1-bit) image support", default=False, action='store_true')
     # Experimental features
     parser.add_option("--f16", dest="f16", help="Add -DEXPERIMENTAL_PLATFORM_SUPPORTS_16_FLOAT=ON to support VX_TYPE_FLOAT16", default=False, action='store_true')
     parser.add_option("--venum", dest="venum", help="Add -DEXPERIMENTAL_USE_VENUM=ON to build also raspberrypi 3B+ Neon target[Default False]", default=False, action='store_true')
@@ -229,6 +230,8 @@ def main():
         cmd += ['-DOPENVX_USE_TILING=ON']
     if options.s16:
         cmd += ['-DOPENVX_USE_S16=ON']
+    if options.u1:
+        cmd += ['-DOPENVX_USE_U1=ON']
     if options.f16:
         cmd += ['-DEXPERIMENTAL_PLATFORM_SUPPORTS_16_FLOAT=ON']
     if options.venum:

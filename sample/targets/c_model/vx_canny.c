@@ -248,7 +248,8 @@ static vx_status VX_CALLBACK vxCannyEdgeInitializer(vx_node node, const vx_refer
 
             vx_scalar sshift;
             vx_df_image out_format = 0;
-            sshift = vxCreateScalar(context, VX_TYPE_INT32, (vx_int32)0);
+            vx_int32 sshift_val = 0;
+            sshift = vxCreateScalar(context, VX_TYPE_INT32, &sshift_val);
             vxQueryImage(output, VX_IMAGE_FORMAT, &out_format, sizeof(out_format));
 
             vx_image virts[] =

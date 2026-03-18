@@ -1374,4 +1374,6 @@ void ActivationKernelImpl(
 
 }
 
+#else
+const int c_khr_nn_unused = 0;
 #endif

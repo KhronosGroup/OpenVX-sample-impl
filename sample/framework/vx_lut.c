@@ -112,17 +112,17 @@ void vxDestructLUT(vx_reference ref)
     ownDestructArray((vx_reference_t *)lut);
 }
 
-VX_API_ENTRY vx_status VX_API_CALL vxReleaseLUT(vx_lut *l)
+VX_API_ENTRY vx_status VX_API_CALL vxReleaseLUT(vx_lut *lut)
 {
-    return ownReleaseReferenceInt((vx_reference *)l, VX_TYPE_LUT, VX_EXTERNAL, NULL);
+    return ownReleaseReferenceInt((vx_reference *)lut, VX_TYPE_LUT, VX_EXTERNAL, NULL);
 }
 
-VX_API_ENTRY vx_status VX_API_CALL vxQueryLUT(vx_lut l, vx_enum attribute, void *ptr, vx_size size)
+VX_API_ENTRY vx_status VX_API_CALL vxQueryLUT(vx_lut lut, vx_enum attribute, void *ptr, vx_size size)
 {
     vx_status status = VX_SUCCESS;
-    vx_lut_t *lut = (vx_lut_t *)l;
+    vx_lut_t *lut_t = (vx_lut_t *)lut;
 
-    if (ownIsValidSpecificReference(&lut->base, VX_TYPE_LUT) == vx_false_e)
+    if (ownIsValidSpecificReference(&lut_t->base, VX_TYPE_LUT) == vx_false_e)
         return VX_ERROR_INVALID_REFERENCE;
 
     switch (attribute)
@@ -130,7 +130,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxQueryLUT(vx_lut l, vx_enum attribute, void 
         case VX_LUT_TYPE:
             if (VX_CHECK_PARAM(ptr, size, vx_enum, 0x3))
             {
-                *(vx_enum *)ptr = lut->item_type;
+                *(vx_enum *)ptr = lut_t->item_type;
             }
             else
             {
@@ -140,7 +140,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxQueryLUT(vx_lut l, vx_enum attribute, void 
         case VX_LUT_COUNT:
             if (VX_CHECK_PARAM(ptr, size, vx_size, 0x3))
             {
-                *(vx_size *)ptr = lut->num_items;
+                *(vx_size *)ptr = lut_t->num_items;
             }
             else
             {
@@ -150,7 +150,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxQueryLUT(vx_lut l, vx_enum attribute, void 
         case VX_LUT_SIZE:
             if (VX_CHECK_PARAM(ptr, size, vx_size, 0x3))
             {
-                *(vx_size *)ptr = lut->num_items * lut->item_size;
+                *(vx_size *)ptr = lut_t->num_items * lut_t->item_size;
             }
             else
             {
@@ -160,7 +160,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxQueryLUT(vx_lut l, vx_enum attribute, void 
         case VX_LUT_OFFSET:
             if (VX_CHECK_PARAM(ptr, size, vx_uint32, 0x3))
             {
-                *(vx_uint32 *)ptr = lut->offset;
+                *(vx_uint32 *)ptr = lut_t->offset;
             }
             else
             {
@@ -204,13 +204,13 @@ VX_API_ENTRY vx_status VX_API_CALL vxCommitLUT(vx_lut l, const void *ptr)
     return status;
 }
 
-VX_API_ENTRY vx_status VX_API_CALL vxCopyLUT(vx_lut l, void *user_ptr, vx_enum usage, vx_enum user_mem_type)
+VX_API_ENTRY vx_status VX_API_CALL vxCopyLUT(vx_lut lut, void *user_ptr, vx_enum usage, vx_enum user_mem_type)
 {
     vx_status status = VX_FAILURE;
-    vx_lut_t *lut = (vx_lut_t *)l;
-    if (ownIsValidSpecificReference(&lut->base, VX_TYPE_LUT) == vx_true_e)
+    vx_lut_t *lut_obj = (vx_lut_t *)lut;
+    if (ownIsValidSpecificReference(&lut_obj->base, VX_TYPE_LUT) == vx_true_e)
     {
-        vx_size stride = lut->item_size;
+        vx_size stride = lut_obj->item_size;
 #ifdef OPENVX_USE_OPENCL_INTEROP
         void * user_ptr_given = user_ptr;
         vx_enum user_mem_type_given = user_mem_type;
@@ -226,7 +226,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxCopyLUT(vx_lut l, void *user_ptr, vx_enum u
             {
                 return VX_ERROR_INVALID_PARAMETERS;
             }
-            user_ptr = clEnqueueMapBuffer(lut->base.context->opencl_command_queue,
+            user_ptr = clEnqueueMapBuffer(lut_obj->base.context->opencl_command_queue,
                 opencl_buf, CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, 0, size,
                 0, NULL, NULL, &cerr);
             VX_PRINT(VX_ZONE_CONTEXT, "OPENCL: vxCopyLUT: clEnqueueMapBuffer(%p,%d) => %p (%d)\n",
@@ -239,14 +239,14 @@ VX_API_ENTRY vx_status VX_API_CALL vxCopyLUT(vx_lut l, void *user_ptr, vx_enum u
         }
 #endif
 
-        status = ownCopyArrayRangeInt((vx_array_t *)l, 0, lut->num_items, stride, user_ptr, usage, user_mem_type);
+        status = ownCopyArrayRangeInt((vx_array_t *)lut, 0, lut_obj->num_items, stride, user_ptr, usage, user_mem_type);
 
 #ifdef OPENVX_USE_OPENCL_INTEROP
         if (user_mem_type_given == VX_MEMORY_TYPE_OPENCL_BUFFER)
         {
-            clEnqueueUnmapMemObject(lut->base.context->opencl_command_queue,
+            clEnqueueUnmapMemObject(lut_obj->base.context->opencl_command_queue,
                 (cl_mem)user_ptr_given, user_ptr, 0, NULL, NULL);
-            clFinish(lut->base.context->opencl_command_queue);
+            clFinish(lut_obj->base.context->opencl_command_queue);
         }
 #endif
 
@@ -258,11 +258,11 @@ VX_API_ENTRY vx_status VX_API_CALL vxCopyLUT(vx_lut l, void *user_ptr, vx_enum u
     return status;
 }
 
-VX_API_ENTRY vx_status VX_API_CALL vxMapLUT(vx_lut l, vx_map_id *map_id, void **ptr, vx_enum usage, vx_enum mem_type, vx_bitfield flags)
+VX_API_ENTRY vx_status VX_API_CALL vxMapLUT(vx_lut lut, vx_map_id *map_id, void **ptr, vx_enum usage, vx_enum mem_type, vx_bitfield flags)
 {
     vx_status status = VX_FAILURE;
-    vx_lut_t *lut = (vx_lut_t *)l;
-    if (ownIsValidSpecificReference(&lut->base, VX_TYPE_LUT) == vx_true_e)
+    vx_lut_t *lut_obj = (vx_lut_t *)lut;
+    if (ownIsValidSpecificReference(&lut_obj->base, VX_TYPE_LUT) == vx_true_e)
     {
 #ifdef OPENVX_USE_OPENCL_INTEROP
          vx_enum mem_type_requested = mem_type;
@@ -272,25 +272,25 @@ VX_API_ENTRY vx_status VX_API_CALL vxMapLUT(vx_lut l, vx_map_id *map_id, void **
          }
 #endif
 
-        vx_size stride = lut->item_size;
-        status = ownMapArrayRangeInt((vx_array_t *)lut, 0, lut->num_items, map_id, &stride, ptr, usage, mem_type, flags);
+        vx_size stride = lut_obj->item_size;
+        status = ownMapArrayRangeInt((vx_array_t *)lut, 0, lut_obj->num_items, map_id, &stride, ptr, usage, mem_type, flags);
 
 #ifdef OPENVX_USE_OPENCL_INTEROP
-        vx_size size = lut->num_items * stride;
-        if ((status == VX_SUCCESS) && lut->base.context->opencl_context &&
+        vx_size size = lut_obj->num_items * stride;
+        if ((status == VX_SUCCESS) && lut_obj->base.context->opencl_context &&
             (mem_type_requested == VX_MEMORY_TYPE_OPENCL_BUFFER) &&
             (size > 0) && ptr && *ptr)
         {
             /* create OpenCL buffer using the host allocated pointer */
             cl_int cerr = 0;
-            cl_mem opencl_buf = clCreateBuffer(lut->base.context->opencl_context,
+            cl_mem opencl_buf = clCreateBuffer(lut_obj->base.context->opencl_context,
                 CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR,
                 size, *ptr, &cerr);
             VX_PRINT(VX_ZONE_CONTEXT, "OPENCL: vxMapLUT: clCreateBuffer(%u) => %p (%d)\n",
                 (vx_uint32)size, opencl_buf, cerr);
             if (cerr == CL_SUCCESS)
             {
-                lut->base.context->memory_maps[*map_id].opencl_buf = opencl_buf;
+                lut_obj->base.context->memory_maps[*map_id].opencl_buf = opencl_buf;
                 *ptr = opencl_buf;
             }
             else
@@ -307,11 +307,11 @@ VX_API_ENTRY vx_status VX_API_CALL vxMapLUT(vx_lut l, vx_map_id *map_id, void **
     return status;
 }
 
-VX_API_ENTRY vx_status VX_API_CALL vxUnmapLUT(vx_lut l, vx_map_id map_id)
+VX_API_ENTRY vx_status VX_API_CALL vxUnmapLUT(vx_lut lut, const vx_map_id map_id)
 {
     vx_status status = VX_FAILURE;
-    vx_lut_t *lut = (vx_lut_t *)l;
-    if (ownIsValidSpecificReference(&lut->base, VX_TYPE_LUT) == vx_true_e)
+    vx_lut_t *lut_obj = (vx_lut_t *)lut;
+    if (ownIsValidSpecificReference(&lut_obj->base, VX_TYPE_LUT) == vx_true_e)
     {
 #ifdef OPENVX_USE_OPENCL_INTEROP
         if (lut->base.context->opencl_context &&
@@ -329,7 +329,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxUnmapLUT(vx_lut l, vx_map_id map_id)
         }
 #endif
 
-        status = ownUnmapArrayRangeInt((vx_array_t *)l, map_id);
+        status = ownUnmapArrayRangeInt((vx_array_t *)lut, map_id);
     }
     else
     {

@@ -34,11 +34,11 @@ VX_API_ENTRY vx_node VX_API_CALL vxColorConvertNode(vx_graph graph, vx_image inp
 
 VX_API_ENTRY vx_node VX_API_CALL vxChannelExtractNode(vx_graph graph,
                              vx_image input,
-                             vx_enum channelNum,
+                             vx_enum channel,
                              vx_image output)
 {
     vx_context context = vxGetContext((vx_reference)graph);
-    vx_scalar scalar = vxCreateScalar(context, VX_TYPE_ENUM, &channelNum);
+    vx_scalar scalar = vxCreateScalar(context, VX_TYPE_ENUM, &channel);
     vx_reference params[] = {
         (vx_reference)input,
         (vx_reference)scalar,
@@ -191,11 +191,11 @@ VX_API_ENTRY vx_node VX_API_CALL vxMeanStdDevNode(vx_graph graph, vx_image input
                                    dimof(params));
 }
 
-VX_API_ENTRY vx_node VX_API_CALL vxThresholdNode(vx_graph graph, vx_image input, vx_threshold thesh, vx_image output)
+VX_API_ENTRY vx_node VX_API_CALL vxThresholdNode(vx_graph graph, vx_image input, vx_threshold thresh, vx_image output)
 {
     vx_reference params[] = {
         (vx_reference)input,
-        (vx_reference)thesh,
+        (vx_reference)thresh,
         (vx_reference)output,
     };
     return vxCreateNodeByStructure(graph,
@@ -770,11 +770,11 @@ VX_API_ENTRY vx_node VX_API_CALL vxHalfScaleGaussianNode(vx_graph graph, vx_imag
     return node;
 }
 
-VX_API_ENTRY vx_node VX_API_CALL vxHoughLinesPNode(vx_graph graph, vx_image input, const vx_hough_lines_p_t *params_hough_lines, vx_array lines_array, vx_scalar num_lines)
+VX_API_ENTRY vx_node VX_API_CALL vxHoughLinesPNode(vx_graph graph, vx_image input, const vx_hough_lines_p_t *params, vx_array lines_array, vx_scalar num_lines)
 {
     vx_array params_hough_lines_array = vxCreateArray(vxGetContext((vx_reference)graph), VX_TYPE_HOUGH_LINES_PARAMS, 1);
-    vxAddArrayItems(params_hough_lines_array, 1, params_hough_lines, sizeof(vx_hough_lines_p_t));
-    vx_reference params[] = {
+    vxAddArrayItems(params_hough_lines_array, 1, params, sizeof(vx_hough_lines_p_t));
+    vx_reference refs[] = {
         (vx_reference)input,
         (vx_reference)params_hough_lines_array,
         (vx_reference)lines_array,
@@ -782,8 +782,8 @@ VX_API_ENTRY vx_node VX_API_CALL vxHoughLinesPNode(vx_graph graph, vx_image inpu
     };
     vx_node node = vxCreateNodeByStructure(graph,
         VX_KERNEL_HOUGH_LINES_P,
-        params,
-        dimof(params));
+        refs,
+        dimof(refs));
     vxReleaseArray(&params_hough_lines_array);
     return node;
 }
@@ -859,10 +859,10 @@ VX_API_ENTRY vx_node VX_API_CALL vxTensorSubtractNode(vx_graph graph, vx_tensor 
     return node;
 }
 
-VX_API_ENTRY vx_node VX_API_CALL vxTensorTableLookupNode(vx_graph graph, vx_tensor input, vx_lut lut, vx_tensor output)
+VX_API_ENTRY vx_node VX_API_CALL vxTensorTableLookupNode(vx_graph graph, vx_tensor input1, vx_lut lut, vx_tensor output)
 {
     vx_reference params[] = {
-        (vx_reference)input,
+        (vx_reference)input1,
         (vx_reference)lut,
         (vx_reference)output,
     };
@@ -870,11 +870,11 @@ VX_API_ENTRY vx_node VX_API_CALL vxTensorTableLookupNode(vx_graph graph, vx_tens
     return vxCreateNodeByStructure(graph, VX_KERNEL_TENSOR_TABLE_LOOKUP, params, dimof(params));
 }
 
-VX_API_ENTRY vx_node VX_API_CALL vxTensorTransposeNode(vx_graph graph, vx_tensor input, vx_tensor output, vx_size dimension0, vx_size dimension1)
+VX_API_ENTRY vx_node VX_API_CALL vxTensorTransposeNode(vx_graph graph, vx_tensor input, vx_tensor output, vx_size dimension1, vx_size dimension2)
 {
     vx_context context = vxGetContext((vx_reference)graph);
-    vx_scalar dim1 = vxCreateScalar(context, VX_TYPE_SIZE, &dimension0);
-    vx_scalar dim2 = vxCreateScalar(context, VX_TYPE_SIZE, &dimension1);
+    vx_scalar dim1 = vxCreateScalar(context, VX_TYPE_SIZE, &dimension1);
+    vx_scalar dim2 = vxCreateScalar(context, VX_TYPE_SIZE, &dimension2);
 
     vx_reference params[] = {
         (vx_reference)input,
@@ -1036,10 +1036,10 @@ VX_API_ENTRY vx_node VX_API_CALL vxMatchTemplateNode(vx_graph graph, vx_image sr
     return node;
 }
 
-VX_API_ENTRY vx_node VX_API_CALL vxScalarOperationNode(vx_graph graph, vx_enum operation, vx_scalar a, vx_scalar b, vx_scalar output)
+VX_API_ENTRY vx_node VX_API_CALL vxScalarOperationNode(vx_graph graph, vx_enum scalar_operation, vx_scalar a, vx_scalar b, vx_scalar output)
 {
     vx_context context = vxGetContext((vx_reference)graph);
-    vx_scalar op = vxCreateScalar(context, VX_TYPE_ENUM, &operation);
+    vx_scalar op = vxCreateScalar(context, VX_TYPE_ENUM, &scalar_operation);
     vx_reference params[] = {
             (vx_reference)op,
             (vx_reference)a,
@@ -1070,7 +1070,7 @@ VX_API_ENTRY vx_node VX_API_CALL vxSelectNode(vx_graph graph, vx_scalar conditio
     return node;
 }
 
-vx_node VX_API_CALL vxHOGCellsNode(vx_graph graph, vx_image input, vx_int32 cell_width, vx_int32 cell_height, vx_int32 num_bins, vx_tensor magnitudes, vx_tensor bins)
+VX_API_ENTRY vx_node VX_API_CALL vxHOGCellsNode(vx_graph graph, vx_image input, vx_int32 cell_width, vx_int32 cell_height, vx_int32 num_bins, vx_tensor magnitudes, vx_tensor bins)
 {
     vx_context context = vxGetContext((vx_reference)graph);
     vx_scalar cell_width_scalar = vxCreateScalar(context, VX_TYPE_INT32, &cell_width);
@@ -1094,7 +1094,7 @@ vx_node VX_API_CALL vxHOGCellsNode(vx_graph graph, vx_image input, vx_int32 cell
     return node;
 }
 
-vx_node VX_API_CALL vxHOGFeaturesNode(vx_graph graph, vx_image input, vx_tensor magnitudes, vx_tensor bins, const vx_hog_t *params, vx_size hog_param_size, vx_tensor features)
+VX_API_ENTRY vx_node VX_API_CALL vxHOGFeaturesNode(vx_graph graph, vx_image input, vx_tensor magnitudes, vx_tensor bins, const vx_hog_t *params, vx_size hog_param_size, vx_tensor features)
 {
     vx_context context = vxGetContext((vx_reference)graph);
     vx_array hog_param = vxCreateArray(vxGetContext((vx_reference)graph), VX_TYPE_HOG_PARAMS, 1);

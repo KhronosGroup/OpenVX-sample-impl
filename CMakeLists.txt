@@ -18,7 +18,11 @@
 # Global setup file for OpenVX CMake
 
 #
-cmake_minimum_required(VERSION 3.0.0)
+cmake_minimum_required(VERSION 3.10)
+
+if(POLICY CMP0068)
+    cmake_policy(SET CMP0068 NEW)
+endif()
 
 file(READ "${CMAKE_SOURCE_DIR}/VERSION" OPENVX_VERSION)
 string(STRIP "${OPENVX_VERSION}" OPENVX_VERSION)
@@ -32,6 +36,8 @@ set( CMAKE_MODULE_PATH
      "${CMAKE_SOURCE_DIR}/cmake_utils/"
 )
 
+project (OpenVX)
+
 include( cmake_utils/CMakeFuncs.txt )
 
 if (WIN32)
@@ -41,8 +47,6 @@ elseif (ANDROID)
 else ()
     include( CMake_linux_tools )
 endif ()
-
-project (OpenVX)
 
 # Supported configurations
 set(CMAKE_CONFIGURATION_TYPES
@@ -65,6 +69,7 @@ option( OPENVX_CONFORMANCE_VISION OFF )
 option( OPENVX_CONFORMANCE_NEURAL_NETWORKS OFF )
 option( OPENVX_CONFORMANCE_NNEF_IMPORT OFF)
 option( OPENVX_USE_ENHANCED_VISION OFF )
+option( OPENVX_USE_U1 OFF )
 option( EXPERIMENTAL_USE_DOT OFF )
 option( EXPERIMENTAL_PLATFORM_SUPPORTS_16_FLOAT OFF )
 option( EXPERIMENTAL_USE_VENUM OFF)
@@ -120,6 +125,10 @@ if (OPENVX_USE_USER_DATA_OBJECT)
     add_definitions( -DOPENVX_USE_USER_DATA_OBJECT )
     message( "-- Offical User Data Object extension")
 endif (OPENVX_USE_USER_DATA_OBJECT)
+if (OPENVX_USE_U1)
+    add_definitions( -DOPENVX_USE_U1 )
+    message( "-- Official binary (U1) feature set")
+endif (OPENVX_USE_U1)
 if (OPENVX_USE_OPENCL_INTEROP)
     add_definitions( -DOPENVX_USE_OPENCL_INTEROP )
     message( "-- Official OpenVX OpenCL Interop")
@@ -200,9 +209,9 @@ endif ( ${PROCESSOR_COUNT} LESS "1" )
 add_definitions( -DTARGET_NUM_CORES=${PROCESSOR_COUNT} )
 
 # Check submodules have been checked out.
-find_path(API_DOCS_PATH "include/VX/vx.h" HINTS "api-docs")
-find_path(CTS_PATH "openvx_cts_version.inc" HINTS "cts")
-find_path(NNEF_TOOLS_PATH "nnef_tools/__init__.py" HINTS "kernels/NNEF-Tools")
+find_path(API_DOCS_PATH "include/VX/vx.h" HINTS "${CMAKE_SOURCE_DIR}/api-docs")
+find_path(CTS_PATH "openvx_cts_version.inc" HINTS "${CMAKE_SOURCE_DIR}/cts")
+find_path(NNEF_TOOLS_PATH "nnef_tools/__init__.py" HINTS "${CMAKE_SOURCE_DIR}/kernels/NNEF-Tools")
 if(
     "${API_DOCS_PATH}" STREQUAL "API_DOCS_PATH-NOTFOUND"
     OR "${CTS_PATH}" STREQUAL "CTS_PATH-NOTFOUND"

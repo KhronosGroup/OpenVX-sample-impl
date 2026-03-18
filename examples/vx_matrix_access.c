@@ -25,8 +25,7 @@
 vx_matrix example_random_matrix(vx_context context)
 {
     //! [matrix]
-    const vx_size columns = 3;
-    const vx_size rows = 4;
+    enum { columns = 3, rows = 4 };
     vx_matrix matrix = vxCreateMatrix(context, VX_TYPE_FLOAT32, columns, rows);
     vx_status status = vxGetStatus((vx_reference)matrix);
     if (status == VX_SUCCESS)

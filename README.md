@@ -9,262 +9,360 @@
 
 This document outlines the purpose of this sample implementation as well as provide build and execution instructions.
 
-## CONTENTS:
+## Contents
 
 * [Purpose](#purpose)
-* [Building And Executing](#building-and-executing)
+* [Building and Executing](#building-and-executing)
   * [CMake](#cmake)
+  * [Build.py Options](#buildpy-options)
   * [Concerto](#concerto)
 * [Sample Build Instructions](#sample-build-instructions)
+* [Conformance Test Modes](#conformance-test-modes)
 * [Included Unit Tests](#included-unit-tests)
 * [Debugging](#debugging)
-* [Packaging And Installing](#packaging-and-installing)
+* [Packaging and Installing](#packaging-and-installing)
+* [CI/CD](#cicd)
 * [Bug Reporting](#bug-reporting)
 
 ## Purpose
 
-The purpose of this software package is to provide a sample implementation of the OpenVX 1.3 Specification that passes the conformance test. It is NOT intended to be a reference implementation.  If there are any discrepancies with the OpenVX 1.3 specification, they are not intentional and the specification should take precedence.  Many of the design decisions made in this sample implementation were motivated out of convenience rather than optimizing for performance.  It is expected that vendor's implementations would choose to make different design choices based on their priorities, and the specification was written in such a way as to allow freedom to do so. Beyond the conformance tests, there was very limited testing, as this was not intended to be directly used as production software.
+The purpose of this software package is to provide a sample implementation of the OpenVX 1.3 Specification that passes the conformance test. It is NOT intended to be a reference implementation. If there are any discrepancies with the OpenVX 1.3 specification, they are not intentional and the specification should take precedence. Many of the design decisions made in this sample implementation were motivated out of convenience rather than optimizing for performance. It is expected that vendor's implementations would choose to make different design choices based on their priorities, and the specification was written in such a way as to allow freedom to do so. Beyond the conformance tests, there was very limited testing, as this was not intended to be directly used as production software.
 
-This sample implementation contains additional 'experimental' or 'internally proposed' features which are not included in OpenVX 1.3.  Since these are not part of OpenVX, these are disabled by default in the build by using preprocessor definitions.  These features may potentially be modified or may never be added to the OpenVX spec, and should not be relied on as such. Additional details on these preprocessor definitions can be found in the BUILD_DEFINES document in this same folder.
+This sample implementation contains additional 'experimental' or 'internally proposed' features which are not included in OpenVX 1.3. Since these are not part of OpenVX, these are disabled by default in the build by using preprocessor definitions. These features may potentially be modified or may never be added to the OpenVX spec, and should not be relied on as such. Additional details on these preprocessor definitions can be found in the `BUILD_DEFINES` document in this same folder.
 
 Future revisions of the OpenVX sample implementation may or may not be released, and Khronos is not actively maintaining a public open source sample implementation project.
 
 The following is a summary of what this sample implementation IS and IS NOT:
 
-**IS**:
-* passing OpenVX 1.3 conformance tests
+**IS:**
+* Passing OpenVX 1.3 conformance tests
 
-**IS NOT**:
-* a reference implementation
-* optimized
-* production ready
-* actively maintained by Khronos publically
+**IS NOT:**
+* A reference implementation
+* Optimized
+* Production ready
+* Actively maintained by Khronos publicly
 
-## Building And Executing
+## Building and Executing
 
-The sample implementation contains two different build system options:
-cmake and concerto (non-standard makefile-based system). The build and execution instructions for each are shown below.
+The sample implementation contains two different build system options: cmake and concerto (non-standard makefile-based system). The build and execution instructions for each are shown below.
 
 ### CMake
 
-#### Supported systems:
+#### Supported Systems
 
 * Linux
+* macOS (Darwin)
 * Android
-* Windows (Visual studio or Cygwin)
+* Windows (Visual Studio or Cygwin)
 
-#### Pre-requisite:
+#### Prerequisites
 
-* python 2.x (Tested with python 2.7)
-* CMAKE 2.8.12 or higher. (should be in PATH)
+* Python 3 (tested with Python 3.8+)
+* CMake 3.10 or higher (should be in PATH)
+* GCC 4.3+ or Clang (Linux/macOS)
+* Git submodules initialized (`git submodule update --init --recursive`)
 
-##### Windows:
-* Visual studio 12 (2013) or higher in order to create VS solution and use VS compiler to build OpenVX and related projects. (Need DEVENV in PATH) Or Cygwin.
+##### macOS
 
-##### Android:
-* NDK tool chain.
+* Xcode Command Line Tools (`xcode-select --install`). Apple Clang is used as the default compiler.
+* Use `--os=Linux` with `Build.py` (macOS shares the same CMake code path as Linux).
+* Libraries are built as `.dylib` instead of `.so`.
+* Use `DYLD_LIBRARY_PATH` instead of `LD_LIBRARY_PATH` when running executables.
 
-#### Building:
+##### Windows
 
-    Windows:
-    --------
-    From VS / Cygwin command prompt:
+* Visual Studio 2013 or higher to create VS solution and use the VS compiler to build OpenVX and related projects (need DEVENV in PATH). Or Cygwin.
 
-    > python Build.py --help
-	
-    In case of Visual Studio solution, the default CMAKE_GENERATOR is "Visual Studio 12", you can change it with --gen option. (cmake --help present the supported generators)
+##### Android
 
-    Linux:
-    ------
-    From shell:
+* NDK toolchain. Set `ANDROID_NDK_TOOLCHAIN_ROOT` environment variable.
 
-    > python Build.py --help
+##### OpenCL (optional)
 
-    The command above will present the available build options, please follow these options.
+* Set `VX_OPENCL_INCLUDE_PATH` and `VX_OPENCL_LIB_PATH` environment variables.
 
-    VS solution will create in:
-    ---------------------------
-    ${OUTPUT_PATH}/build/${OS}/${ARCH}/OpenVX.sln
+##### XML (optional)
 
-    In order to build and install all the sample projects from VS, build the 'INSTALL' project. (Build.py trigger it by default)
+* libxml2 development package (e.g. `libxml2-dev` on Ubuntu).
 
-    Make files will create in:
-    --------------------------
-    ${OUTPUT_PATH}/build/${OS}/${ARCH}/${CONF}
+#### Building
 
-    In order to build and install all the sample projects, call to 'make install'. (Build.py trigger it by default)
+**Windows** -- from VS / Cygwin command prompt:
 
-    OUTPUT_PATH - The path to output, default the root directory.
-    OS - Win / Linux / Android. (Cygwin is equal to Linux)
-    ARCH - 32 / 64
-    CONF - Release / Debug.
-	
-    Enable / Disable experimental options (Optional):
-    -------------------------------------------------
-	Windows:
-	--------
-        (1) Run the python script, set --build=false
-        (2) Open cmake GUI
-            (2.1) Set the source code directory to the openvx root folder, where the root CMakeLists.txt is located
-            (2.2) Set the build directory to ${OUTPUT_PATH}/build/${OS}/${ARCH}
-        (3) Select the options to enable / disable
-        (4) Click the 'Configure' button in order to update the "CMakeCache.txt" file (Do not click on 'Generate' button)
-        (5) Re-run the python script. (You can set --build=true or build from Visual Studio)
-		
-        Linux:
-        ------
-        (1) Run the python script, set --build=false
-        (2) Navigate to ${OUTPUT_PATH}/build/${OS}/${ARCH}/${CONF}
-        (3) > make edit_cache
-        (4) Select the options to enable / disable
-        (5) click 'c' to configure
-        (6) click 'g' to generate the make files
-        (7) > make install
+```shell
+python3 Build.py --help
+```
 
-#### Install:
+In case of Visual Studio solution, the default `CMAKE_GENERATOR` is `Visual Studio 12`. You can change it with the `--gen` option (`cmake --help` presents the supported generators).
 
-    The build process installs the OpenVX headers in 'include' folder / executables and libraries in 'bin' folder / libs in 'lib' folder under:
-    ${OUTPUT_PATH}/install/${OS}/${ARCH}/${CONF}
+**Linux** -- from shell:
 
-##### Running:
+```shell
+python3 Build.py --help
+```
 
-    Windows:
-    --------
-    Add ${OUTPUT_PATH}/install/${OS}/${ARCH}/${CONF}/bin to PATH
+The command above will present the available build options; please follow these options.
 
-    Linux:
-    ------
-    Set LD_LIBRARY_PATH ${OUTPUT_PATH}/install/${OS}/${ARCH}/${CONF}/bin
+**VS solution** will be created in:
 
-    $ cd raw
-    $ ${OUTPUT_PATH}/install/${OS}/${ARCH}/${CONF}/bin/vx_test
+```
+${OUTPUT_PATH}/build/${OS}/${ARCH}/OpenVX.sln
+```
+
+In order to build and install all the sample projects from VS, build the `INSTALL` project (Build.py triggers it by default).
+
+**Makefiles** will be created in:
+
+```
+${OUTPUT_PATH}/build/${OS}/${ARCH}/${CONF}
+```
+
+In order to build and install all the sample projects, call `make install` (Build.py triggers it by default).
+
+| Variable | Description |
+|----------|-------------|
+| `OUTPUT_PATH` | The path to output (default: root directory) |
+| `OS` | `Win` / `Linux` / `Android` (Cygwin is equal to Linux) |
+| `ARCH` | `x32` / `x64` |
+| `CONF` | `Release` / `Debug` |
+
+**Enable / Disable experimental options (optional):**
+
+*Windows:*
+1. Run the python script with `--build=false`
+2. Open CMake GUI
+   - Set the source code directory to the openvx root folder, where the root `CMakeLists.txt` is located
+   - Set the build directory to `${OUTPUT_PATH}/build/${OS}/${ARCH}`
+3. Select the options to enable / disable
+4. Click the `Configure` button to update `CMakeCache.txt` (do not click `Generate`)
+5. Re-run the python script (you can set `--build=true` or build from Visual Studio)
+
+*Linux:*
+1. Run the python script with `--build=false`
+2. Navigate to `${OUTPUT_PATH}/build/${OS}/${ARCH}/${CONF}`
+3. Run `make edit_cache`
+4. Select the options to enable / disable
+5. Press `c` to configure
+6. Press `g` to generate the makefiles
+7. Run `make install`
+
+#### Install
+
+The build process installs the OpenVX headers in `include/`, executables and libraries in `bin/`, and libs in `lib/` under:
+
+```
+${OUTPUT_PATH}/install/${OS}/${ARCH}/${CONF}
+```
+
+#### Running
+
+**Windows:**
+
+Add `${OUTPUT_PATH}/install/${OS}/${ARCH}/${CONF}/bin` to `PATH`.
+
+**Linux:**
+
+```shell
+export LD_LIBRARY_PATH=${OUTPUT_PATH}/install/${OS}/${ARCH}/${CONF}/bin
+cd raw
+${OUTPUT_PATH}/install/${OS}/${ARCH}/${CONF}/bin/vx_test
+```
+
+**macOS:**
+
+```shell
+export DYLD_LIBRARY_PATH=${OUTPUT_PATH}/install/${OS}/${ARCH}/${CONF}/bin
+cd raw
+${OUTPUT_PATH}/install/${OS}/${ARCH}/${CONF}/bin/vx_test
+```
+
+### Build.py Options
+
+The `Build.py` script wraps CMake and provides command-line options for configuring the build. Run `python3 Build.py --help` for full usage.
+
+#### General Options
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `--os` | Operating system (`Linux` / `Windows` / `Android`) | *(required)* |
+| `--arch` | Architecture (`32` / `64`) | `64` |
+| `--conf` | Configuration (`Release` / `Debug`) | `Release` |
+| `--c` | C compiler path | system default |
+| `--cpp` | C++ compiler path | system default |
+| `--gen` | CMake generator | `Visual Studio 12` (Windows), CMake default (Linux) |
+| `--env` | Print supported environment variables | `False` |
+| `--out` | Output path for build/install files | root directory |
+| `--build` | Build and install targets | `True` |
+| `--rebuild` | Clean rebuild (use when adding source files) | `False` |
+| `--package` | Build packages | `False` |
+| `--dump_commands` | Export compile commands for tooling (YCM, etc.) | `False` |
+
+#### Conformance Feature Sets
+
+| Option | CMake Define | Description |
+|--------|-------------|-------------|
+| `--conf_vision` | `OPENVX_CONFORMANCE_VISION=ON` | Vision conformance feature set |
+| `--conf_nn` | `OPENVX_CONFORMANCE_NEURAL_NETWORKS=ON` | Neural Networks conformance feature set |
+| `--conf_nnef` | `OPENVX_CONFORMANCE_NNEF_IMPORT=ON` | NNEF Import conformance feature set |
+| `--enh_vision` | `OPENVX_USE_ENHANCED_VISION=ON` | Enhanced Vision feature set |
+
+#### Official Extensions
+
+| Option | CMake Define | Description |
+|--------|-------------|-------------|
+| `--ix` | `OPENVX_USE_IX=ON` | Import/Export extension |
+| `--nn` | `OPENVX_USE_NN=ON` | Neural Network extension |
+| `--pipelining` | `OPENVX_USE_PIPELINING=ON` | Pipelining extension |
+| `--streaming` | `OPENVX_USE_STREAMING=ON` | Streaming extension |
+| `--opencl_interop` | `OPENVX_USE_OPENCL_INTEROP=ON` | OpenCL Interop extension |
+| `--u1` | `OPENVX_USE_U1=ON` | Binary (1-bit) image support |
+
+#### Provisional Extensions
+
+| Option | CMake Define | Description |
+|--------|-------------|-------------|
+| `--tiling` | `OPENVX_USE_TILING=ON` | Tiling extension |
+| `--s16` | `OPENVX_USE_S16=ON` | Extended S16 support |
+
+#### Experimental Features
+
+| Option | CMake Define | Description |
+|--------|-------------|-------------|
+| `--f16` | `EXPERIMENTAL_PLATFORM_SUPPORTS_16_FLOAT=ON` | VX_TYPE_FLOAT16 support |
+| `--venum` | `EXPERIMENTAL_USE_VENUM=ON` | Raspberry Pi 3B+ NEON target (forces 32-bit) |
+| `--opencl` | `EXPERIMENTAL_USE_OPENCL=ON` | OpenCL target (forces 32-bit) |
+
+> **Note:** Using `--venum`, `--tiling`, or `--opencl` automatically sets the architecture to 32-bit.
 
 ### Concerto
 
 The following systems are supported by the concerto build:
+
 * Linux (GCC or CLANG)
 * Darwin/Mac OSX
 * Windows NT (Cygwin or native Visual Studio 2013)
 
 For each system, consider the following prerequisites:
 
-    1. Linux
-    --------
-    gcc is the default compiler.  If clang is desired, then it can be chosen
-    by setting the HOST_COMPILER environment variable to CLANG.
+#### 1. Linux
 
-    If using gcc, version 4.3.0 or above should be used.
+GCC is the default compiler. If Clang is desired, it can be chosen by setting the `HOST_COMPILER` environment variable to `CLANG`.
 
-    2. Darwin/OSX
-    -------------
-    Mac OSX Users need to use either MacPorts or Fink (or other favorite
-    package manager) to install the same set of packages above.
+If using GCC, version 4.3.0 or above should be used.
 
-    3. Windows NT (Cygwin or native)
-    -----------------------------
+#### 2. Darwin/OSX
 
-    (Cygwin)
-    --------
-    It is recommended that Windows users install Cygwin to build OpenVX.
-    Obtain and run the setup utility at:
+Mac OSX users need to use either MacPorts or Fink (or other favorite package manager) to install the same set of packages above.
 
-        http://cygwin.com/setup.exe
+#### 3. Windows NT (Cygwin or native)
 
-    In addition to the defaults, you MUST manually select the gcc-core,
-    make, and gcc-g++ packages in the cygwin setup utility.  All are in
-    the "Devel" category. gcc version 4.3.0 or above should be used.
+**Cygwin:**
 
-    (native MS Visual Studio 2013)
-    --------
-    Required packages to build:
-        - Microsoft Visual Studio 2013 (at least)
-        - A make utility compiled for windows (examples):
-          - mingw32-make.exe (http://www.mingw.org)
-          - gmake from XDCTools (http://downloads.ti.com/dsps/dsps_public_sw/sdo_sb/targetcontent/rtsc/)
+It is recommended that Windows users install Cygwin to build OpenVX. Obtain and run the setup utility at http://cygwin.com/setup.exe.
 
-    For building the code, adding the path to "make.exe" to
-    the PATH is required after the "vcvarsall.bat" batch file (which
-    configures the environment for compiling with VC) is executed from a
-    CMD window.
+In addition to the defaults, you MUST manually select the `gcc-core`, `make`, and `gcc-g++` packages in the Cygwin setup utility. All are in the "Devel" category. GCC version 4.3.0 or above should be used.
+
+**Native MS Visual Studio 2013:**
+
+Required packages to build:
+* Microsoft Visual Studio 2013 (at least)
+* A make utility compiled for Windows (examples):
+  * `mingw32-make.exe` (http://www.mingw.org)
+  * `gmake` from XDCTools (http://downloads.ti.com/dsps/dsps_public_sw/sdo_sb/targetcontent/rtsc/)
+
+For building the code, adding the path to `make.exe` to the `PATH` is required after the `vcvarsall.bat` batch file (which configures the environment for compiling with VC) is executed from a CMD window.
 
 #### Building OpenVX using Concerto
 
-Once the correct packages above are installed, the sample implementation can be built by typing "make" in the OpenVX installation directory (e.g., "openvx_sample").
+Once the correct packages above are installed, the sample implementation can be built by typing `make` in the OpenVX installation directory (e.g., `openvx_sample`):
 
-    $ cd openvx_sample
-    $ make
+```shell
+cd openvx_sample
+make
+```
 
-Outputs are placed in 
+Outputs are placed in:
 
-    out/$(TARGET_OS)/$(TARGET_CPU)/$(TARGET_BUILD)/
-    
-These variables are visible in the make output. This will be referred to as TARGET_OUT, though this may not be present in the actual environment (users could define this themselves).
+```
+out/$(TARGET_OS)/$(TARGET_CPU)/$(TARGET_BUILD)/
+```
 
-In order to see a list and description of all make commands for concerto,
-type:
+These variables are visible in the make output. This will be referred to as `TARGET_OUT`, though this may not be present in the actual environment (users could define this themselves).
 
-    $ make help
+In order to see a list and description of all make commands for concerto, type:
 
+```shell
+make help
+```
 
 #### Executing OpenVX using Concerto
 
-The tests can be manually run as follows. In any environment, PATHs may need to be altered to allow loading dynamic modules. The $(TARGET_OUT) variable below should be replaced with the actual path to the output file where the libraries and executables are placed, as per the description in section 1: BUILD.
+The tests can be manually run as follows. In any environment, PATHs may need to be altered to allow loading dynamic modules. The `$(TARGET_OUT)` variable below should be replaced with the actual path to the output file where the libraries and executables are placed.
 
 ##### On Linux
 
-TARGET_OUT is usually out/LINUX/x86_64/release
+`TARGET_OUT` is usually `out/LINUX/x86_64/release`
 
-    $ cd raw
-    $ LD_LIBRARY_PATH=../$(TARGET_OUT) ../$(TARGET_OUT)/vx_test
+```shell
+cd raw
+LD_LIBRARY_PATH=../$(TARGET_OUT) ../$(TARGET_OUT)/vx_test
+```
 
 ##### On Windows (Cygwin)
 
-TARGET_OUT is usually
+`TARGET_OUT` is usually `out/CYGWIN/X86/release`
 
-    out/CYGWIN/X86/release
-
-Commands:
-
-    $ cd raw
-    $ LD_LIBRARY_PATH=../$(TARGET_OUT) ../$(TARGET_OUT)/vx_test
+```shell
+cd raw
+LD_LIBRARY_PATH=../$(TARGET_OUT) ../$(TARGET_OUT)/vx_test
+```
 
 ##### On Windows (native)
 
-TARGET_OUT is usually
+`TARGET_OUT` is usually `out\Windows_NT\x86\release`
 
-    out\Windows_NT\x86\release
+```bat
+C:\> copy raw\*.* %TARGET_OUT%
+C:\> pushd %TARGET_OUT% && vx_test.exe
+```
 
-Commands:
+##### On Mac OSX
 
-    C:\> copy raw\*.* %TARGET_OUT%
-    C:\> pushd %TARGET_OUT% && vx_test.exe
+`TARGET_OUT` is usually `out/DARWIN/x86_64/release`
 
-##### On Mac OSX (from openvx_sample)
-
-TARGET_OUT is usually
-
-    out/DARWIN/x86_64/release
-
-Commands:
-
-    $ cd raw
-    $ DYLD_LIBRARY_PATH=../$(TARGET_OUT) ../$(TARGET_OUT)/vx_test
+```shell
+cd raw
+DYLD_LIBRARY_PATH=../$(TARGET_OUT) ../$(TARGET_OUT)/vx_test
+```
 
 ## Sample Build Instructions
 
-### Sample 1 - Build OpenVX 1.3 on Ubuntu 18.04
+### Sample 1 - Build OpenVX 1.3 on Ubuntu 22.04
 
-* Git Clone project with recursive flag to get submodules
-````
+* Install prerequisites
+
+```shell
+sudo apt-get update
+sudo apt-get install -y cmake git python3 gcc g++
+```
+
+* Git clone project with recursive flag to get submodules
+
+```shell
 git clone --recursive https://github.com/KhronosGroup/OpenVX-sample-impl.git
-````
+```
+
 * Use `Build.py` script
-````
+
+```shell
 cd OpenVX-sample-impl/
-python Build.py --os=Linux --arch=64 --conf=Debug --conf_vision --enh_vision --conf_nn
-````
+python3 Build.py --os=Linux --arch=64 --conf=Debug --conf_vision --enh_vision --conf_nn
+```
+
 * Build and run conformance
-````
+
+```shell
 export OPENVX_DIR=$(pwd)/install/Linux/x64/Debug
 export VX_TEST_DATA_PATH=$(pwd)/cts/test_data/
 mkdir build-cts
@@ -272,21 +370,61 @@ cd build-cts
 cmake -DOPENVX_INCLUDES=$OPENVX_DIR/include -DOPENVX_LIBRARIES=$OPENVX_DIR/bin/libopenvx.so\;$OPENVX_DIR/bin/libvxu.so\;pthread\;dl\;m\;rt -DOPENVX_CONFORMANCE_VISION=ON -DOPENVX_USE_ENHANCED_VISION=ON -DOPENVX_CONFORMANCE_NEURAL_NETWORKS=ON ../cts/
 cmake --build .
 LD_LIBRARY_PATH=./lib ./bin/vx_test_conformance
-````
+```
 
-### Sample 2 - Build OpenVX 1.3 on Raspberry Pi
+### Sample 2 - Build OpenVX 1.3 on macOS
 
-* Git Clone project with recursive flag to get submodules
-````
+* Ensure Xcode Command Line Tools are installed
+
+```shell
+xcode-select --install
+```
+
+* Git clone project with recursive flag to get submodules
+
+```shell
 git clone --recursive https://github.com/KhronosGroup/OpenVX-sample-impl.git
-````
-* Use `Build.py` script
-````
+```
+
+* Use `Build.py` script (use `--os=Linux` for macOS)
+
+```shell
 cd OpenVX-sample-impl/
-python Build.py --os=Linux --venum --conf=Debug --conf_vision --enh_vision --conf_nn
-````
+python3 Build.py --os=Linux --arch=64 --conf=Debug --conf_vision --enh_vision --conf_nn
+```
+
 * Build and run conformance
-````
+
+```shell
+export OPENVX_DIR=$(pwd)/install/Linux/x64/Debug
+export VX_TEST_DATA_PATH=$(pwd)/cts/test_data/
+mkdir build-cts
+cd build-cts
+cmake -DOPENVX_INCLUDES=$OPENVX_DIR/include -DOPENVX_LIBRARIES="$OPENVX_DIR/bin/libopenvx.dylib;$OPENVX_DIR/bin/libvxu.dylib;pthread;dl;m" -DOPENVX_CONFORMANCE_VISION=ON -DOPENVX_USE_ENHANCED_VISION=ON -DOPENVX_CONFORMANCE_NEURAL_NETWORKS=ON ../cts/
+cmake --build .
+DYLD_LIBRARY_PATH=./lib ./bin/vx_test_conformance
+```
+
+> **Note:** On macOS, libraries use the `.dylib` extension instead of `.so`, and `DYLD_LIBRARY_PATH` is used instead of `LD_LIBRARY_PATH`.
+
+### Sample 3 - Build OpenVX 1.3 on Raspberry Pi
+
+* Git clone project with recursive flag to get submodules
+
+```shell
+git clone --recursive https://github.com/KhronosGroup/OpenVX-sample-impl.git
+```
+
+* Use `Build.py` script
+
+```shell
+cd OpenVX-sample-impl/
+python3 Build.py --os=Linux --venum --conf=Debug --conf_vision --enh_vision --conf_nn
+```
+
+* Build and run conformance
+
+```shell
 export OPENVX_DIR=$(pwd)/install/Linux/x32/Debug
 export VX_TEST_DATA_PATH=$(pwd)/cts/test_data/
 mkdir build-cts
@@ -294,86 +432,170 @@ cd build-cts
 cmake -DOPENVX_INCLUDES=$OPENVX_DIR/include -DOPENVX_LIBRARIES=$OPENVX_DIR/bin/libopenvx.so\;$OPENVX_DIR/bin/libvxu.so\;pthread\;dl\;m\;rt -DOPENVX_CONFORMANCE_VISION=ON -DOPENVX_USE_ENHANCED_VISION=ON -DOPENVX_CONFORMANCE_NEURAL_NETWORKS=ON ../cts/
 cmake --build .
 LD_LIBRARY_PATH=./lib ./bin/vx_test_conformance
-````
+```
+
+## Conformance Test Modes
+
+The sample implementation supports several conformance test configurations. Below are the supported modes matching the CI pipeline. For all modes, first set up the environment:
+
+```shell
+export OPENVX_DIR=$(pwd)/install/Linux/x64/Debug
+export VX_TEST_DATA_PATH=$(pwd)/cts/test_data/
+```
+
+> **Note:** When switching between modes, remove the previous install directory before rebuilding: `rm -rf install/Linux/x64/Debug`
+
+> **Note:** On macOS, use `.dylib` instead of `.so` for library paths in `OPENVX_LIBRARIES`, replace `LD_LIBRARY_PATH` with `DYLD_LIBRARY_PATH`, and omit `rt` from the library list (e.g., `"...libopenvx.dylib;...libvxu.dylib;pthread;dl;m"`).
+
+### Mode 1 - Vision Conformance
+
+```shell
+python3 Build.py --os=Linux --arch=64 --conf=Debug --conf_vision
+mkdir build-cts-mode-1 && cd build-cts-mode-1
+cmake -DOPENVX_INCLUDES=$OPENVX_DIR/include -DOPENVX_LIBRARIES=$OPENVX_DIR/bin/libopenvx.so\;$OPENVX_DIR/bin/libvxu.so\;pthread\;dl\;m\;rt -DOPENVX_CONFORMANCE_VISION=ON ../cts/
+cmake --build .
+LD_LIBRARY_PATH=./lib ./bin/vx_test_conformance
+```
+
+### Mode 2 - Vision & Enhanced Vision Conformance
+
+```shell
+python3 Build.py --os=Linux --arch=64 --conf=Debug --conf_vision --enh_vision
+mkdir build-cts-mode-2 && cd build-cts-mode-2
+cmake -DOPENVX_INCLUDES=$OPENVX_DIR/include -DOPENVX_LIBRARIES=$OPENVX_DIR/bin/libopenvx.so\;$OPENVX_DIR/bin/libvxu.so\;pthread\;dl\;m\;rt -DOPENVX_CONFORMANCE_VISION=ON -DOPENVX_USE_ENHANCED_VISION=ON ../cts/
+cmake --build .
+LD_LIBRARY_PATH=./lib ./bin/vx_test_conformance
+```
+
+### Mode 3 - Neural Network Conformance
+
+```shell
+python3 Build.py --os=Linux --arch=64 --conf=Debug --conf_nn
+mkdir build-cts-mode-3 && cd build-cts-mode-3
+cmake -DOPENVX_INCLUDES=$OPENVX_DIR/include -DOPENVX_LIBRARIES=$OPENVX_DIR/bin/libopenvx.so\;$OPENVX_DIR/bin/libvxu.so\;pthread\;dl\;m\;rt -DOPENVX_CONFORMANCE_NEURAL_NETWORKS=ON ../cts/
+cmake --build .
+LD_LIBRARY_PATH=./lib ./bin/vx_test_conformance
+```
+
+### Mode 4 - NNEF Import Conformance
+
+```shell
+python3 Build.py --os=Linux --arch=64 --conf=Debug --conf_nnef
+mkdir build-cts-mode-4 && cd build-cts-mode-4
+cmake -DOPENVX_INCLUDES=$OPENVX_DIR/include -DOPENVX_LIBRARIES=$OPENVX_DIR/bin/libopenvx.so\;$OPENVX_DIR/bin/libvxu.so\;$OPENVX_DIR/bin/libnnef-lib.a\;pthread\;dl\;m\;rt -DOPENVX_CONFORMANCE_NNEF_IMPORT=ON ../cts/
+cmake --build .
+LD_LIBRARY_PATH=./lib ./bin/vx_test_conformance
+```
+
+### Mode 5 - Vision, Enhanced Vision, Neural Net, Import/Export, & U1
+
+```shell
+python3 Build.py --os=Linux --arch=64 --conf=Debug --conf_vision --enh_vision --conf_nn --nn --ix --u1
+mkdir build-cts-mode-5 && cd build-cts-mode-5
+cmake -DOPENVX_INCLUDES=$OPENVX_DIR/include -DOPENVX_LIBRARIES=$OPENVX_DIR/bin/libopenvx.so\;$OPENVX_DIR/bin/libvxu.so\;pthread\;dl\;m\;rt -DOPENVX_CONFORMANCE_VISION=ON -DOPENVX_USE_ENHANCED_VISION=ON -DOPENVX_CONFORMANCE_NEURAL_NETWORKS=ON -DOPENVX_USE_NN=ON -DOPENVX_USE_IX=ON -DOPENVX_USE_U1=ON ../cts/
+cmake --build .
+LD_LIBRARY_PATH=./lib ./bin/vx_test_conformance
+```
+
+### Mode 6 - Vision, Enhanced Vision, Pipelining, & Streaming
+
+```shell
+python3 Build.py --os=Linux --arch=64 --conf=Debug --conf_vision --enh_vision --pipelining --streaming
+```
+
+> **Note:** CTS tests for Pipelining and Streaming are not yet available.
 
 ## Included Unit Tests
 
-The sample implementation comes with a few unit sanity tests that exercises
-some examples of the specification.  The executables are called:
+The sample implementation comes with a few unit sanity tests that exercise some examples of the specification. The executables are called:
 
-**vx_test:**
-* main function is in source file: openvx_sample/tests/vx_test.c
-* No arguments will run all included unit tests.
+**`vx_test`**
+* Main function is in source file: `sample/tests/vx_test.c`
+* No arguments will run all included unit tests
 * Argument will list the tests to be run
-* Single tests can be run by specifying test number using -t <testnum>
-* Expects to be run from the raw directory (the program looks for image files in the execution directory).
+* Single tests can be run by specifying test number using `-t <testnum>`
+* Expects to be run from the `raw/` directory (the program looks for image files in the execution directory)
 
-**vx_query:**
-* Main function is in source file: openvx_sample/tools/query/vx_query.c
+**`vx_query`**
+* Main function is in source file: `tools/query/vx_query.c`
 * Queries the implementation and prints out details about all kernels
 
-**vx_example:**
-* Main function is in source file: openvx_sample/examples/vx_graph_factory.c
-* This is an example of creating and running a graph using what is called a graph factory.  This example is beyond the scope of the openvx specification, but is an example of how graph parameters can be use to abstract the details of a graph to clients.
+**`vx_example`**
+* Main function is in source file: `examples/vx_graph_factory.c`
+* This is an example of creating and running a graph using what is called a graph factory. This example is beyond the scope of the OpenVX specification, but is an example of how graph parameters can be used to abstract the details of a graph to clients.
 
-vx_bug13510:
-vx_bug13517:
-vx_bug13518:
-    - Exercise code exposing fixed bugs.
+**`vx_bug13510`**, **`vx_bug13517`**, **`vx_bug13518`**
+* Exercise code exposing fixed bugs
 
 ## Debugging
 
-To build in debug mode (this will output in the out/.../debug folder rather
-than out/.../release, thus if you defined TARGET_OUT, you'll have to change it. 
+To build in debug mode (this will output in the `out/.../debug` folder rather than `out/.../release`; if you defined `TARGET_OUT`, you'll have to change it):
 
-    $ export NO_OPTIMIZE=1
-    $ make
+```shell
+export NO_OPTIMIZE=1
+make
+```
 
-or 
+or
 
-    $ make TARGET_BUILD=debug
+```shell
+make TARGET_BUILD=debug
+```
 
-To enable traces (printfs/logs/etc), use either the mask (higher priority) or
-list of zones to enable. In the mask, the zones are the bit places. Express the
-mask as a hex number.
+To enable traces (printfs/logs/etc), use either the mask (higher priority) or list of zones to enable. In the mask, the zones are the bit places. Express the mask as a hex number:
 
-    $ export VX_ZONE_MASK=0x<hexnumber>
-    
-or use the list as a comma delimited set of zone numbers (see 'sample/include/vx_debug.h')
+```shell
+export VX_ZONE_MASK=0x<hexnumber>
+```
 
-    $ export VX_ZONE_LIST=0,1,2,3,6,9,14
+or use the list as a comma delimited set of zone numbers (see `debug/vx_debug.h`):
 
-The list of mapping zones to bits can be found in openvx_sample/debug/vx_debug.h
+```shell
+export VX_ZONE_LIST=0,1,2,3,6,9,14
+```
 
-If you want these variable as part of the command line:
+The list of mapping zones to bits can be found in `debug/vx_debug.h`.
 
-    $ unset VX_ZONE_MASK
-    $ unset VX_ZONE_LIST
-    $ make
-    $ cd raw
-    $ VX_ZONE_LIST=0,3,16 vx_test <options>
+If you want these variables as part of the command line:
 
-Note: VX_ZONE_MASK will override VX_ZONE_LIST. So if you have both set, only
-VX_ZONE_MASK is being seen by the implementation. 
+```shell
+unset VX_ZONE_MASK
+unset VX_ZONE_LIST
+make
+cd raw
+VX_ZONE_LIST=0,3,16 vx_test <options>
+```
 
-Now run your tests again.
+> **Note:** `VX_ZONE_MASK` will override `VX_ZONE_LIST`. If you have both set, only `VX_ZONE_MASK` is being seen by the implementation.
 
+## Packaging and Installing
 
-## Packaging And Installing
+On Linux, the sample implementation for OpenVX is packaged after a make in:
 
-On Linux, the sample implementation for OpenVX is packaged after a make in
+```
+out/LINUX/x86_64/openvx-*.deb
+```
 
-    out/LINUX/x86_64/openvx-*.deb
+Installing DEB package:
 
-Installing DEB package
+```shell
+dpkg-deb -i <path>/openvx-*.deb
+```
 
-    $ dpkg-deb -i <path>/openvx-*.deb
+## CI/CD
 
+The project uses GitLab CI (`.gitlab-ci.yml`) with an `ubuntu:22.04` image. The CI pipeline:
+
+1. Installs prerequisites: `cmake`, `git`, `python3`, `gcc`, `g++`
+2. Builds OpenVX in both Release and Debug configurations
+3. Runs all conformance test modes (Vision, Enhanced Vision, Neural Networks, NNEF Import, combined modes)
+
+Git submodules are fetched automatically via `GIT_SUBMODULE_STRATEGY: recursive`.
 
 ## Bug Reporting
 
 Although Khronos is not actively maintaining a public project of this sample implementation, bug reports can be reported back to the working group in an effort to make sure that we don't overlook related specification and implementation issues going forward.
 
-If any bugs are found in the sample implementation, you can notify the Khronos working group via 
+If any bugs are found in the sample implementation, you can notify the Khronos working group via:
 * File an [issue on the GitHub](https://github.com/KhronosGroup/OpenVX-sample-impl/issues)
 * The OpenVX feedback forum: https://community.khronos.org/c/openvx
