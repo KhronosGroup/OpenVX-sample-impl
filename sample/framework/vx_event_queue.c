@@ -33,7 +33,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxDisableEvents(vx_context context)
     return VX_ERROR_NOT_IMPLEMENTED;
 }
 
-VX_API_ENTRY vx_status VX_API_CALL vxSendUserEvent(vx_context context, vx_uint32 id, void *parameter)
+VX_API_ENTRY vx_status VX_API_CALL vxSendUserEvent(vx_context context, vx_uint32 id, const void *parameter)
 {
     return VX_ERROR_NOT_IMPLEMENTED;
 }

@@ -23,7 +23,7 @@
 
 #include "vx_internal.h"
 
-VX_API_ENTRY vx_status vxSetGraphScheduleConfig(
+VX_API_ENTRY vx_status VX_API_CALL vxSetGraphScheduleConfig(
     vx_graph graph,
     vx_enum graph_schedule_mode,
     vx_uint32 graph_parameters_list_size,
@@ -35,7 +35,7 @@ VX_API_ENTRY vx_status vxSetGraphScheduleConfig(
 
 VX_API_ENTRY vx_status VX_API_CALL vxGraphParameterEnqueueReadyRef(vx_graph graph,
                 vx_uint32 graph_parameter_index,
-                vx_reference *refs,
+                const vx_reference *refs,
                 vx_uint32 num_refs)
 {
     return VX_ERROR_NOT_IMPLEMENTED;

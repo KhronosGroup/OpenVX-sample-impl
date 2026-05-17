@@ -543,6 +543,7 @@ VX_API_ENTRY vx_image VX_API_CALL vxCreateUniformImage(vx_context context, vx_ui
         {
             /* lock the image from being modified again! */
             ((vx_image_t *)image)->constant = vx_true_e;
+            ((vx_image_t *)image)->uniform_value = *value;
         }
     }
 
@@ -1164,6 +1165,33 @@ VX_API_ENTRY vx_status VX_API_CALL vxQueryImage(vx_image image, vx_enum attribut
                 else
                 {
                     status = VX_ERROR_INVALID_PARAMETERS;
+                }
+                break;
+            case VX_IMAGE_IS_UNIFORM:
+                if (VX_CHECK_PARAM(ptr, size, vx_bool, 0x3))
+                {
+                    *(vx_bool *)ptr = image->constant;
+                }
+                else
+                {
+                    status = VX_ERROR_INVALID_PARAMETERS;
+                }
+                break;
+            case VX_IMAGE_UNIFORM_VALUE:
+                if (image->constant == vx_true_e)
+                {
+                    if (VX_CHECK_PARAM(ptr, size, vx_pixel_value_t, 0x3))
+                    {
+                        *(vx_pixel_value_t *)ptr = image->uniform_value;
+                    }
+                    else
+                    {
+                        status = VX_ERROR_INVALID_PARAMETERS;
+                    }
+                }
+                else
+                {
+                    status = VX_ERROR_NOT_SUPPORTED;
                 }
                 break;
             default:

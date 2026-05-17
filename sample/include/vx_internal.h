@@ -1271,6 +1271,8 @@ typedef struct _vx_image {
     vx_image       subimages[VX_INT_MAX_REF];
     /*! \brief Indicates if the image is constant. */
     vx_bool        constant;
+    /*! \brief The uniform pixel value (valid when constant is true). */
+    vx_pixel_value_t uniform_value;
     /*! \brief The valid region */
     vx_rectangle_t region;
     /*! \brief The memory type */
