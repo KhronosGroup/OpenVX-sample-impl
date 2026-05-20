@@ -3,7 +3,7 @@
 
 <p align="center"><img width="30%" src="https://raw.githubusercontent.com/GPUOpen-ProfessionalCompute-Libraries/MIVisionX/master/docs/data/OpenVX_logo.png" /></p>
 
-# OpenVX 1.3 Sample Implementation
+# OpenVX 1.3.2 Sample Implementation
 
 <a href="https://www.khronos.org/openvx/" target="_blank">Khronos OpenVX™</a> is an open, royalty-free standard for cross platform acceleration of computer vision applications. OpenVX enables performance and power-optimized computer vision processing, especially important in embedded and real-time use cases such as face, body and gesture tracking, smart video surveillance, advanced driver assistance systems (ADAS), object and scene reconstruction, augmented reality, visual inspection, robotics and more.
 
@@ -26,22 +26,27 @@ This document outlines the purpose of this sample implementation as well as prov
 
 ## Purpose
 
-The purpose of this software package is to provide a sample implementation of the OpenVX 1.3 Specification that passes the conformance test. It is NOT intended to be a reference implementation. If there are any discrepancies with the OpenVX 1.3 specification, they are not intentional and the specification should take precedence. Many of the design decisions made in this sample implementation were motivated out of convenience rather than optimizing for performance. It is expected that vendor's implementations would choose to make different design choices based on their priorities, and the specification was written in such a way as to allow freedom to do so. Beyond the conformance tests, there was very limited testing, as this was not intended to be directly used as production software.
+The purpose of this software package is to provide a sample implementation of the OpenVX 1.3.2 Specification that passes the conformance test. It is NOT intended to be a reference implementation. If there are any discrepancies with the OpenVX 1.3.2 specification, they are not intentional and the specification should take precedence. Many of the design decisions made in this sample implementation were motivated out of convenience rather than optimizing for performance. It is expected that vendor's implementations would choose to make different design choices based on their priorities, and the specification was written in such a way as to allow freedom to do so. Beyond the conformance tests, there was very limited testing, as this was not intended to be directly used as production software.
 
-This sample implementation contains additional 'experimental' or 'internally proposed' features which are not included in OpenVX 1.3. Since these are not part of OpenVX, these are disabled by default in the build by using preprocessor definitions. These features may potentially be modified or may never be added to the OpenVX spec, and should not be relied on as such. Additional details on these preprocessor definitions can be found in the `BUILD_DEFINES` document in this same folder.
+This sample implementation contains additional 'experimental' or 'internally proposed' features which are not included in OpenVX 1.3.2. Since these are not part of OpenVX, these are disabled by default in the build by using preprocessor definitions. These features may potentially be modified or may never be added to the OpenVX spec, and should not be relied on as such. Additional details on these preprocessor definitions can be found in the `BUILD_DEFINES` document in this same folder.
 
 Future revisions of the OpenVX sample implementation may or may not be released, and Khronos is not actively maintaining a public open source sample implementation project.
 
 The following is a summary of what this sample implementation IS and IS NOT:
 
 **IS:**
-* Passing OpenVX 1.3 conformance tests
+* Passing OpenVX 1.3.2 conformance tests
+* Implementing the full core API (context, image, graph, kernel, node, scalar, array, object array, pyramid, remap, distribution, threshold, LUT, matrix, convolution, delay, tensor, meta format)
+* Implementing all standard vision and neural network kernels
+* Supporting extensions: Import/Export (IX), Neural Networks (NN), User Data Object, NNEF Import Kernel, U1 (binary image)
 
 **IS NOT:**
 * A reference implementation
 * Optimized
 * Production ready
 * Actively maintained by Khronos publicly
+
+> **Note:** The Pipelining, Streaming, and Event Queue extension APIs are present as stubs (return `VX_ERROR_NOT_IMPLEMENTED`). They are included for API compatibility but do not have functional implementations.
 
 ## Building and Executing
 
@@ -338,7 +343,7 @@ DYLD_LIBRARY_PATH=../$(TARGET_OUT) ../$(TARGET_OUT)/vx_test
 
 ## Sample Build Instructions
 
-### Sample 1 - Build OpenVX 1.3 on Ubuntu 22.04
+### Sample 1 - Build OpenVX 1.3.2 on Ubuntu 22.04
 
 * Install prerequisites
 
@@ -369,10 +374,10 @@ mkdir build-cts
 cd build-cts
 cmake -DOPENVX_INCLUDES=$OPENVX_DIR/include -DOPENVX_LIBRARIES=$OPENVX_DIR/bin/libopenvx.so\;$OPENVX_DIR/bin/libvxu.so\;pthread\;dl\;m\;rt -DOPENVX_CONFORMANCE_VISION=ON -DOPENVX_USE_ENHANCED_VISION=ON -DOPENVX_CONFORMANCE_NEURAL_NETWORKS=ON ../cts/
 cmake --build .
-LD_LIBRARY_PATH=./lib ./bin/vx_test_conformance
+LD_LIBRARY_PATH=$OPENVX_DIR/bin:./lib ./bin/vx_test_conformance
 ```
 
-### Sample 2 - Build OpenVX 1.3 on macOS
+### Sample 2 - Build OpenVX 1.3.2 on macOS
 
 * Ensure Xcode Command Line Tools are installed
 
@@ -402,12 +407,12 @@ mkdir build-cts
 cd build-cts
 cmake -DOPENVX_INCLUDES=$OPENVX_DIR/include -DOPENVX_LIBRARIES="$OPENVX_DIR/bin/libopenvx.dylib;$OPENVX_DIR/bin/libvxu.dylib;pthread;dl;m" -DOPENVX_CONFORMANCE_VISION=ON -DOPENVX_USE_ENHANCED_VISION=ON -DOPENVX_CONFORMANCE_NEURAL_NETWORKS=ON ../cts/
 cmake --build .
-DYLD_LIBRARY_PATH=./lib ./bin/vx_test_conformance
+DYLD_LIBRARY_PATH=$OPENVX_DIR/bin:./lib ./bin/vx_test_conformance
 ```
 
 > **Note:** On macOS, libraries use the `.dylib` extension instead of `.so`, and `DYLD_LIBRARY_PATH` is used instead of `LD_LIBRARY_PATH`.
 
-### Sample 3 - Build OpenVX 1.3 on Raspberry Pi
+### Sample 3 - Build OpenVX 1.3.2 on Raspberry Pi
 
 * Git clone project with recursive flag to get submodules
 
@@ -431,7 +436,7 @@ mkdir build-cts
 cd build-cts
 cmake -DOPENVX_INCLUDES=$OPENVX_DIR/include -DOPENVX_LIBRARIES=$OPENVX_DIR/bin/libopenvx.so\;$OPENVX_DIR/bin/libvxu.so\;pthread\;dl\;m\;rt -DOPENVX_CONFORMANCE_VISION=ON -DOPENVX_USE_ENHANCED_VISION=ON -DOPENVX_CONFORMANCE_NEURAL_NETWORKS=ON ../cts/
 cmake --build .
-LD_LIBRARY_PATH=./lib ./bin/vx_test_conformance
+LD_LIBRARY_PATH=$OPENVX_DIR/bin:./lib ./bin/vx_test_conformance
 ```
 
 ## Conformance Test Modes
@@ -454,7 +459,7 @@ python3 Build.py --os=Linux --arch=64 --conf=Debug --conf_vision
 mkdir build-cts-mode-1 && cd build-cts-mode-1
 cmake -DOPENVX_INCLUDES=$OPENVX_DIR/include -DOPENVX_LIBRARIES=$OPENVX_DIR/bin/libopenvx.so\;$OPENVX_DIR/bin/libvxu.so\;pthread\;dl\;m\;rt -DOPENVX_CONFORMANCE_VISION=ON ../cts/
 cmake --build .
-LD_LIBRARY_PATH=./lib ./bin/vx_test_conformance
+LD_LIBRARY_PATH=$OPENVX_DIR/bin:./lib ./bin/vx_test_conformance
 ```
 
 ### Mode 2 - Vision & Enhanced Vision Conformance
@@ -464,7 +469,7 @@ python3 Build.py --os=Linux --arch=64 --conf=Debug --conf_vision --enh_vision
 mkdir build-cts-mode-2 && cd build-cts-mode-2
 cmake -DOPENVX_INCLUDES=$OPENVX_DIR/include -DOPENVX_LIBRARIES=$OPENVX_DIR/bin/libopenvx.so\;$OPENVX_DIR/bin/libvxu.so\;pthread\;dl\;m\;rt -DOPENVX_CONFORMANCE_VISION=ON -DOPENVX_USE_ENHANCED_VISION=ON ../cts/
 cmake --build .
-LD_LIBRARY_PATH=./lib ./bin/vx_test_conformance
+LD_LIBRARY_PATH=$OPENVX_DIR/bin:./lib ./bin/vx_test_conformance
 ```
 
 ### Mode 3 - Neural Network Conformance
@@ -474,7 +479,7 @@ python3 Build.py --os=Linux --arch=64 --conf=Debug --conf_nn
 mkdir build-cts-mode-3 && cd build-cts-mode-3
 cmake -DOPENVX_INCLUDES=$OPENVX_DIR/include -DOPENVX_LIBRARIES=$OPENVX_DIR/bin/libopenvx.so\;$OPENVX_DIR/bin/libvxu.so\;pthread\;dl\;m\;rt -DOPENVX_CONFORMANCE_NEURAL_NETWORKS=ON ../cts/
 cmake --build .
-LD_LIBRARY_PATH=./lib ./bin/vx_test_conformance
+LD_LIBRARY_PATH=$OPENVX_DIR/bin:./lib ./bin/vx_test_conformance
 ```
 
 ### Mode 4 - NNEF Import Conformance
@@ -484,7 +489,7 @@ python3 Build.py --os=Linux --arch=64 --conf=Debug --conf_nnef
 mkdir build-cts-mode-4 && cd build-cts-mode-4
 cmake -DOPENVX_INCLUDES=$OPENVX_DIR/include -DOPENVX_LIBRARIES=$OPENVX_DIR/bin/libopenvx.so\;$OPENVX_DIR/bin/libvxu.so\;$OPENVX_DIR/bin/libnnef-lib.a\;pthread\;dl\;m\;rt -DOPENVX_CONFORMANCE_NNEF_IMPORT=ON ../cts/
 cmake --build .
-LD_LIBRARY_PATH=./lib ./bin/vx_test_conformance
+LD_LIBRARY_PATH=$OPENVX_DIR/bin:./lib ./bin/vx_test_conformance
 ```
 
 ### Mode 5 - Vision, Enhanced Vision, Neural Net, Import/Export, & U1
@@ -494,16 +499,32 @@ python3 Build.py --os=Linux --arch=64 --conf=Debug --conf_vision --enh_vision --
 mkdir build-cts-mode-5 && cd build-cts-mode-5
 cmake -DOPENVX_INCLUDES=$OPENVX_DIR/include -DOPENVX_LIBRARIES=$OPENVX_DIR/bin/libopenvx.so\;$OPENVX_DIR/bin/libvxu.so\;pthread\;dl\;m\;rt -DOPENVX_CONFORMANCE_VISION=ON -DOPENVX_USE_ENHANCED_VISION=ON -DOPENVX_CONFORMANCE_NEURAL_NETWORKS=ON -DOPENVX_USE_NN=ON -DOPENVX_USE_IX=ON -DOPENVX_USE_U1=ON ../cts/
 cmake --build .
-LD_LIBRARY_PATH=./lib ./bin/vx_test_conformance
+LD_LIBRARY_PATH=$OPENVX_DIR/bin:./lib ./bin/vx_test_conformance
 ```
 
-### Mode 6 - Vision, Enhanced Vision, Pipelining, & Streaming
+### Mode 6 - User Data Object
+
+```shell
+python3 Build.py --os=Linux --arch=64 --conf=Debug
+mkdir build-cts-mode-6 && cd build-cts-mode-6
+cmake -DOPENVX_INCLUDES=$OPENVX_DIR/include -DOPENVX_LIBRARIES=$OPENVX_DIR/bin/libopenvx.so\;$OPENVX_DIR/bin/libvxu.so\;pthread\;dl\;m\;rt -DOPENVX_USE_USER_DATA_OBJECT=ON ../cts/
+cmake --build .
+LD_LIBRARY_PATH=$OPENVX_DIR/bin:./lib ./bin/vx_test_conformance
+```
+
+> **Note:** Build.py does not have a `--user_data_object` flag. To enable User Data Object support, use CMake directly with `-DOPENVX_USE_USER_DATA_OBJECT=ON`.
+
+### Mode 7 - Vision, Enhanced Vision, Pipelining, & Streaming
 
 ```shell
 python3 Build.py --os=Linux --arch=64 --conf=Debug --conf_vision --enh_vision --pipelining --streaming
+mkdir build-cts-mode-7 && cd build-cts-mode-7
+cmake -DOPENVX_INCLUDES=$OPENVX_DIR/include -DOPENVX_LIBRARIES=$OPENVX_DIR/bin/libopenvx.so\;$OPENVX_DIR/bin/libvxu.so\;pthread\;dl\;m\;rt -DOPENVX_CONFORMANCE_VISION=ON -DOPENVX_USE_ENHANCED_VISION=ON -DOPENVX_USE_PIPELINING=ON -DOPENVX_USE_STREAMING=ON ../cts/
+cmake --build .
+LD_LIBRARY_PATH=$OPENVX_DIR/bin:./lib ./bin/vx_test_conformance
 ```
 
-> **Note:** CTS tests for Pipelining and Streaming are not yet available.
+> **Note:** The Pipelining, Streaming, and Event Queue APIs are stub implementations that return `VX_ERROR_NOT_IMPLEMENTED`. Conformance tests for this mode are expected to fail.
 
 ## Included Unit Tests
 
@@ -586,9 +607,16 @@ dpkg-deb -i <path>/openvx-*.deb
 
 The project uses GitLab CI (`.gitlab-ci.yml`) with an `ubuntu:22.04` image. The CI pipeline:
 
-1. Installs prerequisites: `cmake`, `git`, `python3`, `gcc`, `g++`
+1. Installs prerequisites: `cmake`, `make`, `git`, `python3`, `gcc`, `g++`
 2. Builds OpenVX in both Release and Debug configurations
-3. Runs all conformance test modes (Vision, Enhanced Vision, Neural Networks, NNEF Import, combined modes)
+3. Runs 7 conformance test modes:
+   - Mode 1: Vision
+   - Mode 2: Vision & Enhanced Vision
+   - Mode 3: Neural Networks
+   - Mode 4: NNEF Import
+   - Mode 5: Combined (Vision, Enhanced Vision, Neural Networks, Import/Export, U1)
+   - Mode 6: User Data Object
+   - Mode 7: Pipelining & Streaming (`allow_failure` -- stub implementation)
 
 Git submodules are fetched automatically via `GIT_SUBMODULE_STRATEGY: recursive`.
 
