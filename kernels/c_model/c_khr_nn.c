@@ -508,7 +508,7 @@ void PoolingKernelImpl(
         if (!max_pooling)
         {
             //result = conversion_24_8(result / (int16_t)(size_x * size_y));
-            result = CLAMP(result / (size_x * size_y), getMinValue(fmt), getMaxValue(fmt));
+            result = CLAMP(result / (int32_t)(size_x * size_y), getMinValue(fmt), getMaxValue(fmt));
         }
 
         const size_t output_byte_offset =

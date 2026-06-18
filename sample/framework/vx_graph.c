@@ -655,6 +655,26 @@ void ownDestructGraph(vx_reference ref)
         }
         ownRemoveNodeInt(&graph->nodes[0]);
     }
+    /* Release virtual objects scoped to this graph */
+    {
+        vx_context context = graph->base.context;
+        vx_uint32 r;
+        for (r = 0u; r < context->num_references; r++)
+        {
+            vx_reference virt_ref = context->reftable[r];
+            if (virt_ref != NULL && virt_ref->is_virtual == vx_true_e && virt_ref->scope == (vx_reference)graph)
+            {
+                if (virt_ref->external_count > 0)
+                {
+                    ownReleaseReferenceInt(&virt_ref, virt_ref->type, VX_EXTERNAL, NULL);
+                }
+                else if (virt_ref->internal_count > 0)
+                {
+                    ownDecrementReference(virt_ref, VX_INTERNAL);
+                }
+            }
+        }
+    }
     // execution lock?
     ownDestroySem(&graph->lock);
 }

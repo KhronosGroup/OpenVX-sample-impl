@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef _VX_INTERNAL_H_
-#define _VX_INTERNAL_H_
+#ifndef VX_INTERNAL_H_
+#define VX_INTERNAL_H_
 
 /*!
  * \file vx_internal.h

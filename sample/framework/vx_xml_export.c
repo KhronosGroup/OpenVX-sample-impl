@@ -902,7 +902,7 @@ static vx_status vxExportToXMLThreshold(FILE* fp, vx_reference refs[], vx_uint32
     indent[i] = '\0';
 
     fprintf(fp, "%s<threshold reference=\"%u\" elemType=\"%s\" true_value=\"%d\" false_value=\"%d\"%s",
-                 indent, r, type_pairs[j].name, thresh->true_value, thresh->false_value, refNameStr);
+                 indent, r, type_pairs[j].name, thresh->true_value.S32, thresh->false_value.S32, refNameStr);
 
     if (refs[r]->is_virtual == vx_true_e) /* is not virtual in 1.0, but check anyway */
     {

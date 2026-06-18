@@ -447,63 +447,70 @@ VX_API_ENTRY vx_status VX_API_CALL vxReadScalarValue(vx_scalar scalar, void *ptr
         return VX_ERROR_INVALID_PARAMETERS;
 
     ownSemWait(&scalar->base.lock);
-    vxPrintScalarValue(scalar);
-    switch (scalar->data_type)
+    if (scalar->data_addr != NULL && scalar->data_len != 0)
     {
-        case VX_TYPE_CHAR:
-            *(vx_char *)ptr = scalar->data.chr;
-            break;
-        case VX_TYPE_INT8:
-            *(vx_int8 *)ptr = scalar->data.s08;
-            break;
-        case VX_TYPE_UINT8:
-            *(vx_uint8 *)ptr = scalar->data.u08;
-            break;
-        case VX_TYPE_INT16:
-            *(vx_int16 *)ptr = scalar->data.s16;
-            break;
-        case VX_TYPE_UINT16:
-            *(vx_uint16 *)ptr = scalar->data.u16;
-            break;
-        case VX_TYPE_INT32:
-            *(vx_int32 *)ptr = scalar->data.s32;
-            break;
-        case VX_TYPE_UINT32:
-            *(vx_uint32 *)ptr = scalar->data.u32;
-            break;
-        case VX_TYPE_INT64:
-            *(vx_int64 *)ptr = scalar->data.s64;
-            break;
-        case VX_TYPE_UINT64:
-            *(vx_uint64 *)ptr = scalar->data.u64;
-            break;
+        memcpy(ptr, scalar->data_addr, scalar->data_len);
+    }
+    else
+    {
+        vxPrintScalarValue(scalar);
+        switch (scalar->data_type)
+        {
+            case VX_TYPE_CHAR:
+                *(vx_char *)ptr = scalar->data.chr;
+                break;
+            case VX_TYPE_INT8:
+                *(vx_int8 *)ptr = scalar->data.s08;
+                break;
+            case VX_TYPE_UINT8:
+                *(vx_uint8 *)ptr = scalar->data.u08;
+                break;
+            case VX_TYPE_INT16:
+                *(vx_int16 *)ptr = scalar->data.s16;
+                break;
+            case VX_TYPE_UINT16:
+                *(vx_uint16 *)ptr = scalar->data.u16;
+                break;
+            case VX_TYPE_INT32:
+                *(vx_int32 *)ptr = scalar->data.s32;
+                break;
+            case VX_TYPE_UINT32:
+                *(vx_uint32 *)ptr = scalar->data.u32;
+                break;
+            case VX_TYPE_INT64:
+                *(vx_int64 *)ptr = scalar->data.s64;
+                break;
+            case VX_TYPE_UINT64:
+                *(vx_uint64 *)ptr = scalar->data.u64;
+                break;
 #if OVX_SUPPORT_HALF_FLOAT
-        case VX_TYPE_FLOAT16:
-            *(vx_float16 *)ptr = scalar->data.f16;
-            break;
+            case VX_TYPE_FLOAT16:
+                *(vx_float16 *)ptr = scalar->data.f16;
+                break;
 #endif
-        case VX_TYPE_FLOAT32:
-            *(vx_float32 *)ptr = scalar->data.f32;
-            break;
-        case VX_TYPE_FLOAT64:
-            *(vx_float64 *)ptr = scalar->data.f64;
-            break;
-        case VX_TYPE_DF_IMAGE:
-            *(vx_df_image *)ptr = scalar->data.fcc;
-            break;
-        case VX_TYPE_ENUM:
-            *(vx_enum *)ptr = scalar->data.enm;
-            break;
-        case VX_TYPE_SIZE:
-            *(vx_size *)ptr = scalar->data.size;
-            break;
-        case VX_TYPE_BOOL:
-            *(vx_bool *)ptr = scalar->data.boolean;
-            break;
-        default:
-            VX_PRINT(VX_ZONE_ERROR, "some case is not covered in %s\n", __FUNCTION__);
-            status = VX_ERROR_NOT_SUPPORTED;
-            break;
+            case VX_TYPE_FLOAT32:
+                *(vx_float32 *)ptr = scalar->data.f32;
+                break;
+            case VX_TYPE_FLOAT64:
+                *(vx_float64 *)ptr = scalar->data.f64;
+                break;
+            case VX_TYPE_DF_IMAGE:
+                *(vx_df_image *)ptr = scalar->data.fcc;
+                break;
+            case VX_TYPE_ENUM:
+                *(vx_enum *)ptr = scalar->data.enm;
+                break;
+            case VX_TYPE_SIZE:
+                *(vx_size *)ptr = scalar->data.size;
+                break;
+            case VX_TYPE_BOOL:
+                *(vx_bool *)ptr = scalar->data.boolean;
+                break;
+            default:
+                VX_PRINT(VX_ZONE_ERROR, "some case is not covered in %s\n", __FUNCTION__);
+                status = VX_ERROR_NOT_SUPPORTED;
+                break;
+        }
     }
     ownSemPost(&scalar->base.lock);
     ownReadFromReference(&scalar->base);
@@ -521,64 +528,71 @@ VX_API_ENTRY vx_status VX_API_CALL vxWriteScalarValue(vx_scalar scalar, const vo
         return VX_ERROR_INVALID_PARAMETERS;
 
     ownSemWait(&scalar->base.lock);
-    switch (scalar->data_type)
+    if (scalar->data_addr != NULL && scalar->data_len != 0)
     {
-        case VX_TYPE_CHAR:
-            scalar->data.chr = *(vx_char *)ptr;
-            break;
-        case VX_TYPE_INT8:
-            scalar->data.s08 = *(vx_int8 *)ptr;
-            break;
-        case VX_TYPE_UINT8:
-            scalar->data.u08 = *(vx_uint8 *)ptr;
-            break;
-        case VX_TYPE_INT16:
-            scalar->data.s16 = *(vx_int16 *)ptr;
-            break;
-        case VX_TYPE_UINT16:
-            scalar->data.u16 = *(vx_uint16 *)ptr;
-            break;
-        case VX_TYPE_INT32:
-            scalar->data.s32 = *(vx_int32 *)ptr;
-            break;
-        case VX_TYPE_UINT32:
-            scalar->data.u32 = *(vx_uint32 *)ptr;
-            break;
-        case VX_TYPE_INT64:
-            scalar->data.s64 = *(vx_int64 *)ptr;
-            break;
-        case VX_TYPE_UINT64:
-            scalar->data.u64 = *(vx_uint64 *)ptr;
-            break;
-#if OVX_SUPPORT_HALF_FLOAT
-        case VX_TYPE_FLOAT16:
-            scalar->data.f16 = *(vx_float16 *)ptr;
-            break;
-#endif
-        case VX_TYPE_FLOAT32:
-            scalar->data.f32 = *(vx_float32 *)ptr;
-            break;
-        case VX_TYPE_FLOAT64:
-            scalar->data.f64 = *(vx_float64 *)ptr;
-            break;
-        case VX_TYPE_DF_IMAGE:
-            scalar->data.fcc = *(vx_df_image *)ptr;
-            break;
-        case VX_TYPE_ENUM:
-            scalar->data.enm = *(vx_enum *)ptr;
-            break;
-        case VX_TYPE_SIZE:
-            scalar->data.size = *(vx_size *)ptr;
-            break;
-        case VX_TYPE_BOOL:
-            scalar->data.boolean = *(vx_bool *)ptr;
-            break;
-        default:
-            VX_PRINT(VX_ZONE_ERROR, "some case is not covered in %s\n", __FUNCTION__);
-            status = VX_ERROR_NOT_SUPPORTED;
-            break;
+        memcpy(scalar->data_addr, ptr, scalar->data_len);
     }
-    vxPrintScalarValue(scalar);
+    else
+    {
+        switch (scalar->data_type)
+        {
+            case VX_TYPE_CHAR:
+                scalar->data.chr = *(vx_char *)ptr;
+                break;
+            case VX_TYPE_INT8:
+                scalar->data.s08 = *(vx_int8 *)ptr;
+                break;
+            case VX_TYPE_UINT8:
+                scalar->data.u08 = *(vx_uint8 *)ptr;
+                break;
+            case VX_TYPE_INT16:
+                scalar->data.s16 = *(vx_int16 *)ptr;
+                break;
+            case VX_TYPE_UINT16:
+                scalar->data.u16 = *(vx_uint16 *)ptr;
+                break;
+            case VX_TYPE_INT32:
+                scalar->data.s32 = *(vx_int32 *)ptr;
+                break;
+            case VX_TYPE_UINT32:
+                scalar->data.u32 = *(vx_uint32 *)ptr;
+                break;
+            case VX_TYPE_INT64:
+                scalar->data.s64 = *(vx_int64 *)ptr;
+                break;
+            case VX_TYPE_UINT64:
+                scalar->data.u64 = *(vx_uint64 *)ptr;
+                break;
+#if OVX_SUPPORT_HALF_FLOAT
+            case VX_TYPE_FLOAT16:
+                scalar->data.f16 = *(vx_float16 *)ptr;
+                break;
+#endif
+            case VX_TYPE_FLOAT32:
+                scalar->data.f32 = *(vx_float32 *)ptr;
+                break;
+            case VX_TYPE_FLOAT64:
+                scalar->data.f64 = *(vx_float64 *)ptr;
+                break;
+            case VX_TYPE_DF_IMAGE:
+                scalar->data.fcc = *(vx_df_image *)ptr;
+                break;
+            case VX_TYPE_ENUM:
+                scalar->data.enm = *(vx_enum *)ptr;
+                break;
+            case VX_TYPE_SIZE:
+                scalar->data.size = *(vx_size *)ptr;
+                break;
+            case VX_TYPE_BOOL:
+                scalar->data.boolean = *(vx_bool *)ptr;
+                break;
+            default:
+                VX_PRINT(VX_ZONE_ERROR, "some case is not covered in %s\n", __FUNCTION__);
+                status = VX_ERROR_NOT_SUPPORTED;
+                break;
+        }
+        vxPrintScalarValue(scalar);
+    }
     ownSemPost(&scalar->base.lock);
     ownWroteToReference(&scalar->base);
     return status;

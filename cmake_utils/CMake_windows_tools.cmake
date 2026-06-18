@@ -18,7 +18,7 @@
 
 # Compiler switches that CANNOT be modified during makefile generation
 set (ADD_C_FLAGS         "/Oi -D WINDOWS_ENABLE_CPLUSPLUS /GS")
-set (ADD_C_FLAGS_DEBUG   "-D _DEBUG /RTC1 /MTd")  #/MTd /Gm
+set (ADD_C_FLAGS_DEBUG   "-D _DEBUG /RTC1 /MTd /bigobj")  #/MTd /Gm
 set (ADD_C_FLAGS_RELEASE "/Zi /Gy -D NDEBUG /MT")# /Ob0") #/GL") #MT
 
 # Compiler switches that CAN be modified during makefile generation and configuration-independent

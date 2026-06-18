@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef _VX_EXTRAS_K_H_
-#define _VX_EXTRAS_K_H_
+#ifndef VX_EXTRAS_K_H_
+#define VX_EXTRAS_K_H_
 
 #include <VX/vx.h>
 #include <VX/vx_helper.h>

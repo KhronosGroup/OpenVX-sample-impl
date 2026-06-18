@@ -422,6 +422,7 @@ VX_API_ENTRY vx_threshold VX_API_CALL vxCreateThresholdForImage(vx_context conte
         VX_PRINT(VX_ZONE_ERROR, "Invalid threshold type\n");
         vxAddLogEntry(&context->base, VX_ERROR_INVALID_TYPE, "Invalid threshold type\n");
         threshold = (vx_threshold )ownGetErrorObject(context, VX_ERROR_INVALID_TYPE);
+        return threshold;
     }
 
     if ( ((vxIsValidThresholdFormat  (input_format) == vx_false_e) &&
@@ -432,6 +433,7 @@ VX_API_ENTRY vx_threshold VX_API_CALL vxCreateThresholdForImage(vx_context conte
         VX_PRINT(VX_ZONE_ERROR, "Invalid input or output format\n");
         vxAddLogEntry(&context->base, VX_ERROR_INVALID_TYPE, "Invalid input or output format\n");
         threshold = (vx_threshold )ownGetErrorObject(context, VX_ERROR_INVALID_TYPE);
+        return threshold;
     }
 
 
