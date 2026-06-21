@@ -85,6 +85,7 @@ def main():
     parser.add_option("--nn", dest="nn", help="Add -DOPENVX_USE_NN=ON to support the neural network extension", default=False, action='store_true')
     parser.add_option("--pipelining", dest="pipelining", help="Add -DOPENVX_USE_PIPELINING=ON to support the pipelining extension", default=False, action='store_true')
     parser.add_option("--streaming", dest="streaming", help="Add -DOPENVX_USE_STREAMING=ON to support the streaming extension", default=False, action='store_true')
+    parser.add_option("--userdataobj", dest="userdataobj", help="Add -DOPENVX_USE_USER_DATA_OBJECT=ON to support the user data object extension", default=False, action="store_true")
     parser.add_option("--opencl_interop", dest="opencl_interop", help="Add -DOPENVX_USE_OPENCL_INTEROP=ON to support OpenVX OpenCL InterOp", default=False, action='store_true')
     # Provisional extensions
     parser.add_option("--tiling", dest="tiling", help="Add -DOPENVX_USE_TILING=ON to support the tiling extension", default=False, action='store_true')
@@ -214,6 +215,8 @@ def main():
         cmd += ['-DOPENVX_USE_IX=ON']
     if options.nn:
         cmd += ['-DOPENVX_USE_NN=ON']
+    if options.userdataobj:
+        cmd += ['-DOPENVX_USE_USER_DATA_OBJECT=ON']
     if options.opencl_interop:
         cmd += ['-DOPENVX_USE_OPENCL_INTEROP=ON']
 #    if options.nn16:
