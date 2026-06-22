@@ -18,7 +18,7 @@
 # Global setup file for OpenVX CMake
 
 #
-cmake_minimum_required(VERSION 3.0.0)
+cmake_minimum_required(VERSION 3.5)
 
 file(READ "${CMAKE_SOURCE_DIR}/VERSION" OPENVX_VERSION)
 string(STRIP "${OPENVX_VERSION}" OPENVX_VERSION)

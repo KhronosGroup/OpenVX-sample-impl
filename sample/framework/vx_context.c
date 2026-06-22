@@ -565,6 +565,20 @@ VX_API_ENTRY vx_context VX_API_CALL vxCreateContext(void)
             ownInitQueue(&context->proc.output);
             context->proc.running = vx_true_e;
             context->proc.thread = ownCreateThread(vxWorkerGraph, &context->proc);
+#ifdef OPENVX_USE_PIPELINING
+            context->events_enabled = vx_false_e;
+            ownCreateSem(&context->event_lock, 1);
+            ownInitEvent(&context->event_ready, vx_false_e);
+            context->event_start = 0;
+            context->event_end = 0;
+            context->event_count = 0;
+            context->num_event_reg = 0;
+            for (vx_uint32 i = 0; i < VX_INT_MAX_REF; i++)
+            {
+                context->event_reg[i].registered = vx_false_e;
+                context->event_reg[i].ref = NULL;
+            }
+#endif
             single_context = context;
             context->imm_target_enum = VX_TARGET_ANY;
             memset(context->imm_target_string, 0, sizeof(context->imm_target_string));
@@ -611,7 +625,10 @@ VX_API_ENTRY vx_status VX_API_CALL vxReleaseContext(vx_context *c)
             ownJoinThread(context->proc.thread, NULL);
             ownDeinitQueue(&context->proc.output);
             ownDeinitQueue(&context->proc.input);
-
+#ifdef OPENVX_USE_PIPELINING
+            ownDestroySem(&context->event_lock);
+            ownDeinitEvent(&context->event_ready);
+#endif
             /* Deregister any log callbacks if there is any registered */
             vxRegisterLogCallback(context, NULL, vx_false_e);
 
