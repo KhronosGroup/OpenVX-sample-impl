@@ -199,6 +199,80 @@ static vx_status ownCopyImage_U8(vx_image input, vx_image output)
     return status;
 }
 
+static vx_status ownCopyImage_S16(vx_image input, vx_image output)
+{
+    vx_status status = VX_SUCCESS; // assume success until an error occurs.
+    vx_uint32 p = 0;
+    vx_uint32 y = 0, x = 0;
+    vx_size planes = 0;
+
+    void* src;
+    void* dst;
+    vx_imagepatch_addressing_t src_addr;
+    vx_imagepatch_addressing_t dst_addr;
+    vx_rectangle_t src_rect, dst_rect;
+    vx_map_id map_id1;
+    vx_map_id map_id2;
+    vx_df_image src_format = 0;
+    vx_df_image out_format = 0;
+
+    status |= vxQueryImage(input, VX_IMAGE_PLANES, &planes, sizeof(planes));
+    vxQueryImage(output, VX_IMAGE_FORMAT, &out_format, sizeof(out_format));
+    vxQueryImage(input, VX_IMAGE_FORMAT, &src_format, sizeof(src_format));
+
+    status |= vxGetValidRegionImage(input, &src_rect);
+    status |= vxGetValidRegionImage(output, &dst_rect);
+
+    vx_uint32 wWidth;
+    for (p = 0; p < planes && status == VX_SUCCESS; p++)
+    {
+        status = VX_SUCCESS;
+
+        src = NULL;
+        dst = NULL;
+
+        status |= vxMapImagePatch(input, &src_rect, p, &map_id1, &src_addr, &src, VX_READ_ONLY, VX_MEMORY_TYPE_HOST, 0);
+        status |= vxMapImagePatch(output, &dst_rect, p, &map_id2, &dst_addr, &dst, VX_WRITE_ONLY, VX_MEMORY_TYPE_HOST, 0);
+
+        wWidth = (src_addr.dim_x >> 3) << 3;
+        for (y = 0; y < src_addr.dim_y && status == VX_SUCCESS; y += src_addr.step_y)
+        {
+            vx_int16 *ptr_dst = (vx_int16 *)dst + y * dst_addr.stride_y/2;
+            vx_uint8 *ptr_src = (vx_uint8 *)src + y * src_addr.stride_y;
+            for (x = 0; x < wWidth; x += 8)
+            {
+                if (src_format == VX_DF_IMAGE_U8)
+                {
+                    uint8x8_t vSrc = vld1_u8(ptr_src + x * src_addr.stride_x);
+                    uint16x8_t vSrcu16 = vmovl_u8(vSrc);
+                    int16x8_t vSrcs16 = vcombine_s16(vreinterpret_s16_u16(vget_low_u16(vSrcu16)),
+                        vreinterpret_s16_u16(vget_high_u16(vSrcu16)));
+                    vst1q_s16(ptr_dst + x, vSrcs16);
+                }
+                else if (src_format == VX_DF_IMAGE_S16)
+                {
+                    int16x8_t vSrc = vld1q_s16((vx_int16 *)(ptr_src + x * src_addr.stride_x));
+                    vst1q_s16(ptr_dst + x, vSrc);
+                }
+            }
+            for (x = wWidth; x < src_addr.dim_x; x += src_addr.step_x)
+            {
+                void* srcp = vxFormatImagePatchAddress2d(src, x, y, &src_addr);
+                vx_int32 out0 = src_format == VX_DF_IMAGE_U8 ? *(vx_uint8 *)srcp : *(vx_int16 *)srcp;
+                ptr_dst[x] = out0;
+            }
+        }
+
+        if (status == VX_SUCCESS)
+        {
+            status |= vxUnmapImagePatch(input, map_id1);
+            status |= vxUnmapImagePatch(output, map_id2);
+        }
+    }
+
+    return status;
+}
+
 static vx_status VX_CALLBACK vxGaussianPyramidKernel(vx_node node, const vx_reference parameters[], vx_uint32 num)
 {
     vx_status status = VX_FAILURE;
@@ -741,10 +815,91 @@ static vx_param_description_t laplacian_reconstruct_kernel_params[] =
 
 static vx_status VX_CALLBACK vxLaplacianReconstructKernel(vx_node node, const vx_reference parameters[], vx_uint32 num)
 {
-    vx_status status = VX_FAILURE;
+    /* The reconstructed image must be recomputed against the current input data
+     * on every vxProcessGraph() call, so the work lives here rather than in the
+     * Initializer (which only runs once at verify time). */
+    vx_status status = VX_SUCCESS;
+
     if (num == dimof(laplacian_reconstruct_kernel_params))
     {
-        status = VX_SUCCESS;
+        vx_context context = vxGetContext((vx_reference)node);
+
+        vx_size lev;
+        vx_size levels = 1;
+        vx_uint32 width = 0;
+        vx_uint32 height = 0;
+        vx_uint32 level_width = 0;
+        vx_uint32 level_height = 0;
+        vx_df_image format = VX_DF_IMAGE_S16;
+        vx_enum policy = VX_CONVERT_POLICY_SATURATE;
+        vx_border_t border;
+        vx_image filling = 0;
+        vx_image pyr_level = 0;
+        vx_image filter = 0;
+        vx_image out = 0;
+        vx_convolution conv;
+
+        vx_pyramid laplacian = (vx_pyramid)parameters[0];
+        vx_image   input = (vx_image)parameters[1];
+        vx_image   output = (vx_image)parameters[2];
+
+        vx_scalar spolicy = vxCreateScalar(context, VX_TYPE_ENUM, &policy);
+
+        status |= vxQueryImage(input, VX_IMAGE_WIDTH, &width, sizeof(width));
+        status |= vxQueryImage(input, VX_IMAGE_HEIGHT, &height, sizeof(height));
+
+        status |= vxQueryPyramid(laplacian, VX_PYRAMID_LEVELS, &levels, sizeof(levels));
+
+        status |= vxQueryNode(node, VX_NODE_BORDER, &border, sizeof(border));
+        border.mode = VX_BORDER_REPLICATE;
+        conv = vxCreateGaussian5x5Convolution(context);
+
+        level_width = (vx_uint32)ceilf(width  * VX_SCALE_PYRAMID_DOUBLE);
+        level_height = (vx_uint32)ceilf(height * VX_SCALE_PYRAMID_DOUBLE);
+        filling = vxCreateImage(context, width, height, format);
+        for (lev = 0; lev < levels; lev++)
+        {
+            out = vxCreateImage(context, level_width, level_height, format);
+            filter = vxCreateImage(context, level_width, level_height, format);
+
+            pyr_level = vxGetPyramidLevel(laplacian, (vx_uint32)((levels - 1) - lev));
+
+            if (lev == 0)
+            {
+                ownCopyImage_S16(input, filling);
+            }
+            upsampleImage(context, level_width, level_height, filling, conv, filter, &border);
+            vxAddition(filter, pyr_level, spolicy, out);
+
+            status |= vxReleaseImage(&pyr_level);
+
+            if ((levels - 1) - lev == 0)
+            {
+                ownCopyImage(out, output);
+                status |= vxReleaseImage(&filling);
+            }
+            else
+            {
+                /* compute dimensions for the next level */
+                status |= vxReleaseImage(&filling);
+                filling = vxCreateImage(context, level_width, level_height, format);
+                ownCopyImage(out, filling);
+
+                level_width = (vx_uint32)ceilf(level_width  * VX_SCALE_PYRAMID_DOUBLE);
+                level_height = (vx_uint32)ceilf(level_height * VX_SCALE_PYRAMID_DOUBLE);
+
+
+            }
+            status |= vxReleaseImage(&out);
+            status |= vxReleaseImage(&filter);
+
+        }
+        status |= vxReleaseConvolution(&conv);
+        status |= vxReleaseScalar(&spolicy);
+    }
+    else
+    {
+        status = VX_FAILURE;
     }
     return status;
 }
@@ -887,160 +1042,18 @@ static vx_status VX_CALLBACK vxLaplacianReconstructOutputValidator(vx_node node,
     return status;
 }
 
-static vx_status ownCopyImage_S16(vx_image input, vx_image output)
-{
-    vx_status status = VX_SUCCESS; // assume success until an error occurs.
-    vx_uint32 p = 0;
-    vx_uint32 y = 0, x = 0;
-    vx_size planes = 0;
-
-    void* src;
-    void* dst;
-    vx_imagepatch_addressing_t src_addr;
-    vx_imagepatch_addressing_t dst_addr;
-    vx_rectangle_t src_rect, dst_rect;
-    vx_map_id map_id1;
-    vx_map_id map_id2;
-    vx_df_image src_format = 0;
-    vx_df_image out_format = 0;
-
-    status |= vxQueryImage(input, VX_IMAGE_PLANES, &planes, sizeof(planes));
-    vxQueryImage(output, VX_IMAGE_FORMAT, &out_format, sizeof(out_format));
-    vxQueryImage(input, VX_IMAGE_FORMAT, &src_format, sizeof(src_format));
-    
-    status |= vxGetValidRegionImage(input, &src_rect);
-    status |= vxGetValidRegionImage(output, &dst_rect);
-
-    vx_uint32 wWidth;
-    for (p = 0; p < planes && status == VX_SUCCESS; p++)
-    {
-        status = VX_SUCCESS;
-
-        src = NULL;
-        dst = NULL;
-
-        status |= vxMapImagePatch(input, &src_rect, p, &map_id1, &src_addr, &src, VX_READ_ONLY, VX_MEMORY_TYPE_HOST, 0);
-        status |= vxMapImagePatch(output, &dst_rect, p, &map_id2, &dst_addr, &dst, VX_WRITE_ONLY, VX_MEMORY_TYPE_HOST, 0);
-
-        wWidth = (src_addr.dim_x >> 3) << 3;
-        for (y = 0; y < src_addr.dim_y && status == VX_SUCCESS; y += src_addr.step_y)
-        {
-            vx_int16 *ptr_dst = (vx_int16 *)dst + y * dst_addr.stride_y/2;
-            vx_uint8 *ptr_src = (vx_uint8 *)src + y * src_addr.stride_y;
-            for (x = 0; x < wWidth; x += 8)
-            {
-                if (src_format == VX_DF_IMAGE_U8)
-                {
-                    uint8x8_t vSrc = vld1_u8(ptr_src + x * src_addr.stride_x);
-                    uint16x8_t vSrcu16 = vmovl_u8(vSrc);
-                    int16x8_t vSrcs16 = vcombine_s16(vreinterpret_s16_u16(vget_low_u16(vSrcu16)),
-                        vreinterpret_s16_u16(vget_high_u16(vSrcu16)));
-                    vst1q_s16(ptr_dst + x, vSrcs16);
-                }
-                else if (src_format == VX_DF_IMAGE_S16)
-                {
-                    int16x8_t vSrc = vld1q_s16((vx_int16 *)(ptr_src + x * src_addr.stride_x));
-                    vst1q_s16(ptr_dst + x, vSrc);
-                }
-            }
-            for (x = wWidth; x < src_addr.dim_x; x += src_addr.step_x)
-            {
-                void* srcp = vxFormatImagePatchAddress2d(src, x, y, &src_addr);
-                vx_int32 out0 = src_format == VX_DF_IMAGE_U8 ? *(vx_uint8 *)srcp : *(vx_int16 *)srcp;
-                ptr_dst[x] = out0;
-            }
-        }
-
-        if (status == VX_SUCCESS)
-        {
-            status |= vxUnmapImagePatch(input, map_id1);
-            status |= vxUnmapImagePatch(output, map_id2);
-        }
-    }
-
-    return status;
-}
-
 static vx_status VX_CALLBACK vxLaplacianReconstructInitializer(vx_node node, const vx_reference parameters[], vx_uint32 num)
 {
-    vx_status status = VX_SUCCESS;
+    /* No per-node local data to set up. The reconstruction work lives in
+     * vxLaplacianReconstructKernel so it is re-executed against the current
+     * input on every vxProcessGraph() call, per the OpenVX spec. */
+    vx_status status = VX_ERROR_INVALID_PARAMETERS;
+    (void)node;
+    (void)parameters;
 
     if (num == dimof(laplacian_reconstruct_kernel_params))
     {
-        vx_context context = vxGetContext((vx_reference)node);
-
-        vx_size lev;
-        vx_size levels = 1;
-        vx_uint32 width = 0;
-        vx_uint32 height = 0;
-        vx_uint32 level_width = 0;
-        vx_uint32 level_height = 0;
-        vx_df_image format = VX_DF_IMAGE_S16;
-        vx_enum policy = VX_CONVERT_POLICY_SATURATE;
-        vx_border_t border;
-        vx_image filling = 0;
-        vx_image pyr_level = 0;
-        vx_image filter = 0;
-        vx_image out = 0;
-        vx_convolution conv;
-
-        vx_pyramid laplacian = (vx_pyramid)parameters[0];
-        vx_image   input = (vx_image)parameters[1];
-        vx_image   output = (vx_image)parameters[2];
-
-        vx_scalar spolicy = vxCreateScalar(context, VX_TYPE_ENUM, &policy);
-
-        status |= vxQueryImage(input, VX_IMAGE_WIDTH, &width, sizeof(width));
-        status |= vxQueryImage(input, VX_IMAGE_HEIGHT, &height, sizeof(height));
-
-        status |= vxQueryPyramid(laplacian, VX_PYRAMID_LEVELS, &levels, sizeof(levels));
-
-        status |= vxQueryNode(node, VX_NODE_BORDER, &border, sizeof(border));
-        border.mode = VX_BORDER_REPLICATE;
-        conv = vxCreateGaussian5x5Convolution(context);
-
-        level_width = (vx_uint32)ceilf(width  * VX_SCALE_PYRAMID_DOUBLE);
-        level_height = (vx_uint32)ceilf(height * VX_SCALE_PYRAMID_DOUBLE);
-        filling = vxCreateImage(context, width, height, format);
-        for (lev = 0; lev < levels; lev++)
-        {
-            out = vxCreateImage(context, level_width, level_height, format);
-            filter = vxCreateImage(context, level_width, level_height, format);
-
-            pyr_level = vxGetPyramidLevel(laplacian, (vx_uint32)((levels - 1) - lev));
-
-            if (lev == 0)
-            {
-                ownCopyImage_S16(input, filling);
-            }
-            upsampleImage(context, level_width, level_height, filling, conv, filter, &border);
-            vxAddition(filter, pyr_level, spolicy, out);
-
-            status |= vxReleaseImage(&pyr_level);
-
-            if ((levels - 1) - lev == 0)
-            {
-                ownCopyImage(out, output);
-                status |= vxReleaseImage(&filling);
-            }
-            else
-            {
-                /* compute dimensions for the next level */
-                status |= vxReleaseImage(&filling);
-                filling = vxCreateImage(context, level_width, level_height, format);
-                ownCopyImage(out, filling);
-
-                level_width = (vx_uint32)ceilf(level_width  * VX_SCALE_PYRAMID_DOUBLE);
-                level_height = (vx_uint32)ceilf(level_height * VX_SCALE_PYRAMID_DOUBLE);
-
-
-            }
-            status |= vxReleaseImage(&out);
-            status |= vxReleaseImage(&filter);
-
-        }
-        status |= vxReleaseConvolution(&conv);
-        status |= vxReleaseScalar(&spolicy);
+        status = VX_SUCCESS;
     }
 
     return status;

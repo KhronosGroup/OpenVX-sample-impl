@@ -691,13 +691,99 @@ static vx_param_description_t laplacian_pyramid_kernel_params[] =
 
 static vx_status VX_CALLBACK vxLaplacianPyramidKernel(vx_node node, const vx_reference parameters[], vx_uint32 num)
 {
-    vx_status status = VX_FAILURE;
-    (void)node;
-    (void)parameters;
+    /* The Laplacian pyramid must be recomputed against the current input data on
+     * every vxProcessGraph() call. Keeping the computation here (rather than in
+     * the Initializer, which only runs once at verify time) ensures the output
+     * pyramid always reflects the latest input image. */
+    vx_status status = VX_SUCCESS;
 
     if (num == dimof(laplacian_pyramid_kernel_params))
     {
-        status = VX_SUCCESS;
+        vx_context context = vxGetContext((vx_reference)node);
+
+        vx_size lev;
+        vx_size levels = 1;
+        vx_uint32 width = 0;
+        vx_uint32 height = 0;
+        vx_uint32 level_width = 0;
+        vx_uint32 level_height = 0;
+        vx_df_image format;
+        vx_enum policy = VX_CONVERT_POLICY_SATURATE;
+        vx_border_t border;
+        vx_convolution conv = 0;
+        vx_image pyr_gauss_curr_level_filtered = 0;
+        vx_image pyr_laplacian_curr_level = 0;
+        vx_image   input = (vx_image)parameters[0];
+        vx_pyramid laplacian = (vx_pyramid)parameters[1];
+        vx_image   output = (vx_image)parameters[2];
+        vx_pyramid gaussian = 0;
+        vx_image gauss_cur = 0;
+        vx_image gauss_next = 0;
+
+        status |= vxQueryImage(input, VX_IMAGE_WIDTH, &width, sizeof(width));
+        status |= vxQueryImage(input, VX_IMAGE_HEIGHT, &height, sizeof(height));
+        status |= vxQueryImage(input, VX_IMAGE_FORMAT, &format, sizeof(format));
+
+        status |= vxQueryPyramid(laplacian, VX_PYRAMID_LEVELS, &levels, sizeof(levels));
+
+        status |= vxQueryNode(node, VX_NODE_BORDER, &border, sizeof(border));
+
+        border.mode = VX_BORDER_REPLICATE;
+
+        vxSetContextAttribute(context, VX_CONTEXT_IMMEDIATE_BORDER, &border, sizeof(border));
+
+        gaussian = vxCreatePyramid(context, levels + 1, VX_SCALE_PYRAMID_HALF, width, height, VX_DF_IMAGE_U8);
+        vxuGaussianPyramid(context, input, gaussian);
+
+        conv = vxCreateGaussian5x5Convolution(context);
+
+        level_width = width;
+        level_height = height;
+
+        gauss_cur = vxGetPyramidLevel(gaussian, 0);
+        gauss_next = vxGetPyramidLevel(gaussian, 1);
+        for (lev = 0; lev < levels; lev++)
+        {
+            pyr_gauss_curr_level_filtered = vxCreateImage(context, level_width, level_height, VX_DF_IMAGE_S16);
+            upsampleImage(context, level_width, level_height, gauss_next, conv, pyr_gauss_curr_level_filtered, &border);
+
+            pyr_laplacian_curr_level = vxGetPyramidLevel(laplacian, (vx_uint32)lev);
+            status |= vxuSubtract(context, gauss_cur, pyr_gauss_curr_level_filtered, policy, pyr_laplacian_curr_level);
+
+            if (lev == levels - 1)
+            {
+                vx_image tmp = vxGetPyramidLevel(gaussian, (vx_uint32) levels);
+                ownCopyImage(tmp, output);
+                vxReleaseImage(&tmp);
+                vxReleaseImage(&gauss_next);
+                vxReleaseImage(&gauss_cur);
+            }
+            else
+            {
+                /* compute dimensions for the next level */
+                level_width = (vx_uint32)ceilf(level_width * VX_SCALE_PYRAMID_HALF);
+                level_height = (vx_uint32)ceilf(level_height * VX_SCALE_PYRAMID_HALF);
+                /* prepare to the next iteration */
+                /* make the next level of gaussian pyramid the current level */
+                vxReleaseImage(&gauss_next);
+                vxReleaseImage(&gauss_cur);
+                gauss_cur = vxGetPyramidLevel(gaussian, (vx_uint32)lev + 1);
+                gauss_next = vxGetPyramidLevel(gaussian, (vx_uint32)lev + 2);
+
+            }
+
+            /* decrements the references */
+
+            status |= vxReleaseImage(&pyr_gauss_curr_level_filtered);
+            status |= vxReleaseImage(&pyr_laplacian_curr_level);
+        }
+
+        status |= vxReleasePyramid(&gaussian);
+        status |= vxReleaseConvolution(&conv);
+    }
+    else
+    {
+        status = VX_FAILURE;
     }
     return status;
 }
@@ -858,91 +944,16 @@ static vx_status VX_CALLBACK vxLaplacianPyramidOutputValidator(vx_node node, vx_
 
 static vx_status VX_CALLBACK vxLaplacianPyramidInitializer(vx_node node, const vx_reference parameters[], vx_uint32 num)
 {
-    vx_status status = VX_SUCCESS;
+    /* No per-node local data to set up. The pyramid computation deliberately
+     * lives in vxLaplacianPyramidKernel so it is re-executed against the current
+     * input on every vxProcessGraph() call, per the OpenVX spec. */
+    vx_status status = VX_ERROR_INVALID_PARAMETERS;
+    (void)node;
+    (void)parameters;
 
     if (num == dimof(laplacian_pyramid_kernel_params))
     {
-        vx_context context = vxGetContext((vx_reference)node);
-
-        vx_size lev;
-        vx_size levels = 1;
-        vx_uint32 width = 0;
-        vx_uint32 height = 0;
-        vx_uint32 level_width = 0;
-        vx_uint32 level_height = 0;
-        vx_df_image format;
-        vx_enum policy = VX_CONVERT_POLICY_SATURATE;
-        vx_border_t border;
-        vx_convolution conv = 0;
-        vx_image pyr_gauss_curr_level_filtered = 0;
-        vx_image pyr_laplacian_curr_level = 0;
-        vx_image   input = (vx_image)parameters[0];
-        vx_pyramid laplacian = (vx_pyramid)parameters[1];
-        vx_image   output = (vx_image)parameters[2];
-        vx_pyramid gaussian = 0;
-        vx_image gauss_cur = 0;
-        vx_image gauss_next = 0;
-
-        status |= vxQueryImage(input, VX_IMAGE_WIDTH, &width, sizeof(width));
-        status |= vxQueryImage(input, VX_IMAGE_HEIGHT, &height, sizeof(height));
-        status |= vxQueryImage(input, VX_IMAGE_FORMAT, &format, sizeof(format));
-
-        status |= vxQueryPyramid(laplacian, VX_PYRAMID_LEVELS, &levels, sizeof(levels));
-
-        status |= vxQueryNode(node, VX_NODE_BORDER, &border, sizeof(border));
-        
-        border.mode = VX_BORDER_REPLICATE;
-
-        vxSetContextAttribute(context, VX_CONTEXT_IMMEDIATE_BORDER, &border, sizeof(border));
-
-        gaussian = vxCreatePyramid(context, levels + 1, VX_SCALE_PYRAMID_HALF, width, height, VX_DF_IMAGE_U8);
-        vxuGaussianPyramid(context, input, gaussian);
-
-        conv = vxCreateGaussian5x5Convolution(context);
-
-        level_width = width;
-        level_height = height;
-
-        gauss_cur = vxGetPyramidLevel(gaussian, 0);
-        gauss_next = vxGetPyramidLevel(gaussian, 1);
-        for (lev = 0; lev < levels; lev++)
-        {
-            pyr_gauss_curr_level_filtered = vxCreateImage(context, level_width, level_height, VX_DF_IMAGE_S16);
-            upsampleImage(context, level_width, level_height, gauss_next, conv, pyr_gauss_curr_level_filtered, &border);
-
-            pyr_laplacian_curr_level = vxGetPyramidLevel(laplacian, (vx_uint32)lev);
-            status |= vxuSubtract(context, gauss_cur, pyr_gauss_curr_level_filtered, policy, pyr_laplacian_curr_level);
-
-            if (lev == levels - 1)
-            {
-                vx_image tmp = vxGetPyramidLevel(gaussian, (vx_uint32) levels);
-                ownCopyImage(tmp, output);
-                vxReleaseImage(&tmp);
-                vxReleaseImage(&gauss_next);
-                vxReleaseImage(&gauss_cur);
-            }
-            else
-            {
-                /* compute dimensions for the next level */
-                level_width = (vx_uint32)ceilf(level_width * VX_SCALE_PYRAMID_HALF);
-                level_height = (vx_uint32)ceilf(level_height * VX_SCALE_PYRAMID_HALF);
-                /* prepare to the next iteration */
-                /* make the next level of gaussian pyramid the current level */
-                vxReleaseImage(&gauss_next);
-                vxReleaseImage(&gauss_cur);
-                gauss_cur = vxGetPyramidLevel(gaussian, (vx_uint32)lev + 1);
-                gauss_next = vxGetPyramidLevel(gaussian, (vx_uint32)lev + 2);
-
-            }
-
-            /* decrements the references */
-
-            status |= vxReleaseImage(&pyr_gauss_curr_level_filtered);
-            status |= vxReleaseImage(&pyr_laplacian_curr_level);
-        }
-
-        status |= vxReleasePyramid(&gaussian);
-        status |= vxReleaseConvolution(&conv);
+        status = VX_SUCCESS;
     }
 
     return status;
@@ -988,13 +999,91 @@ static vx_param_description_t laplacian_reconstruct_kernel_params[] =
 
 static vx_status VX_CALLBACK vxLaplacianReconstructKernel(vx_node node, const vx_reference parameters[], vx_uint32 num)
 {
-    vx_status status = VX_FAILURE;
-    (void)node;
-    (void)parameters;
+    /* The reconstructed image must be recomputed against the current input data
+     * on every vxProcessGraph() call, so the work lives here rather than in the
+     * Initializer (which only runs once at verify time). */
+    vx_status status = VX_SUCCESS;
 
     if (num == dimof(laplacian_reconstruct_kernel_params))
     {
-        status = VX_SUCCESS;
+        vx_context context = vxGetContext((vx_reference)node);
+
+        vx_size lev;
+        vx_size levels = 1;
+        vx_uint32 width = 0;
+        vx_uint32 height = 0;
+        vx_uint32 level_width = 0;
+        vx_uint32 level_height = 0;
+        vx_df_image format = VX_DF_IMAGE_S16;
+        vx_enum policy = VX_CONVERT_POLICY_SATURATE;
+        vx_border_t border;
+        vx_image filling = 0;
+        vx_image pyr_level = 0;
+        vx_image filter = 0;
+        vx_image out = 0;
+        vx_convolution conv;
+
+        vx_pyramid laplacian = (vx_pyramid)parameters[0];
+        vx_image   input = (vx_image)parameters[1];
+        vx_image   output = (vx_image)parameters[2];
+
+        vx_scalar spolicy = vxCreateScalar(context, VX_TYPE_ENUM, &policy);
+
+        status |= vxQueryImage(input, VX_IMAGE_WIDTH, &width, sizeof(width));
+        status |= vxQueryImage(input, VX_IMAGE_HEIGHT, &height, sizeof(height));
+
+        status |= vxQueryPyramid(laplacian, VX_PYRAMID_LEVELS, &levels, sizeof(levels));
+
+        status |= vxQueryNode(node, VX_NODE_BORDER, &border, sizeof(border));
+        border.mode = VX_BORDER_REPLICATE;
+        conv = vxCreateGaussian5x5Convolution(context);
+
+        level_width = (vx_uint32)ceilf(width  * VX_SCALE_PYRAMID_DOUBLE);
+        level_height = (vx_uint32)ceilf(height * VX_SCALE_PYRAMID_DOUBLE);
+        filling = vxCreateImage(context, width, height, format);
+        for (lev = 0; lev < levels; lev++)
+        {
+            out = vxCreateImage(context, level_width, level_height, format);
+            filter = vxCreateImage(context, level_width, level_height, format);
+
+            pyr_level = vxGetPyramidLevel(laplacian, (vx_uint32)((levels - 1) - lev));
+
+            if (lev == 0)
+            {
+                ownCopyImage(input, filling);
+            }
+            upsampleImage(context, level_width, level_height, filling, conv, filter, &border);
+            vxAddition(filter, pyr_level, spolicy, out);
+
+            status |= vxReleaseImage(&pyr_level);
+
+            if ((levels - 1) - lev == 0)
+            {
+                ownCopyImage(out, output);
+                status |= vxReleaseImage(&filling);
+            }
+            else
+            {
+                /* compute dimensions for the next level */
+                status |= vxReleaseImage(&filling);
+                filling = vxCreateImage(context, level_width, level_height, format);
+                ownCopyImage(out, filling);
+
+                level_width = (vx_uint32)ceilf(level_width  * VX_SCALE_PYRAMID_DOUBLE);
+                level_height = (vx_uint32)ceilf(level_height * VX_SCALE_PYRAMID_DOUBLE);
+
+
+            }
+            status |= vxReleaseImage(&out);
+            status |= vxReleaseImage(&filter);
+
+        }
+        status |= vxReleaseConvolution(&conv);
+        status |= vxReleaseScalar(&spolicy);
+    }
+    else
+    {
+        status = VX_FAILURE;
     }
     return status;
 }
@@ -1140,84 +1229,16 @@ static vx_status VX_CALLBACK vxLaplacianReconstructOutputValidator(vx_node node,
 
 static vx_status VX_CALLBACK vxLaplacianReconstructInitializer(vx_node node, const vx_reference parameters[], vx_uint32 num)
 {
-    vx_status status = VX_SUCCESS;
+    /* No per-node local data to set up. The reconstruction work lives in
+     * vxLaplacianReconstructKernel so it is re-executed against the current
+     * input on every vxProcessGraph() call, per the OpenVX spec. */
+    vx_status status = VX_ERROR_INVALID_PARAMETERS;
+    (void)node;
+    (void)parameters;
 
     if (num == dimof(laplacian_reconstruct_kernel_params))
     {
-        vx_context context = vxGetContext((vx_reference)node);
-
-        vx_size lev;
-        vx_size levels = 1;
-        vx_uint32 width = 0;
-        vx_uint32 height = 0;
-        vx_uint32 level_width = 0;
-        vx_uint32 level_height = 0;
-        vx_df_image format = VX_DF_IMAGE_S16;
-        vx_enum policy = VX_CONVERT_POLICY_SATURATE;
-        vx_border_t border;
-        vx_image filling = 0;
-        vx_image pyr_level = 0;
-        vx_image filter = 0;
-        vx_image out = 0;
-        vx_convolution conv;
-
-        vx_pyramid laplacian = (vx_pyramid)parameters[0];
-        vx_image   input = (vx_image)parameters[1];
-        vx_image   output = (vx_image)parameters[2];
-
-        vx_scalar spolicy = vxCreateScalar(context, VX_TYPE_ENUM, &policy);
-
-        status |= vxQueryImage(input, VX_IMAGE_WIDTH, &width, sizeof(width));
-        status |= vxQueryImage(input, VX_IMAGE_HEIGHT, &height, sizeof(height));
-
-        status |= vxQueryPyramid(laplacian, VX_PYRAMID_LEVELS, &levels, sizeof(levels));
-
-        status |= vxQueryNode(node, VX_NODE_BORDER, &border, sizeof(border));
-        border.mode = VX_BORDER_REPLICATE;
-        conv = vxCreateGaussian5x5Convolution(context);
-
-        level_width = (vx_uint32)ceilf(width  * VX_SCALE_PYRAMID_DOUBLE);
-        level_height = (vx_uint32)ceilf(height * VX_SCALE_PYRAMID_DOUBLE);
-        filling = vxCreateImage(context, width, height, format);
-        for (lev = 0; lev < levels; lev++)
-        {
-            out = vxCreateImage(context, level_width, level_height, format);
-            filter = vxCreateImage(context, level_width, level_height, format);
-
-            pyr_level = vxGetPyramidLevel(laplacian, (vx_uint32)((levels - 1) - lev));
-
-            if (lev == 0)
-            {
-                ownCopyImage(input, filling);
-            }
-            upsampleImage(context, level_width, level_height, filling, conv, filter, &border);
-            vxAddition(filter, pyr_level, spolicy, out);
-
-            status |= vxReleaseImage(&pyr_level);
-
-            if ((levels - 1) - lev == 0)
-            {
-                ownCopyImage(out, output);
-                status |= vxReleaseImage(&filling);
-            }
-            else
-            {
-                /* compute dimensions for the next level */
-                status |= vxReleaseImage(&filling);
-                filling = vxCreateImage(context, level_width, level_height, format);
-                ownCopyImage(out, filling);
-
-                level_width = (vx_uint32)ceilf(level_width  * VX_SCALE_PYRAMID_DOUBLE);
-                level_height = (vx_uint32)ceilf(level_height * VX_SCALE_PYRAMID_DOUBLE);
-
-
-            }
-            status |= vxReleaseImage(&out);
-            status |= vxReleaseImage(&filter);
-
-        }
-        status |= vxReleaseConvolution(&conv);
-        status |= vxReleaseScalar(&spolicy);
+        status = VX_SUCCESS;
     }
 
     return status;
