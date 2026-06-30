@@ -219,6 +219,35 @@ jobs:
           retention-days: 7
 
   # ================================================================
+  # Phase 2 — CTS Core Vision kernels
+  # ================================================================
+  cts-vision-kernels:
+    needs: build-cts
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Download CTS artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: openvx-cts
+          path: ${{ github.workspace }}
+
+      - name: Download debug build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: openvx-debug
+          path: ${{ github.workspace }}
+
+      - name: Run CTS — Core Vision kernels
+        run: |
+          cd build-cts
+          chmod +x bin/vx_test_conformance
+          export LD_LIBRARY_PATH=${{ env.INSTALL_PREFIX }}/Linux/x64/Debug/lib
+          export VX_TEST_DATA_PATH=${{ github.workspace }}/cts/test_data/
+          timeout 1200 ./bin/vx_test_conformance \
+            --filter="Box3x3.*:Gaussian3x3.*:Median3x3.*:Dilate3x3.*:Erode3x3.*:Sobel3x3.*:Magnitude.*:Phase.*:NonLinearFilter.*:Convolve.*:EqualizeHistogram.*:ColorConvert.*:ChannelExtract.*:ChannelCombine.*:vxConvertDepth.*:vxuConvertDepth.*:vxAddSub.*:vxuAddSub.*:vxMultiply.*:vxuMultiply.*:vxBinOp8u.*:vxuBinOp8u.*:vxBinOp16s.*:vxuBinOp16s.*:vxNot.*:vxuNot.*:WeightedAverage.*:Threshold.*:Scale.*:WarpAffine.*:WarpPerspective.*:Remap.*:HalfScaleGaussian.*:HarrisCorners.*:FastCorners.*:vxCanny.*:vxuCanny.*:MeanStdDev.*:MinMaxLoc.*:Integral.*:GaussianPyramid.*:LaplacianPyramid.*:LaplacianReconstruct.*:OptFlowPyrLK.*" \
+            --verbose
+
+  # ================================================================
   # Phase 2 — CTS Enhanced Vision
   # ================================================================
   cts-enhanced-vision:
@@ -243,8 +272,8 @@ jobs:
           chmod +x bin/vx_test_conformance
           export LD_LIBRARY_PATH=${{ env.INSTALL_PREFIX }}/Linux/x64/Debug/lib
           export VX_TEST_DATA_PATH=${{ github.workspace }}/cts/test_data/
-          timeout 600 ./bin/vx_test_conformance \
-            --filter="Graph/Conv*:Graph/HoG*:Graph/Nonmax*:Graph/HoughLinesP*:Graph/Weighted*" \
+          timeout 1200 ./bin/vx_test_conformance \
+            --filter="Graph/Conv*:Graph/HoG*:Graph/Nonmax*:Graph/HoughLinesP*:Graph/Weighted*:HogCells.*:HogFeatures.*:MatchTemplate.*:LBP.*:Copy.*:Nonmaxsuppression.*:Houghlinesp.*:BilateralFilter.*:ControlFlow.*:TensorOp.*:Min.*:Max.*:Tensor.*:TensorEnhanced.*" \
             --verbose
 
   # ================================================================
@@ -275,7 +304,7 @@ jobs:
           chmod +x bin/vx_test_conformance
           export LD_LIBRARY_PATH=${{ env.INSTALL_PREFIX }}/Linux/x64/Debug/lib
           export VX_TEST_DATA_PATH=${{ github.workspace }}/cts/test_data/
-          timeout 600 ./bin/vx_test_conformance \
+          timeout 1200 ./bin/vx_test_conformance \
             --filter="TensorNetworks.*:-TensorNetworks.AlexNetTestNetwork:*NN*:VxKernelOfNNAndNNEF.*:VxParameterOfNNAndNNEF.*:MetaFormatOfNNAndNNEF.*:UserKernelsOfNNAndNNEF.*" \
             --verbose
 
@@ -402,7 +431,7 @@ jobs:
   # Phase 3 — Build main branch release (PR only, for perf comparison)
   # ================================================================
   build-main:
-    name: Build Release (main)
+    name: Build Release (${{ github.base_ref }})
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-22.04
     steps:
@@ -416,7 +445,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y build-essential cmake
 
-      - name: Build OpenVX sample impl (Release) from main
+      - name: Build OpenVX sample impl (Release) from ${{ github.base_ref }}
         run: |
           # main branch may not yet have --userdataobj support
           if grep -q 'userdataobj' Build.py; then EXTRA="--userdataobj"; fi
@@ -441,10 +470,15 @@ jobs:
           retention-days: 1
 
   # ================================================================
-  # Phase 3 — Performance gate: openvx-mark benchmark PR vs main
+  # Phase 3 — Performance gate: openvx-mark benchmark PR vs base ref
+  #
+  # Adapted from the rustVX workflow. This job builds the same openvx-mark
+  # workload twice on the SAME runner — once against the PR's Release build
+  # and once against the merge target's Release build — then runs an
+  # automated perf gate with configurable geomean and per-kernel floors.
   # ================================================================
   perf-gate:
-    name: Perf gate (PR vs main)
+    name: Perf gate (PR vs ${{ github.base_ref }})
     if: github.event_name == 'pull_request'
     needs:
       - build-release
@@ -458,7 +492,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential cmake git
+          sudo apt-get install -y build-essential cmake git python3
 
       - name: Download PR release build artifacts
         uses: actions/download-artifact@v4
@@ -466,7 +500,7 @@ jobs:
           name: openvx-release
           path: ${{ github.workspace }}/pr-build
 
-      - name: Download main release build artifacts
+      - name: Download base ref release build artifacts
         uses: actions/download-artifact@v4
         with:
           name: openvx-release-main
@@ -483,7 +517,7 @@ jobs:
           ls -la "$INC_DIR/VX/vx.h"
           ls -la "$LIB_DIR"
 
-      - name: Stage main OpenVX libraries
+      - name: Stage base ref OpenVX libraries
         id: main_openvx
         run: |
           set -euo pipefail
@@ -510,7 +544,7 @@ jobs:
             ..
           cmake --build . -j$(nproc)
 
-      - name: Build openvx-mark against main release
+      - name: Build openvx-mark against base ref release
         run: |
           mkdir -p ${{ github.workspace }}/openvx-mark/build-main
           cd ${{ github.workspace }}/openvx-mark/build-main
@@ -521,37 +555,224 @@ jobs:
             ..
           cmake --build . -j$(nproc)
 
-      - name: Run openvx-mark benchmarks (PR)
+      # Per-library "warmup + measure" cycles, back-to-back on the same VM
+      # so both libraries see comparable cache/thermal state.
+      - name: Bench + perf gate (with retry for VM noise)
         run: |
-          cd ${{ github.workspace }}/openvx-mark/build-pr
-          export LD_LIBRARY_PATH=${{ steps.pr_openvx.outputs.lib_dir }}
-          timeout 300 ./openvx-mark --resolution FHD --iterations 5 --warmup 1 \
-            --output ${{ github.workspace }}/pr-results.json || true
+          set -uo pipefail
 
-      - name: Run openvx-mark benchmarks (main)
-        run: |
-          cd ${{ github.workspace }}/openvx-mark/build-main
-          export LD_LIBRARY_PATH=${{ steps.main_openvx.outputs.lib_dir }}
-          timeout 300 ./openvx-mark --resolution FHD --iterations 5 --warmup 1 \
-            --output ${{ github.workspace }}/main-results.json || true
+          PR_LIB=${{ steps.pr_openvx.outputs.lib_dir }}
+          MAIN_LIB=${{ steps.main_openvx.outputs.lib_dir }}
+          PR_BUILD=${{ github.workspace }}/openvx-mark/build-pr
+          MAIN_BUILD=${{ github.workspace }}/openvx-mark/build-main
+          PR_JSON=$PR_BUILD/benchmark_results/benchmark_results.json
+          MAIN_JSON=$MAIN_BUILD/benchmark_results/benchmark_results.json
 
-      - name: Compare benchmark results
-        run: |
-          echo "=== PR Results ==="
-          cat ${{ github.workspace }}/pr-results.json 2>/dev/null || echo "No PR results"
-          echo ""
-          echo "=== Main Results ==="
-          cat ${{ github.workspace }}/main-results.json 2>/dev/null || echo "No main results"
-          echo ""
-          echo "Perf comparison complete. Manual review of results recommended."
+          MAX_RETRIES=3
+          for attempt in $(seq 1 $MAX_RETRIES); do
+            echo ""
+            echo "=== Perf gate attempt $attempt / $MAX_RETRIES ==="
+            echo ""
 
-      - name: Upload benchmark results
+            # Bench PR
+            cd "$PR_BUILD"
+            export LD_LIBRARY_PATH=$PR_LIB
+            ./openvx-mark --resolution FHD --iterations 5 --warmup 0 \
+              --output /tmp/warmup-pr-throwaway-$attempt >/dev/null 2>&1 || true
+            ./openvx-mark --resolution FHD --iterations 20 --warmup 5
+
+            # Bench base ref
+            cd "$MAIN_BUILD"
+            export LD_LIBRARY_PATH=$MAIN_LIB
+            ./openvx-mark --resolution FHD --iterations 5 --warmup 0 \
+              --output /tmp/warmup-main-throwaway-$attempt >/dev/null 2>&1 || true
+            ./openvx-mark --resolution FHD --iterations 20 --warmup 5
+
+            if [ ! -f "$PR_JSON" ] || [ ! -f "$MAIN_JSON" ]; then
+              echo "::error::Missing benchmark JSONs on attempt $attempt."
+              ls -la "$(dirname "$PR_JSON")" "$(dirname "$MAIN_JSON")" 2>/dev/null || true
+              if [ $attempt -eq $MAX_RETRIES ]; then exit 1; fi
+              continue
+            fi
+
+            set +e
+            python3 ${{ github.workspace }}/.github/scripts/perf_gate.py \
+              "$MAIN_JSON" "$PR_JSON" \
+              --geomean-floor 0.97 \
+              --kernel-floor 0.90 \
+              --warn-floor 0.95 \
+              --max-cv 5.0 \
+              --summary-out "$GITHUB_STEP_SUMMARY"
+            gate_exit=$?
+            set -e
+
+            if [ $gate_exit -eq 0 ]; then
+              echo ""
+              echo "✅ Perf gate PASSED on attempt $attempt"
+              echo ""
+              exit 0
+            else
+              echo ""
+              echo "⚠️ Perf gate FAILED on attempt $attempt"
+              echo ""
+              rm -f "$PR_JSON" "$MAIN_JSON"
+              if [ $attempt -eq $MAX_RETRIES ]; then
+                echo "::error::Perf gate failed after $MAX_RETRIES attempts. Likely real regression."
+                exit 1
+              fi
+            fi
+          done
+
+      - name: Upload PR benchmark results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: perf-gate-results
+          name: perf-gate-results-pr
+          path: ${{ github.workspace }}/openvx-mark/build-pr/benchmark_results/
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Upload base ref benchmark results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: perf-gate-results-main
+          path: ${{ github.workspace }}/openvx-mark/build-main/benchmark_results/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  # ================================================================
+  # Phase 3 — Benchmark comparison against rustVX (same runner)
+  #
+  # Mirrors rustVX's Khronos-vs-rustVX benchmark job. On every PR and
+  # push, download the pre-built rustVX release artifact (built by the
+  # rustVX project) and run openvx-mark against it on the same VM that
+  # benchmarks the Khronos sample, producing a direct same-hardware
+  # comparison. This is informational only (continue-on-error).
+  # ================================================================
+  benchmark-vs-rustvx:
+    name: Benchmark vs rustVX (informational)
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/openvx_1.3'
+    needs:
+      - build-release
+      - cts-baseline
+    runs-on: ubuntu-22.04
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake git python3
+
+      - name: Download Khronos sample release artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: openvx-release
+          path: ${{ github.workspace }}/khronos-pkg
+
+      - name: Stage Khronos OpenVX libraries
+        id: khronos
+        run: |
+          set -euo pipefail
+          LIB_DIR=${{ github.workspace }}/khronos-pkg/Linux/x64/Release/lib
+          INC_DIR=${{ github.workspace }}/khronos-pkg/include
+          echo "lib_dir=$LIB_DIR" >> "$GITHUB_OUTPUT"
+          echo "include_dir=$INC_DIR" >> "$GITHUB_OUTPUT"
+          ls -la "$LIB_DIR"
+
+      - name: Fetch latest rustVX release artifact
+        uses: dawidd6/action-download-artifact@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          repo: kiritigowda/rustVX
+          branch: main
+          workflow: conformance.yml
+          name: build-artifacts
+          path: ${{ github.workspace }}/rustvx-pkg
+          if_no_artifact_found: warn
+
+      - name: Stage rustVX library
+        id: rustvx
+        if: hashFiles('rustvx-pkg/**/libopenvx_ffi.so') != ''
+        run: |
+          set -euo pipefail
+          LIB_SRC=$(find ${{ github.workspace }}/rustvx-pkg -name "libopenvx_ffi.so" -print -quit)
+          LIB_DIR=$(dirname "$LIB_SRC")
+          INC_DIR=${{ github.workspace }}/rustvx-pkg/include
+          cd "$LIB_DIR"
+          ln -sf libopenvx_ffi.so libopenvx.so
+          ln -sf libopenvx_ffi.so libvxu.so
+          echo "lib_dir=$LIB_DIR" >> "$GITHUB_OUTPUT"
+          echo "include_dir=$INC_DIR" >> "$GITHUB_OUTPUT"
+          ls -la libopenvx*.so libvxu*.so
+
+      - name: Clone openvx-mark
+        run: |
+          git clone --depth 1 https://github.com/kiritigowda/openvx-mark.git \
+            ${{ github.workspace }}/openvx-mark
+
+      - name: Build openvx-mark against Khronos sample
+        run: |
+          mkdir -p ${{ github.workspace }}/openvx-mark/build-khronos
+          cd ${{ github.workspace }}/openvx-mark/build-khronos
+          cmake \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DOPENVX_INCLUDES=${{ steps.khronos.outputs.include_dir }} \
+            -DOPENVX_LIBRARIES="${{ steps.khronos.outputs.lib_dir }}/libopenvx.so;${{ steps.khronos.outputs.lib_dir }}/libvxu.so" \
+            ..
+          cmake --build . -j$(nproc)
+
+      - name: Build openvx-mark against rustVX
+        if: steps.rustvx.outputs.lib_dir != ''
+        run: |
+          mkdir -p ${{ github.workspace }}/openvx-mark/build-rustvx
+          cd ${{ github.workspace }}/openvx-mark/build-rustvx
+          cmake \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DOPENVX_INCLUDES=${{ steps.rustvx.outputs.include_dir }} \
+            -DOPENVX_LIBRARIES="${{ steps.rustvx.outputs.lib_dir }}/libopenvx.so;${{ steps.rustvx.outputs.lib_dir }}/libvxu.so" \
+            ..
+          cmake --build . -j$(nproc)
+
+      - name: Run benchmark (Khronos sample)
+        run: |
+          cd ${{ github.workspace }}/openvx-mark/build-khronos
+          export LD_LIBRARY_PATH=${{ steps.khronos.outputs.lib_dir }}
+          timeout 300 ./openvx-mark --resolution FHD --iterations 20 --warmup 5
+
+      - name: Run benchmark (rustVX)
+        if: steps.rustvx.outputs.lib_dir != ''
+        run: |
+          cd ${{ github.workspace }}/openvx-mark/build-rustvx
+          export LD_LIBRARY_PATH=${{ steps.rustvx.outputs.lib_dir }}
+          timeout 300 ./openvx-mark --resolution FHD --iterations 20 --warmup 5
+
+      - name: Compare Khronos sample vs rustVX
+        if: steps.rustvx.outputs.lib_dir != ''
+        run: |
+          set -euo pipefail
+          KHRONOS=${{ github.workspace }}/openvx-mark/build-khronos/benchmark_results/benchmark_results.json
+          RUSTVX=${{ github.workspace }}/openvx-mark/build-rustvx/benchmark_results/benchmark_results.json
+          if [ ! -f "$KHRONOS" ] || [ ! -f "$RUSTVX" ]; then
+            echo "Skipping comparison — one or both benchmark results missing"
+            exit 0
+          fi
+          python3 ${{ github.workspace }}/openvx-mark/scripts/compare_reports.py \
+            "$KHRONOS" "$RUSTVX" \
+            --output ${{ github.workspace }}/openvx-mark/comparison
+          cat ${{ github.workspace }}/openvx-mark/comparison.md >> "$GITHUB_STEP_SUMMARY" || true
+
+      - name: Upload benchmark artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-vs-rustvx-results
           path: |
-            ${{ github.workspace }}/pr-results.json
-            ${{ github.workspace }}/main-results.json
+            ${{ github.workspace }}/openvx-mark/build-*/benchmark_results/
+            ${{ github.workspace }}/openvx-mark/comparison.*
           if-no-files-found: ignore
           retention-days: 7
