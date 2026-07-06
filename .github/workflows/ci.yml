@@ -73,7 +73,7 @@ jobs:
           path: |
             ${{ env.INSTALL_PREFIX }}/Linux/x64/Debug/
             include/
-          retention-days: 1
+          retention-days: 7
 
   # ================================================================
   # Phase 1 — Build Release (for performance benchmarking)
@@ -110,7 +110,7 @@ jobs:
           path: |
             ${{ env.INSTALL_PREFIX }}/Linux/x64/Release/
             include/
-          retention-days: 1
+          retention-days: 7
 
   # ================================================================
   # Phase 1 — Build CTS (against debug build)
@@ -168,7 +168,7 @@ jobs:
           path: |
             build-cts/
             cts/test_data/
-          retention-days: 1
+          retention-days: 7
 
   # ================================================================
   # Phase 2 — Run CTS smoke / baseline + collect coverage
@@ -459,7 +459,7 @@ jobs:
           path: |
             ${{ env.INSTALL_PREFIX }}/Linux/x64/Release/
             include/
-          retention-days: 1
+          retention-days: 7
 
   # ================================================================
   # Phase 3 — Performance gate: openvx-mark benchmark PR vs base ref
