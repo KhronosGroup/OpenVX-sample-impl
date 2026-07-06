@@ -571,7 +571,7 @@ jobs:
           cmake \
             -DCMAKE_BUILD_TYPE=Release \
             -DOPENVX_INCLUDES=${{ steps.pr_openvx.outputs.include_dir }} \
-            -DOPENVX_LIBRARIES="${{ steps.pr_openvx.outputs.lib_dir }}/libopenvx.so;${{ steps.pr_openvx.outputs.lib_dir }}/libvxu.so" \
+            -DOPENVX_LIB_DIR=${{ steps.pr_openvx.outputs.lib_dir }} \
             ..
           cmake --build . -j$(nproc)
 
@@ -582,7 +582,7 @@ jobs:
           cmake \
             -DCMAKE_BUILD_TYPE=Release \
             -DOPENVX_INCLUDES=${{ steps.main_openvx.outputs.include_dir }} \
-            -DOPENVX_LIBRARIES="${{ steps.main_openvx.outputs.lib_dir }}/libopenvx.so;${{ steps.main_openvx.outputs.lib_dir }}/libvxu.so" \
+            -DOPENVX_LIB_DIR=${{ steps.main_openvx.outputs.lib_dir }} \
             ..
           cmake --build . -j$(nproc)
 
@@ -760,7 +760,7 @@ jobs:
           cmake \
             -DCMAKE_BUILD_TYPE=Release \
             -DOPENVX_INCLUDES=${{ steps.khronos.outputs.include_dir }} \
-            -DOPENVX_LIBRARIES="${{ steps.khronos.outputs.lib_dir }}/libopenvx.so;${{ steps.khronos.outputs.lib_dir }}/libvxu.so" \
+            -DOPENVX_LIB_DIR=${{ steps.khronos.outputs.lib_dir }} \
             ..
           cmake --build . -j$(nproc)
 
@@ -772,7 +772,7 @@ jobs:
           cmake \
             -DCMAKE_BUILD_TYPE=Release \
             -DOPENVX_INCLUDES=${{ steps.rustvx.outputs.include_dir }} \
-            -DOPENVX_LIBRARIES="${{ steps.rustvx.outputs.lib_dir }}/libopenvx.so;${{ steps.rustvx.outputs.lib_dir }}/libvxu.so" \
+            -DOPENVX_LIB_DIR=${{ steps.rustvx.outputs.lib_dir }} \
             ..
           cmake --build . -j$(nproc)
 
