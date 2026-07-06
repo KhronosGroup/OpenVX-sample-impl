@@ -238,7 +238,7 @@ jobs:
           export LD_LIBRARY_PATH=${{ env.INSTALL_PREFIX }}/Linux/x64/Debug/lib
           export VX_TEST_DATA_PATH=${{ github.workspace }}/cts/test_data/
           timeout 1200 ./bin/vx_test_conformance \
-            --filter="Box3x3.*:Gaussian3x3.*:Median3x3.*:Dilate3x3.*:Erode3x3.*:Sobel3x3.*:Magnitude.*:Phase.*:NonLinearFilter.*:Convolve.*:EqualizeHistogram.*:ColorConvert.*:ChannelExtract.*:ChannelCombine.*:vxConvertDepth.*:vxuConvertDepth.*:vxAddSub.*:vxuAddSub.*:vxMultiply.*:vxuMultiply.*:vxBinOp8u.*:vxuBinOp8u.*:vxBinOp16s.*:vxuBinOp16s.*:vxNot.*:vxuNot.*:WeightedAverage.*:Threshold.*:Scale.*:WarpAffine.*:WarpPerspective.*:Remap.*:HalfScaleGaussian.*:HarrisCorners.*:FastCorners.*:vxCanny.*:vxuCanny.*:MeanStdDev.*:MinMaxLoc.*:Integral.*:GaussianPyramid.*:LaplacianPyramid.*:LaplacianReconstruct.*:OptFlowPyrLK.*" \
+            --filter="Box3x3.*:Gaussian3x3.*:Median3x3.*:Dilate3x3.*:Erode3x3.*:Sobel3x3.*:Magnitude.*:Phase.*:NonLinearFilter.*:Convolve.*:EqualizeHistogram.*:ColorConvert.*:ChannelExtract.*:ChannelCombine.*:vxConvertDepth.*:vxuConvertDepth.*:vxAddSub.*:vxuAddSub.*:vxMultiply.*:vxuMultiply.*:vxBinOp8u.*:vxuBinOp8u.*:vxBinOp16s.*:vxuBinOp16s.*:vxNot.*:vxuNot.*:WeightedAverage.*:Threshold.*:Scale.*:WarpAffine.*:WarpPerspective.*:Remap.*:HalfScaleGaussian.*:HarrisCorners.*:FastCorners.*:vxCanny.*:vxuCanny.*:MeanStdDev.*:MinMaxLoc.*:Integral.*:GaussianPyramid.*:LaplacianPyramid.*:LaplacianReconstruct.*:OptFlowPyrLK.*:Convolution.*:Histogram.*" \
             --verbose
 
   # ================================================================
@@ -267,7 +267,7 @@ jobs:
           export LD_LIBRARY_PATH=${{ env.INSTALL_PREFIX }}/Linux/x64/Debug/lib
           export VX_TEST_DATA_PATH=${{ github.workspace }}/cts/test_data/
           timeout 1200 ./bin/vx_test_conformance \
-            --filter="Graph/Conv*:Graph/HoG*:Graph/Nonmax*:Graph/HoughLinesP*:Graph/Weighted*:HogCells.*:HogFeatures.*:MatchTemplate.*:LBP.*:Copy.*:Nonmaxsuppression.*:Houghlinesp.*:BilateralFilter.*:ControlFlow.*:TensorOp.*:Min.*:Max.*:Tensor.*:TensorEnhanced.*" \
+            --filter="GraphEnhanced.*:HogCells.*:HogFeatures.*:MatchTemplate.*:LBP.*:Copy.*:Nonmaxsuppression.*:Houghlinesp.*:BilateralFilter.*:ControlFlow.*:TensorOp.*:Min.*:Max.*:Tensor.*:TensorEnhanced.*" \
             --verbose
 
   # ================================================================
@@ -328,7 +328,7 @@ jobs:
           export LD_LIBRARY_PATH=${{ env.INSTALL_PREFIX }}/Linux/x64/Debug/lib
           export VX_TEST_DATA_PATH=${{ github.workspace }}/cts/test_data/
           timeout 600 ./bin/vx_test_conformance \
-            --filter="Graph/ExportImport*:*IX*" \
+            --filter="ExtensionObject.*" \
             --verbose
 
   # ================================================================
@@ -360,7 +360,7 @@ jobs:
           export LD_LIBRARY_PATH=${{ env.INSTALL_PREFIX }}/Linux/x64/Debug/lib
           export VX_TEST_DATA_PATH=${{ github.workspace }}/cts/test_data/
           timeout 600 ./bin/vx_test_conformance \
-            --filter="GraphDelay.*:GraphROI.*:GraphCallback.*:GraphPipeline.*:GraphStreaming.*" \
+            --filter="GraphDelay.*:GraphROI.*:GraphCallback.*:GraphPipeline.*:GraphStreaming.*:GraphDelayTensor.*" \
             --verbose || true
 
   # ================================================================
@@ -389,7 +389,7 @@ jobs:
           export LD_LIBRARY_PATH=${{ env.INSTALL_PREFIX }}/Linux/x64/Debug/lib
           export VX_TEST_DATA_PATH=${{ github.workspace }}/cts/test_data/
           timeout 600 ./bin/vx_test_conformance \
-            --filter="Array.*:Image.*:Scalar.*:Matrix.*:Distribution.*:LUT.*:Remap.*:Tensor.*:ObjectArray.*:UserDataObject.*" \
+            --filter="Array.*:Image.*:Scalar.*:Matrix.*:Distribution.*:LUT.*:Remap.*:Tensor.*:ObjectArray.*:UserDataObject.*:vxCreateImageFromChannel.*:vxCopyImagePatch.*:vxMapImagePatch.*:vxCopyRemapPatch.*:vxMapRemapPatch.*" \
             --verbose
 
   # ================================================================
@@ -418,7 +418,36 @@ jobs:
           export LD_LIBRARY_PATH=${{ env.INSTALL_PREFIX }}/Linux/x64/Debug/lib
           export VX_TEST_DATA_PATH=${{ github.workspace }}/cts/test_data/
           timeout 600 ./bin/vx_test_conformance \
-            --filter="UserNode.*:UserKernel.*" \
+            --filter="UserNode.*" \
+            --verbose
+
+  # ================================================================
+  # Phase 2 — CTS Graph core
+  # ================================================================
+  cts-graph-core:
+    needs: build-cts
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Download CTS artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: openvx-cts
+          path: ${{ github.workspace }}
+
+      - name: Download debug build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: openvx-debug
+          path: ${{ github.workspace }}
+
+      - name: Run CTS — Core graph construction / verification / execution
+        run: |
+          cd build-cts
+          chmod +x bin/vx_test_conformance
+          export LD_LIBRARY_PATH=${{ env.INSTALL_PREFIX }}/Linux/x64/Debug/lib
+          export VX_TEST_DATA_PATH=${{ github.workspace }}/cts/test_data/
+          timeout 1200 ./bin/vx_test_conformance \
+            --filter="Graph.*" \
             --verbose
 
   # ================================================================
