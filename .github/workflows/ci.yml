@@ -189,6 +189,11 @@ jobs:
           name: openvx-debug
           path: ${{ github.workspace }}
 
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y lcov
+
       - name: Run CTS baseline / smoke tests
         run: |
           cd build-cts
