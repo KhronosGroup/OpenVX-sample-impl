@@ -531,21 +531,33 @@ jobs:
         id: pr_openvx
         run: |
           set -euo pipefail
-          LIB_DIR=${{ github.workspace }}/pr-build/Linux/x64/Release/lib
-          INC_DIR=${{ github.workspace }}/pr-build/include
+          LIB_DIR=$(find ${{ github.workspace }}/pr-build -type d -name lib | head -n1)
+          INC_DIR=$(find ${{ github.workspace }}/pr-build -type d -name include | head -n1)
+          if [ -z "$LIB_DIR" ] || [ -z "$INC_DIR" ]; then
+            echo "::error::Could not locate PR lib/include directories"
+            find ${{ github.workspace }}/pr-build -maxdepth 4 -type d
+            exit 1
+          fi
           echo "lib_dir=$LIB_DIR" >> "$GITHUB_OUTPUT"
           echo "include_dir=$INC_DIR" >> "$GITHUB_OUTPUT"
           ls -la "$LIB_DIR"
+          ls -la "$INC_DIR"
 
       - name: Stage base ref OpenVX libraries
         id: main_openvx
         run: |
           set -euo pipefail
-          LIB_DIR=${{ github.workspace }}/main-build/Linux/x64/Release/lib
-          INC_DIR=${{ github.workspace }}/main-build/include
+          LIB_DIR=$(find ${{ github.workspace }}/main-build -type d -name lib | head -n1)
+          INC_DIR=$(find ${{ github.workspace }}/main-build -type d -name include | head -n1)
+          if [ -z "$LIB_DIR" ] || [ -z "$INC_DIR" ]; then
+            echo "::error::Could not locate base ref lib/include directories"
+            find ${{ github.workspace }}/main-build -maxdepth 4 -type d
+            exit 1
+          fi
           echo "lib_dir=$LIB_DIR" >> "$GITHUB_OUTPUT"
           echo "include_dir=$INC_DIR" >> "$GITHUB_OUTPUT"
           ls -la "$LIB_DIR"
+          ls -la "$INC_DIR"
 
       - name: Clone openvx-mark
         run: |
