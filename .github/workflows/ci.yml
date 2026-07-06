@@ -532,12 +532,13 @@ jobs:
         run: |
           set -euo pipefail
           LIB_DIR=$(find ${{ github.workspace }}/pr-build -type d -name lib | head -n1)
-          INC_DIR=$(find ${{ github.workspace }}/pr-build -type d -name include | head -n1)
-          if [ -z "$LIB_DIR" ] || [ -z "$INC_DIR" ]; then
-            echo "::error::Could not locate PR lib/include directories"
+          if [ -z "$LIB_DIR" ]; then
+            echo "::error::Could not locate PR lib directory"
             find ${{ github.workspace }}/pr-build -maxdepth 4 -type d
             exit 1
           fi
+          # Headers are installed as a sibling of the lib directory
+          INC_DIR=$(dirname "$LIB_DIR")/include
           echo "lib_dir=$LIB_DIR" >> "$GITHUB_OUTPUT"
           echo "include_dir=$INC_DIR" >> "$GITHUB_OUTPUT"
           ls -la "$LIB_DIR"
@@ -548,12 +549,13 @@ jobs:
         run: |
           set -euo pipefail
           LIB_DIR=$(find ${{ github.workspace }}/main-build -type d -name lib | head -n1)
-          INC_DIR=$(find ${{ github.workspace }}/main-build -type d -name include | head -n1)
-          if [ -z "$LIB_DIR" ] || [ -z "$INC_DIR" ]; then
-            echo "::error::Could not locate base ref lib/include directories"
+          if [ -z "$LIB_DIR" ]; then
+            echo "::error::Could not locate base ref lib directory"
             find ${{ github.workspace }}/main-build -maxdepth 4 -type d
             exit 1
           fi
+          # Headers are installed as a sibling of the lib directory
+          INC_DIR=$(dirname "$LIB_DIR")/include
           echo "lib_dir=$LIB_DIR" >> "$GITHUB_OUTPUT"
           echo "include_dir=$INC_DIR" >> "$GITHUB_OUTPUT"
           ls -la "$LIB_DIR"
@@ -712,12 +714,13 @@ jobs:
         run: |
           set -euo pipefail
           LIB_DIR=$(find ${{ github.workspace }}/khronos-pkg -type d -name lib | head -n1)
-          INC_DIR=$(find ${{ github.workspace }}/khronos-pkg -type d -name include | head -n1)
-          if [ -z "$LIB_DIR" ] || [ -z "$INC_DIR" ]; then
-            echo "::error::Could not locate Khronos lib/include directories"
+          if [ -z "$LIB_DIR" ]; then
+            echo "::error::Could not locate Khronos lib directory"
             find ${{ github.workspace }}/khronos-pkg -maxdepth 3 -type d
             exit 1
           fi
+          # Headers are installed as a sibling of the lib directory
+          INC_DIR=$(dirname "$LIB_DIR")/include
           echo "lib_dir=$LIB_DIR" >> "$GITHUB_OUTPUT"
           echo "include_dir=$INC_DIR" >> "$GITHUB_OUTPUT"
           ls -la "$LIB_DIR"
