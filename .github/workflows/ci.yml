@@ -49,7 +49,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential cmake lcov
+          sudo apt-get install -y build-essential cmake
 
       - name: Build OpenVX sample impl (Debug + extensions + coverage)
         run: |
@@ -72,6 +72,7 @@ jobs:
           name: openvx-debug
           path: |
             ${{ env.INSTALL_PREFIX }}/Linux/x64/Debug/
+            build/Linux/x64/Debug/
             include/
           retention-days: 7
 
@@ -189,32 +190,27 @@ jobs:
           name: openvx-debug
           path: ${{ github.workspace }}
 
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y lcov
-
       - name: Run CTS baseline / smoke tests
+        env:
+          GCOV_PREFIX: ${{ github.workspace }}/gcov-cts-baseline
         run: |
           cd build-cts
           chmod +x bin/vx_test_conformance
           export LD_LIBRARY_PATH=${{ env.INSTALL_PREFIX }}/Linux/x64/Debug/lib
           export VX_TEST_DATA_PATH=${{ github.workspace }}/cts/test_data/
+          BUILD_DIR="${{ github.workspace }}/build/Linux/x64/Debug"
+          export GCOV_PREFIX_STRIP=$(($(echo "$BUILD_DIR" | tr '/' '\n' | wc -l) - 1))
           timeout 300 ./bin/vx_test_conformance \
             --filter="GraphBase.*:SmokeTestBase.*:SmokeTest.*:TargetBase.*:Target.*:Logging.*" \
             --verbose || true
 
-      - name: Collect code-coverage data
-        run: |
-          lcov --directory build/Linux/x64/Debug --capture --output-file coverage.info
-          lcov --remove coverage.info '/usr/*' '${{ github.workspace }}/cts/*' --output-file coverage.info
-          lcov --list coverage.info
-
-      - name: Upload coverage report
+      - name: Upload coverage raw data
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-report
-          path: coverage.info
+          name: gcov-cts-baseline
+          path: ${{ github.workspace }}/gcov-cts-baseline/
+          if-no-files-found: ignore
           retention-days: 7
 
   # ================================================================
@@ -237,14 +233,27 @@ jobs:
           path: ${{ github.workspace }}
 
       - name: Run CTS — Core Vision kernels
+        env:
+          GCOV_PREFIX: ${{ github.workspace }}/gcov-cts-vision-kernels
         run: |
           cd build-cts
           chmod +x bin/vx_test_conformance
           export LD_LIBRARY_PATH=${{ env.INSTALL_PREFIX }}/Linux/x64/Debug/lib
           export VX_TEST_DATA_PATH=${{ github.workspace }}/cts/test_data/
+          BUILD_DIR="${{ github.workspace }}/build/Linux/x64/Debug"
+          export GCOV_PREFIX_STRIP=$(($(echo "$BUILD_DIR" | tr '/' '\n' | wc -l) - 1))
           timeout 1200 ./bin/vx_test_conformance \
             --filter="Box3x3.*:Gaussian3x3.*:Median3x3.*:Dilate3x3.*:Erode3x3.*:Sobel3x3.*:Magnitude.*:Phase.*:NonLinearFilter.*:Convolve.*:EqualizeHistogram.*:ColorConvert.*:ChannelExtract.*:ChannelCombine.*:vxConvertDepth.*:vxuConvertDepth.*:vxAddSub.*:vxuAddSub.*:vxMultiply.*:vxuMultiply.*:vxBinOp8u.*:vxuBinOp8u.*:vxBinOp16s.*:vxuBinOp16s.*:vxNot.*:vxuNot.*:WeightedAverage.*:Threshold.*:Scale.*:WarpAffine.*:WarpPerspective.*:Remap.*:HalfScaleGaussian.*:HarrisCorners.*:FastCorners.*:vxCanny.*:vxuCanny.*:MeanStdDev.*:MinMaxLoc.*:Integral.*:GaussianPyramid.*:LaplacianPyramid.*:LaplacianReconstruct.*:OptFlowPyrLK.*:Convolution.*:Histogram.*" \
             --verbose
+
+      - name: Upload coverage raw data
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gcov-cts-vision-kernels
+          path: ${{ github.workspace }}/gcov-cts-vision-kernels/
+          if-no-files-found: ignore
+          retention-days: 7
 
   # ================================================================
   # Phase 2 — CTS Enhanced Vision
@@ -266,14 +275,27 @@ jobs:
           path: ${{ github.workspace }}
 
       - name: Run CTS — Enhanced Vision
+        env:
+          GCOV_PREFIX: ${{ github.workspace }}/gcov-cts-enhanced-vision
         run: |
           cd build-cts
           chmod +x bin/vx_test_conformance
           export LD_LIBRARY_PATH=${{ env.INSTALL_PREFIX }}/Linux/x64/Debug/lib
           export VX_TEST_DATA_PATH=${{ github.workspace }}/cts/test_data/
+          BUILD_DIR="${{ github.workspace }}/build/Linux/x64/Debug"
+          export GCOV_PREFIX_STRIP=$(($(echo "$BUILD_DIR" | tr '/' '\n' | wc -l) - 1))
           timeout 1200 ./bin/vx_test_conformance \
             --filter="GraphEnhanced.*:HogCells.*:HogFeatures.*:MatchTemplate.*:LBP.*:Copy.*:Nonmaxsuppression.*:Houghlinesp.*:BilateralFilter.*:ControlFlow.*:TensorOp.*:Min.*:Max.*:Tensor.*:TensorEnhanced.*" \
             --verbose
+
+      - name: Upload coverage raw data
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gcov-cts-enhanced-vision
+          path: ${{ github.workspace }}/gcov-cts-enhanced-vision/
+          if-no-files-found: ignore
+          retention-days: 7
 
   # ================================================================
   # Phase 2 — CTS Neural Networks
@@ -298,14 +320,27 @@ jobs:
           path: ${{ github.workspace }}
 
       - name: Run CTS — Neural Networks
+        env:
+          GCOV_PREFIX: ${{ github.workspace }}/gcov-cts-neural-networks
         run: |
           cd build-cts
           chmod +x bin/vx_test_conformance
           export LD_LIBRARY_PATH=${{ env.INSTALL_PREFIX }}/Linux/x64/Debug/lib
           export VX_TEST_DATA_PATH=${{ github.workspace }}/cts/test_data/
+          BUILD_DIR="${{ github.workspace }}/build/Linux/x64/Debug"
+          export GCOV_PREFIX_STRIP=$(($(echo "$BUILD_DIR" | tr '/' '\n' | wc -l) - 1))
           timeout 1200 ./bin/vx_test_conformance \
             --filter="TensorNetworks.*:-TensorNetworks.AlexNetTestNetwork:*NN*:VxKernelOfNNAndNNEF.*:VxParameterOfNNAndNNEF.*:MetaFormatOfNNAndNNEF.*:UserKernelsOfNNAndNNEF.*" \
             --verbose
+
+      - name: Upload coverage raw data
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gcov-cts-neural-networks
+          path: ${{ github.workspace }}/gcov-cts-neural-networks/
+          if-no-files-found: ignore
+          retention-days: 7
 
   # ================================================================
   # Phase 2 — CTS Import / Export (IX)
@@ -327,14 +362,27 @@ jobs:
           path: ${{ github.workspace }}
 
       - name: Run CTS — Import/Export
+        env:
+          GCOV_PREFIX: ${{ github.workspace }}/gcov-cts-ix
         run: |
           cd build-cts
           chmod +x bin/vx_test_conformance
           export LD_LIBRARY_PATH=${{ env.INSTALL_PREFIX }}/Linux/x64/Debug/lib
           export VX_TEST_DATA_PATH=${{ github.workspace }}/cts/test_data/
+          BUILD_DIR="${{ github.workspace }}/build/Linux/x64/Debug"
+          export GCOV_PREFIX_STRIP=$(($(echo "$BUILD_DIR" | tr '/' '\n' | wc -l) - 1))
           timeout 600 ./bin/vx_test_conformance \
             --filter="ExtensionObject.*" \
             --verbose
+
+      - name: Upload coverage raw data
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gcov-cts-ix
+          path: ${{ github.workspace }}/gcov-cts-ix/
+          if-no-files-found: ignore
+          retention-days: 7
 
   # ================================================================
   # Phase 2 — CTS Graph features (delay, ROI, callback, pipeline, streaming)
@@ -359,14 +407,27 @@ jobs:
           path: ${{ github.workspace }}
 
       - name: Run CTS — Graph Delay / ROI / Callbacks / Pipeline / Streaming
+        env:
+          GCOV_PREFIX: ${{ github.workspace }}/gcov-cts-graph-features
         run: |
           cd build-cts
           chmod +x bin/vx_test_conformance
           export LD_LIBRARY_PATH=${{ env.INSTALL_PREFIX }}/Linux/x64/Debug/lib
           export VX_TEST_DATA_PATH=${{ github.workspace }}/cts/test_data/
+          BUILD_DIR="${{ github.workspace }}/build/Linux/x64/Debug"
+          export GCOV_PREFIX_STRIP=$(($(echo "$BUILD_DIR" | tr '/' '\n' | wc -l) - 1))
           timeout 600 ./bin/vx_test_conformance \
             --filter="GraphDelay.*:GraphROI.*:GraphCallback.*:GraphPipeline.*:GraphStreaming.*:GraphDelayTensor.*" \
             --verbose || true
+
+      - name: Upload coverage raw data
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gcov-cts-graph-features
+          path: ${{ github.workspace }}/gcov-cts-graph-features/
+          if-no-files-found: ignore
+          retention-days: 7
 
   # ================================================================
   # Phase 2 — CTS Data objects
@@ -388,14 +449,27 @@ jobs:
           path: ${{ github.workspace }}
 
       - name: Run CTS — Data objects / Arrays / Scalars / Tensors
+        env:
+          GCOV_PREFIX: ${{ github.workspace }}/gcov-cts-data-objects
         run: |
           cd build-cts
           chmod +x bin/vx_test_conformance
           export LD_LIBRARY_PATH=${{ env.INSTALL_PREFIX }}/Linux/x64/Debug/lib
           export VX_TEST_DATA_PATH=${{ github.workspace }}/cts/test_data/
+          BUILD_DIR="${{ github.workspace }}/build/Linux/x64/Debug"
+          export GCOV_PREFIX_STRIP=$(($(echo "$BUILD_DIR" | tr '/' '\n' | wc -l) - 1))
           timeout 600 ./bin/vx_test_conformance \
             --filter="Array.*:Image.*:Scalar.*:Matrix.*:Distribution.*:LUT.*:Remap.*:Tensor.*:ObjectArray.*:UserDataObject.*:vxCreateImageFromChannel.*:vxCopyImagePatch.*:vxMapImagePatch.*:vxCopyRemapPatch.*:vxMapRemapPatch.*" \
             --verbose
+
+      - name: Upload coverage raw data
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gcov-cts-data-objects
+          path: ${{ github.workspace }}/gcov-cts-data-objects/
+          if-no-files-found: ignore
+          retention-days: 7
 
   # ================================================================
   # Phase 2 — CTS User-defined kernels
@@ -417,14 +491,27 @@ jobs:
           path: ${{ github.workspace }}
 
       - name: Run CTS — User kernels / nodes
+        env:
+          GCOV_PREFIX: ${{ github.workspace }}/gcov-cts-user-kernels
         run: |
           cd build-cts
           chmod +x bin/vx_test_conformance
           export LD_LIBRARY_PATH=${{ env.INSTALL_PREFIX }}/Linux/x64/Debug/lib
           export VX_TEST_DATA_PATH=${{ github.workspace }}/cts/test_data/
+          BUILD_DIR="${{ github.workspace }}/build/Linux/x64/Debug"
+          export GCOV_PREFIX_STRIP=$(($(echo "$BUILD_DIR" | tr '/' '\n' | wc -l) - 1))
           timeout 600 ./bin/vx_test_conformance \
             --filter="UserNode.*" \
             --verbose
+
+      - name: Upload coverage raw data
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gcov-cts-user-kernels
+          path: ${{ github.workspace }}/gcov-cts-user-kernels/
+          if-no-files-found: ignore
+          retention-days: 7
 
   # ================================================================
   # Phase 2 — CTS Graph core
@@ -446,14 +533,27 @@ jobs:
           path: ${{ github.workspace }}
 
       - name: Run CTS — Core graph construction / verification / execution
+        env:
+          GCOV_PREFIX: ${{ github.workspace }}/gcov-cts-graph-core
         run: |
           cd build-cts
           chmod +x bin/vx_test_conformance
           export LD_LIBRARY_PATH=${{ env.INSTALL_PREFIX }}/Linux/x64/Debug/lib
           export VX_TEST_DATA_PATH=${{ github.workspace }}/cts/test_data/
+          BUILD_DIR="${{ github.workspace }}/build/Linux/x64/Debug"
+          export GCOV_PREFIX_STRIP=$(($(echo "$BUILD_DIR" | tr '/' '\n' | wc -l) - 1))
           timeout 1200 ./bin/vx_test_conformance \
             --filter="Graph.*" \
             --verbose
+
+      - name: Upload coverage raw data
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gcov-cts-graph-core
+          path: ${{ github.workspace }}/gcov-cts-graph-core/
+          if-no-files-found: ignore
+          retention-days: 7
 
   # ================================================================
   # Phase 3 — Build base ref release (PR only, for perf comparison)
@@ -820,5 +920,89 @@ jobs:
           path: |
             ${{ github.workspace }}/openvx-mark/build-*/benchmark_results/
             ${{ github.workspace }}/openvx-mark/comparison.*
+          if-no-files-found: ignore
+          retention-days: 7
+
+  # ===========================================================================
+  # Coverage Stage — merge gcov data from all test jobs after tests complete
+  # ===========================================================================
+  coverage-summary:
+    name: Code coverage summary
+    runs-on: ubuntu-22.04
+    if: always() && needs.build-debug.result == 'success'
+    needs:
+      - build-debug
+      - cts-baseline
+      - cts-vision-kernels
+      - cts-enhanced-vision
+      - cts-neural-networks
+      - cts-ix
+      - cts-graph-features
+      - cts-data-objects
+      - cts-user-kernels
+      - cts-graph-core
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install lcov
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y lcov
+
+      - name: Download debug build (for .gcno files)
+        uses: actions/download-artifact@v4
+        with:
+          name: openvx-debug
+          path: ${{ github.workspace }}
+
+      - name: Download all gcov artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: gcov-cts-*
+          path: all-gcov
+          merge-multiple: true
+
+      - name: Merge gcov data into build tree
+        run: |
+          set -euo pipefail
+          BUILD_DIR="${{ github.workspace }}/build/Linux/x64/Debug"
+          mkdir -p "$BUILD_DIR"
+          echo "GCDA files found:"
+          find all-gcov -name '*.gcda' -type f | head -50
+          COUNT=$(find all-gcov -name '*.gcda' -type f | wc -l)
+          echo "Total .gcda files: $COUNT"
+          if [ "$COUNT" -eq 0 ]; then
+            echo "::warning::No .gcda files collected — coverage will be empty"
+            exit 0
+          fi
+          # Each gcov artifact was emitted with GCOV_PREFIX_STRIP set so the
+          # file paths are relative to BUILD_DIR. Copy them back into the
+          # build tree next to their matching .gcno files.
+          find all-gcov -name '*.gcda' -type f | while read -r gcda; do
+            rel="${gcda#all-gcov/}"
+            dest="$BUILD_DIR/$rel"
+            mkdir -p "$(dirname "$dest")"
+            cp "$gcda" "$dest"
+          done
+          echo "Merged .gcda files into $BUILD_DIR"
+
+      - name: Collect code-coverage data
+        run: |
+          set -euo pipefail
+          BUILD_DIR="${{ github.workspace }}/build/Linux/x64/Debug"
+          if [ ! -d "$BUILD_DIR" ]; then
+            echo "::warning::Build directory missing — cannot collect coverage"
+            exit 0
+          fi
+          lcov --directory "$BUILD_DIR" --capture --output-file coverage.info
+          lcov --remove coverage.info '/usr/*' '${{ github.workspace }}/cts/*' --output-file coverage.info
+          lcov --list coverage.info
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage.info
           if-no-files-found: ignore
           retention-days: 7
