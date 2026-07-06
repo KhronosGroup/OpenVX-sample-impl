@@ -58,6 +58,7 @@ class Row:
     sustained_ms: float
     cv_percent: float
     verified: bool
+    supported: bool
     stability_warning: bool
 
     @property
@@ -75,6 +76,7 @@ def _row_from(d: dict) -> Row:
         sustained_ms=float(d.get("sustained_ms") or 0.0),
         cv_percent=float(wc.get("cv_percent") or 0.0),
         verified=bool(d.get("verified", True)),
+        supported=bool(d.get("supported", True)),
         stability_warning=bool(d.get("stability_warning", False)),
     )
 
@@ -386,6 +388,7 @@ def _empty_row(key: tuple[str, str, str]) -> Row:
         sustained_ms=0.0,
         cv_percent=0.0,
         verified=False,
+        supported=False,
         stability_warning=False,
     )
 
@@ -463,6 +466,9 @@ def main(argv: list[str]) -> int:
         m, r = main_rows[key], pr_rows[key]
         if m.name in skip_names:
             skipped.append(SkipRecord(key=key, reason="explicitly skipped by --skip-name", main=m, pr=r))
+            continue
+        if not (m.supported and r.supported):
+            skipped.append(SkipRecord(key=key, reason="unsupported on at least one side", main=m, pr=r))
             continue
         if not (m.verified and r.verified):
             skipped.append(SkipRecord(key=key, reason="unverified on at least one side", main=m, pr=r))
