@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-Perf-regression gate for rustVX pull requests.
+Perf-regression gate for OpenVX pull requests.
 
 Compares two openvx-mark `benchmark_results.json` reports captured on
 the SAME runner VM (so hardware variance is zero) — one from the PR's
-build, one from the merge target's (main's) build — and decides
-whether the PR regresses performance against main.
+build, one from the merge target's (base/main) build — and decides
+whether the PR regresses performance against the base.
 
 Exits 0 on pass / acceptable change, exits 1 on regression. Always
 writes a markdown verdict block to stdout, suitable for piping into
@@ -18,19 +18,16 @@ Defaults:
                             [0.90, 0.95); 5-10% slower → advisory)
     --max-cv        5.0    (skip kernels above this run-to-run noise)
 
-The per-kernel floor is set to a strict 10% regression because the
-upstream workflow now builds both PR and main rustVX with EXPLICIT
-AVX2 features and `-C target-cpu=x86-64-v3` (rather than per-VM
-auto-detected features). With the binaries having identical
-compile-time configuration and both running on the same Phase-3
-runner VM, the only remaining noise source is genuine same-VM
-jitter (cache state, thermal, VM-host neighbour load), which on
-real CI sits well below 10%. Anything that trips the gate is a
-real regression worth investigating.
+The per-kernel floor is set to a strict 10% regression because both
+builds are produced with the same compile-time configuration and both
+run on the same runner VM. The only remaining noise source is genuine
+same-VM jitter (cache state, thermal, VM-host neighbour load), which on
+real CI sits well below 10%. Anything that trips the gate is a real
+regression worth investigating.
 
-Aggregate moves > 3% across 50+ verified kernels are essentially
-impossible to fake with noise, which is why the geomean floor is
-the strongest gate signal — it stays at 0.97x.
+Aggregate moves > 3% across many verified kernels are essentially
+impossible to fake with noise, which is why the geomean floor is the
+strongest gate signal — it stays at 0.97x.
 
 Each filter is applied independently; a kernel that doesn't pass the
 filters (unverified, noisy, missing on either side) is reported in a
@@ -183,14 +180,20 @@ def _geomean(values: Iterable[float]) -> float:
 # ---------------------------------------------------------------------------
 
 
-def _render_hardware(main_system: dict | None, pr_system: dict | None) -> str:
+def _render_hardware(
+    main_system: dict | None,
+    pr_system: dict | None,
+    *,
+    main_label: str,
+    pr_label: str,
+) -> str:
     """Render the runner-hardware details for both bench runs.
 
-    Both rustVX builds are benchmarked on the same Phase-3 runner VM,
-    so the two `system` blocks should match. We render both anyway so
-    the user has a record of the bench environment per run, and so any
-    drift (different VMs / CPU pools) surfaces visually rather than
-    being silently absorbed into the verdict.
+    Both builds are benchmarked on the same runner VM, so the two
+    `system` blocks should match. We render both anyway so the user
+    has a record of the bench environment per run, and so any drift
+    (different VMs / CPU pools) surfaces visually rather than being
+    silently absorbed into the verdict.
     """
     main_system = main_system or {}
     pr_system = pr_system or {}
@@ -204,7 +207,7 @@ def _render_hardware(main_system: dict | None, pr_system: dict | None) -> str:
     out: list[str] = []
     out.append("### Hardware")
     out.append("")
-    out.append("| Field | rustVX-main run | rustVX-PR run |")
+    out.append(f"| Field | {main_label} run | {pr_label} run |")
     out.append("|---|---|---|")
     fields = [
         ("CPU model",  "cpu_model"),
@@ -230,7 +233,7 @@ def _render_hardware(main_system: dict | None, pr_system: dict | None) -> str:
     if drifted:
         out.append("")
         out.append(
-            "> **Warning:** the two rustVX runs reported different runner "
+            "> **Warning:** the two runs reported different runner "
             "hardware (CPU model or hostname). The perf comparison may be "
             "biased by the hardware delta in addition to any real software "
             "change in this PR — interpret regressions cautiously."
@@ -260,18 +263,20 @@ def _render(
     overall_pass: bool,
     main_system: dict | None = None,
     pr_system: dict | None = None,
+    main_label: str = "base",
+    pr_label: str = "PR",
 ) -> str:
     lines: list[str] = []
-    lines.append("## Perf gate (rustVX-PR vs rustVX-main)")
+    lines.append(f"## Perf gate ({pr_label} vs {main_label})")
     lines.append("")
     lines.append(
-        "Both rustVX builds were benchmarked on the **same runner VM** "
-        "with the same workload, so hardware variance is zero — the "
-        "ratios below are pure software-side deltas attributable to "
-        "this PR."
+        f"Both {main_label} and {pr_label} builds were benchmarked on the "
+        "**same runner VM** with the same workload, so hardware variance is "
+        "zero — the ratios below are pure software-side deltas attributable "
+        "to this PR."
     )
     lines.append("")
-    lines.append(_render_hardware(main_system, pr_system))
+    lines.append(_render_hardware(main_system, pr_system, main_label=main_label, pr_label=pr_label))
     lines.append("")
 
     if overall_pass:
@@ -420,15 +425,19 @@ def _table(groups: list[list[KernelVerdict]]) -> str:
 
 def main(argv: list[str]) -> int:
     p = argparse.ArgumentParser(description=__doc__.split("\n\n", 1)[0])
-    p.add_argument("main_json", help="benchmark_results.json from main's rustVX run")
-    p.add_argument("pr_json", help="benchmark_results.json from PR's rustVX run")
+    p.add_argument("main_json", help="benchmark_results.json from the base ref run")
+    p.add_argument("pr_json", help="benchmark_results.json from the PR run")
+    p.add_argument("--main-label", default="base",
+                   help="Label for the base ref run in the report (default: base)")
+    p.add_argument("--pr-label", default="PR",
+                   help="Label for the PR run in the report (default: PR)")
     p.add_argument("--geomean-floor", type=float, default=0.97,
                    help="Aggregate geomean floor (default 0.97 = up to 3%% regression)")
     p.add_argument("--kernel-floor", type=float, default=0.90,
                    help="Per-kernel floor (default 0.90 = up to 10%% regression). "
-                        "With explicit-AVX2 builds the same-VM noise floor sits "
-                        "well below this; anything tripping the gate is a real "
-                        "regression worth investigating.")
+                        "With both builds produced the same way and running on the "
+                        "same VM, same-VM noise sits well below this; anything "
+                        "tripping the gate is a real regression worth investigating.")
     p.add_argument("--warn-floor", type=float, default=0.95,
                    help="Soft warn floor (default 0.95 = warn for individual "
                         "kernels in [-10%%, -5%%); below 5%% is treated as noise)")
@@ -480,13 +489,13 @@ def main(argv: list[str]) -> int:
     for key in sorted(set(main_rows) - set(pr_rows)):
         skipped.append(SkipRecord(
             key=key,
-            reason="missing in PR run (new on main?)",
+            reason=f"missing in {args.pr_label} run (new on {args.main_label}?)",
             main=main_rows[key],
         ))
     for key in sorted(set(pr_rows) - set(main_rows)):
         skipped.append(SkipRecord(
             key=key,
-            reason="missing in main run (new in PR — not gated)",
+            reason=f"missing in {args.main_label} run (new in {args.pr_label} — not gated)",
             pr=pr_rows[key],
         ))
 
@@ -507,6 +516,8 @@ def main(argv: list[str]) -> int:
         pr_system=pr_system,
         max_cv=args.max_cv,
         overall_pass=overall_pass,
+        main_label=args.main_label,
+        pr_label=args.pr_label,
     )
 
     sys.stdout.write(md)

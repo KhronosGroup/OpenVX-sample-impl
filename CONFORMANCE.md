@@ -38,14 +38,15 @@ parser dependency is wired into the sample-impl build.
 | `build-debug` | — | All | Debug build with coverage instrumentation. |
 | `build-release` | — | All | Release build for benchmarking. |
 | `build-cts` | — | All | Builds `vx_test_conformance` against the Debug sample impl. |
-| `cts-baseline` | `GraphBase.*:SmokeTestBase.*:SmokeTest.*:TargetBase.*:Target.*:Logging.*` | Base / core | Smoke + baseline + code-coverage collection. |
-| `cts-vision-kernels` | All core 2D vision kernels | Vision | Box, Gaussian, Sobel, magnitude, phase, color, arithmetic, geometry, features, statistics, pyramids, optical flow. |
-| `cts-enhanced-vision` | `Graph/Conv*`, `HOG*`, `LBP`, `BilateralFilter`, `ControlFlow`, `TensorOp`, `Tensor`, `TensorEnhanced`, etc. | Enhanced Vision | Tensors, HOG, LBP, bilateral filter, control flow, advanced filters, feature extraction, post-processing. |
-| `cts-neural-networks` | `TensorNetworks.*:-AlexNetTestNetwork:*NN*:*NNAndNNEF*` | Neural Networks NN/16 | AlexNet test is excluded because ImageNet weights are not shipped in the public CTS. Marked `continue-on-error` for NN/16 stability. |
-| `cts-ix` | `Graph/ExportImport*:*IX*` | Import/Export KHR | Object serialization tests. |
-| `cts-graph-features` | `GraphDelay.*:GraphROI.*:GraphCallback.*:GraphPipeline.*:GraphStreaming.*:GraphPipe*` | Graph + Pipelining + Streaming | Marked `continue-on-error` because the C model target pipelining is incomplete upstream. |
-| `cts-data-objects` | `Array.*:Image.*:Scalar.*:Matrix.*:Distribution.*:LUT.*:Remap.*:Tensor.*:ObjectArray.*:UserDataObject.*` | Data objects + User Data Object KHR | |
-| `cts-user-kernels` | `UserNode.*:UserKernel.*` | User-defined kernels/nodes | |
+| `cts-baseline` | `GraphBase.*:SmokeTestBase.*:SmokeTest.*:TargetBase.*:Target.*:Logging.*` | Base / core | Smoke + baseline tests. Coverage data is collected in the separate `coverage-summary` job. |
+| `cts-graph-core` | `Graph.*:-GraphDelay.*:-GraphROI.*:-GraphCallback.*:-GraphPipeline.*:-GraphStreaming.*:-GraphDelayTensor.*` | Core graph construction / verification / execution | Excludes graph-feature suites that are run (and may fail) in `cts-graph-features`. |
+| `cts-vision-kernels` | `Box3x3.*:Gaussian3x3.*:Median3x3.*:Dilate3x3.*:Erode3x3.*:Sobel3x3.*:Magnitude.*:Phase.*:NonLinearFilter.*:Convolve.*:EqualizeHistogram.*:ColorConvert.*:ChannelExtract.*:ChannelCombine.*:vxConvertDepth.*:vxuConvertDepth.*:vxAddSub.*:vxuAddSub.*:vxMultiply.*:vxuMultiply.*:vxBinOp8u.*:vxuBinOp8u.*:vxBinOp16s.*:vxuBinOp16s.*:vxNot.*:vxuNot.*:WeightedAverage.*:Threshold.*:Scale.*:WarpAffine.*:WarpPerspective.*:Remap.*:HalfScaleGaussian.*:HarrisCorners.*:FastCorners.*:vxCanny.*:vxuCanny.*:MeanStdDev.*:MinMaxLoc.*:Integral.*:GaussianPyramid.*:LaplacianPyramid.*:LaplacianReconstruct.*:OptFlowPyrLK.*:Convolution.*:Histogram.*` | Vision | Core 2D vision kernels. |
+| `cts-enhanced-vision` | `GraphEnhanced.*:HogCells.*:HogFeatures.*:MatchTemplate.*:LBP.*:Copy.*:Nonmaxsuppression.*:Houghlinesp.*:BilateralFilter.*:ControlFlow.*:TensorOp.*:Min.*:Max.*:Tensor.*:TensorEnhanced.*` | Enhanced Vision | Tensors, HOG, LBP, bilateral filter, control flow, advanced filters, feature extraction, post-processing. |
+| `cts-neural-networks` | `TensorNetworks.*:-TensorNetworks.AlexNetTestNetwork:*NN*:VxKernelOfNNAndNNEF.*:VxParameterOfNNAndNNEF.*:MetaFormatOfNNAndNNEF.*:UserKernelsOfNNAndNNEF.*` | Neural Networks NN/16 | AlexNet test is excluded because ImageNet weights are not shipped in the public CTS. Marked `continue-on-error` for NN/16 stability. |
+| `cts-ix` | `ExtensionObject.*` | Import/Export KHR | Object serialization tests. |
+| `cts-graph-features` | `GraphDelay.*:GraphROI.*:GraphCallback.*:GraphPipeline.*:GraphStreaming.*:GraphDelayTensor.*` | Graph + Pipelining + Streaming | Marked `continue-on-error` because the C model target pipelining is incomplete upstream. |
+| `cts-data-objects` | `Array.*:Image.*:Scalar.*:Matrix.*:Distribution.*:LUT.*:Remap.*:Tensor.*:ObjectArray.*:UserDataObject.*:vxCreateImageFromChannel.*:vxCopyImagePatch.*:vxMapImagePatch.*:vxCopyRemapPatch.*:vxMapRemapPatch.*` | Data objects + User Data Object KHR | |
+| `cts-user-kernels` | `UserNode.*` | User-defined kernels/nodes | |
 
 ## Performance gates
 
@@ -114,7 +115,7 @@ export VX_TEST_DATA_PATH=$PWD/../test_data/
    integrated into the sample-impl build and CTS CMake path.
 2. Promote `cts-graph-features` and `cts-neural-networks` to required once
    the underlying C model implementation gaps are resolved upstream.
-3. Add `lcov` / `gcov` coverage thresholds to `cts-baseline` so PRs cannot
+3. Add coverage thresholds to the `coverage-summary` job so PRs cannot
    silently drop coverage.
 4. Extend `benchmark-vs-rustvx` to also compare against other OpenVX
    implementations on the same runner.

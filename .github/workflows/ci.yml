@@ -543,7 +543,7 @@ jobs:
           BUILD_DIR="${{ github.workspace }}/build/Linux/x64/Debug"
           export GCOV_PREFIX_STRIP=$(($(echo "$BUILD_DIR" | tr '/' '\n' | wc -l) - 1))
           timeout 1200 ./bin/vx_test_conformance \
-            --filter="Graph.*" \
+            --filter="Graph.*:-GraphDelay.*:-GraphROI.*:-GraphCallback.*:-GraphPipeline.*:-GraphStreaming.*:-GraphDelayTensor.*" \
             --verbose
 
       - name: Upload coverage raw data
@@ -715,16 +715,16 @@ jobs:
             # Bench PR
             cd "$PR_BUILD"
             export LD_LIBRARY_PATH=$PR_LIB
-            ./openvx-mark --resolution FHD --iterations 5 --warmup 0 \
+            timeout 300 ./openvx-mark --resolution FHD --iterations 5 --warmup 0 \
               --output /tmp/warmup-pr-throwaway-$attempt >/dev/null 2>&1 || true
-            ./openvx-mark --resolution FHD --iterations 20 --warmup 5
+            timeout 300 ./openvx-mark --resolution FHD --iterations 20 --warmup 5
 
             # Bench base ref
             cd "$MAIN_BUILD"
             export LD_LIBRARY_PATH=$MAIN_LIB
-            ./openvx-mark --resolution FHD --iterations 5 --warmup 0 \
+            timeout 300 ./openvx-mark --resolution FHD --iterations 5 --warmup 0 \
               --output /tmp/warmup-main-throwaway-$attempt >/dev/null 2>&1 || true
-            ./openvx-mark --resolution FHD --iterations 20 --warmup 5
+            timeout 300 ./openvx-mark --resolution FHD --iterations 20 --warmup 5
 
             if [ ! -f "$PR_JSON" ] || [ ! -f "$MAIN_JSON" ]; then
               echo "::error::Missing benchmark JSONs on attempt $attempt."
@@ -736,6 +736,8 @@ jobs:
             set +e
             python3 ${{ github.workspace }}/.github/scripts/perf_gate.py \
               "$MAIN_JSON" "$PR_JSON" \
+              --main-label "${{ github.base_ref }}" \
+              --pr-label "PR" \
               --geomean-floor 0.97 \
               --kernel-floor 0.90 \
               --warn-floor 0.95 \
