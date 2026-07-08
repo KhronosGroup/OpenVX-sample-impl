@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef _OPENVX_INT_OSAL_H_
-#define _OPENVX_INT_OSAL_H_
+#ifndef OPENVX_INT_OSAL_H_
+#define OPENVX_INT_OSAL_H_
 
 #include <VX/vx.h>
 #include "vx_internal.h"

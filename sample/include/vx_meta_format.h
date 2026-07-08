@@ -16,8 +16,8 @@
  */
 
 
-#ifndef _OPENVX_INT_META_FORMAT_H_
-#define _OPENVX_INT_META_FORMAT_H_
+#ifndef OPENVX_INT_META_FORMAT_H_
+#define OPENVX_INT_META_FORMAT_H_
 
 #include <VX/vx.h>
 

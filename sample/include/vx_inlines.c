@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef _VX_INLINES_C_
-#define _VX_INLINES_C_
+#ifndef VX_INLINES_C_
+#define VX_INLINES_C_
 
 #include <VX/vx.h>
 #include "vx_internal.h"

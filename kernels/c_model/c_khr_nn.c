@@ -278,8 +278,8 @@ void ConvolutionKernelImpl(
             for (size_t w_y = 0; w_y < weight_h; ++w_y)
             for (size_t w_x = 0; w_x < weight_w; ++w_x)
             {
-                const size_t tmp_x = xx + w_x * (dilation_x + 1) + dilation_x;
-                const size_t tmp_y = yy + w_y * (dilation_y + 1) + dilation_y;
+                const size_t tmp_x = xx + w_x * (dilation_x + 1);
+                const size_t tmp_y = yy + w_y * (dilation_y + 1);
 
                 if (tmp_x >= pad_x && tmp_x < input_w + pad_x &&
                     tmp_y >= pad_y && tmp_y < input_h + pad_y)
@@ -508,7 +508,7 @@ void PoolingKernelImpl(
         if (!max_pooling)
         {
             //result = conversion_24_8(result / (int16_t)(size_x * size_y));
-            result = CLAMP(result / (size_x * size_y), getMinValue(fmt), getMaxValue(fmt));
+            result = CLAMP(result / (int32_t)(size_x * size_y), getMinValue(fmt), getMaxValue(fmt));
         }
 
         const size_t output_byte_offset =
@@ -947,8 +947,8 @@ void DeconvolutionKernelImpl(
             for (size_t w_y = 0; w_y < weight_h; ++w_y)
             for (size_t w_x = 0; w_x < weight_w; ++w_x)
             {
-                if (x + w_x >= start_x_pad && x + w_x < input_w + start_x_pad &&
-                    y + w_y >= start_y_pad && y + w_y < input_h + start_y_pad)
+                if (x + w_x >= start_x_pad && x + w_x < input_w + start_x_pad + (upscale_x - 1) * (input_w - 1) &&
+                    y + w_y >= start_y_pad && y + w_y < input_h + start_y_pad + (upscale_y - 1) * (input_h - 1))
                 {
                     const size_t xx = x + w_x - start_x_pad;
                     const size_t yy = y + w_y - start_y_pad;

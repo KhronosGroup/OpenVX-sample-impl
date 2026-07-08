@@ -1,11 +1,11 @@
 [submodule "api-docs"]
 	path = api-docs
 	url = https://github.com/KhronosGroup/OpenVX-api-docs.git
-	branch = openvx_1.3
+	branch = openvx_1.3.2
 [submodule "cts"]
 	path = cts
 	url = https://github.com/KhronosGroup/OpenVX-cts.git
-	branch = openvx_1.3
+	branch = openvx_1.3.2
 [submodule "kernels/NNEF-Tools"]
 	path = kernels/NNEF-Tools
 	url = https://github.com/KhronosGroup/NNEF-Tools/

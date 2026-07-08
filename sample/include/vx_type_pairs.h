@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef _OPENVX_INT_type_pairs_H_
-#define _OPENVX_INT_type_pairs_H_
+#ifndef OPENVX_INT_type_pairs_H_
+#define OPENVX_INT_type_pairs_H_
 
 #include <stdint.h>
 #include <VX/vx.h>

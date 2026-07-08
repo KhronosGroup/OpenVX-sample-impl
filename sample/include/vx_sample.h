@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef _VX_SAMPLE_H_
-#define _VX_SAMPLE_H_
+#ifndef VX_SAMPLE_H_
+#define VX_SAMPLE_H_
 
 #include <VX/vx.h>
 
@@ -49,5 +49,5 @@ enum _vx_sample_kernels_e {
  */
 vx_node ownCreateNodeFromGraph(vx_graph parent, vx_graph child);
 
-#endif /* _VX_SAMPLE_H_ */
+#endif /* VX_SAMPLE_H_ */
 
