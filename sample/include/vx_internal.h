@@ -88,6 +88,9 @@
 #if defined(OPENVX_USE_USER_DATA_OBJECT)
 #include <VX/vx_khr_user_data_object.h>
 #endif
+#if defined(OPENVX_USE_PIPELINING)
+#include <VX/vx_khr_pipelining.h>
+#endif
 
 #define VX_MAX_TENSOR_DIMENSIONS 6
 #define Q78_FIXED_POINT_POSITION 8
@@ -1073,7 +1076,32 @@ typedef struct _vx_context {
     cl_context opencl_context;
     cl_command_queue opencl_command_queue;
 #endif
-
+#ifdef OPENVX_USE_PIPELINING
+    /*! \brief Global event enable flag */
+    vx_bool             events_enabled;
+    /*! \brief Lock protecting event queue and registrations */
+    vx_sem_t            event_lock;
+    /*! \brief Event signaled when an event is queued */
+    vx_internal_event_t event_ready;
+    /*! \brief Circular queue of pending events */
+    vx_event_t          event_queue[VX_INT_MAX_QUEUE_DEPTH];
+    /*! \brief Read index for event_queue */
+    vx_int32            event_start;
+    /*! \brief Write index for event_queue */
+    vx_int32            event_end;
+    /*! \brief Number of pending events in event_queue */
+    vx_int32            event_count;
+    /*! \brief Registered event interests */
+    struct {
+        vx_reference    ref;
+        vx_enum         type;
+        vx_uint32       param;
+        vx_uint32       app_value;
+        vx_bool         registered;
+    } event_reg[VX_INT_MAX_REF];
+    /*! \brief Number of registered event interests */
+    vx_uint32           num_event_reg;
+#endif
 } vx_context_t;
 
 /*! \brief A data structure used to track the various costs which could being optimized.
@@ -1169,7 +1197,49 @@ typedef struct _vx_graph {
     vx_graph       parentGraph;
     /*! \brief The array of all delays in this graph */
     vx_delay       delays[VX_INT_MAX_REF];
+#ifdef OPENVX_USE_PIPELINING
+    /*! \brief Pipelining schedule mode (vx_graph_schedule_mode_e) */
+    vx_enum        schedule_mode;
+    /*! \brief Pipelining queue depth */
+    vx_uint32      pipeline_depth;
+    /*! \brief Flag set after vxSetGraphScheduleConfig is called */
+    vx_bool        pipeline_configured;
+    /*! \brief Lock protecting pipeline queues and state */
+    vx_sem_t       pipe_lock;
+    /*! \brief Semaphore to trigger a worker execution */
+    vx_sem_t       trigger;
+    /*! \brief Per-graph-parameter pipeline state */
+    struct {
+        vx_bool        enabled;
+        vx_queue_t     ready_queue;
+        vx_queue_t     done_queue;
+        vx_uint32      refs_per_enqueue;
+        vx_uint32      queue_depth;
+        vx_reference   saved_ref;
+        vx_uint32      num_extra;
+        struct {
+            vx_node     node;
+            vx_uint32   index;
+        } extra[VX_INT_MAX_PARAMS];
+    } pipe[VX_INT_MAX_PARAMS];
+    /*! \brief Reference stored at each graph parameter before pipelining swap */
+    vx_reference   original_param_refs[VX_INT_MAX_PARAMS];
+    /*! \brief Worker thread running pipelined executions */
+    vx_thread_t    worker;
+    /*! \brief Worker running flag */
+    vx_bool        worker_running;
+    /*! \brief Set when worker should exit */
+    vx_bool        worker_stop;
+    /*! \brief Counter of outstanding pipeline executions */
+    vx_int32       in_flight;
+    /*! \brief Event signaled when worker becomes idle */
+    vx_internal_event_t idle_event;
+#endif
 } vx_graph_t;
+
+#ifdef OPENVX_USE_PIPELINING
+vx_status ownPipelineSchedule(vx_graph graph);
+#endif
 
 /*! \brief The dimensions enumeration, also stride enumerations.
  * \ingroup group_int_image

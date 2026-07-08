@@ -18,6 +18,28 @@
 #include "vx_internal.h"
 #include "vx_graph.h"
 
+#ifdef OPENVX_USE_PIPELINING
+static vx_bool vxPipelineTryReadQueue(vx_queue_t *q, vx_value_set_t **data)
+{
+    vx_bool red = vx_false_e;
+    ownSemWait(&q->lock);
+    if (q->end_index != -1)
+    {
+        *data = q->data[q->start_index];
+        q->data[q->start_index] = NULL;
+        q->start_index = (q->start_index + 1) % VX_INT_MAX_QUEUE_DEPTH;
+        if (q->start_index == q->end_index)
+        {
+            q->end_index = -1;
+        }
+        ownSetEvent(&q->writeEvent);
+        red = vx_true_e;
+    }
+    ownSemPost(&q->lock);
+    return red;
+}
+#endif
+
 static vx_uint32 vxNextNode(vx_graph graph, vx_uint32 index)
 {
     return ((index + 1) % graph->numNodes);
@@ -552,6 +574,29 @@ VX_API_ENTRY vx_graph VX_API_CALL vxCreateGraph(vx_context context)
             graph->reverify = graph->verified;
             graph->verified = vx_false_e;
             graph->state = VX_GRAPH_STATE_UNVERIFIED;
+#ifdef OPENVX_USE_PIPELINING
+            graph->schedule_mode = VX_GRAPH_SCHEDULE_MODE_NORMAL;
+            graph->pipeline_depth = 0;
+            graph->pipeline_configured = vx_false_e;
+            ownCreateSem(&graph->pipe_lock, 1);
+            ownCreateSem(&graph->trigger, 0);
+            ownInitEvent(&graph->idle_event, vx_false_e);
+            ownSetEvent(&graph->idle_event);
+            graph->worker_running = vx_false_e;
+            graph->worker_stop = vx_false_e;
+            graph->worker = 0;
+            graph->in_flight = 0;
+            for (vx_uint32 i = 0; i < VX_INT_MAX_PARAMS; i++)
+            {
+                graph->pipe[i].enabled = vx_false_e;
+                graph->pipe[i].refs_per_enqueue = 0;
+                graph->pipe[i].queue_depth = 0;
+                graph->pipe[i].saved_ref = NULL;
+                ownInitQueue(&graph->pipe[i].ready_queue);
+                ownInitQueue(&graph->pipe[i].done_queue);
+                graph->original_param_refs[i] = NULL;
+            }
+#endif
         }
     }
 
@@ -654,6 +699,38 @@ void ownDestructGraph(vx_reference ref)
         }
         ownRemoveNodeInt(&graph->nodes[0]);
     }
+#ifdef OPENVX_USE_PIPELINING
+    graph->worker_stop = vx_true_e;
+    graph->worker_running = vx_false_e;
+    ownSemPost(&graph->trigger);
+    if (graph->worker)
+    {
+        ownJoinThread(graph->worker, NULL);
+        graph->worker = 0;
+    }
+    for (vx_uint32 i = 0; i < VX_INT_MAX_PARAMS; i++)
+    {
+        vx_value_set_t *data = NULL;
+        while (vxPipelineTryReadQueue(&graph->pipe[i].ready_queue, &data) == vx_true_e)
+        {
+            vx_reference ref = (vx_reference)data->v1;
+            if (ref) ownDecrementReference(ref, VX_INTERNAL);
+            free(data);
+            data = NULL;
+        }
+        while (vxPipelineTryReadQueue(&graph->pipe[i].done_queue, &data) == vx_true_e)
+        {
+            vx_reference ref = (vx_reference)data->v1;
+            if (ref) ownDecrementReference(ref, VX_INTERNAL);
+            free(data);
+            data = NULL;
+        }
+        ownDeinitQueue(&graph->pipe[i].ready_queue);
+        ownDeinitQueue(&graph->pipe[i].done_queue);
+    }    ownDestroySem(&graph->trigger);
+    ownDestroySem(&graph->pipe_lock);
+    ownDeinitEvent(&graph->idle_event);
+#endif
     // execution lock?
     ownDestroySem(&graph->lock);
 }
@@ -2542,6 +2619,14 @@ VX_API_ENTRY vx_status VX_API_CALL vxScheduleGraph(vx_graph graph)
     if (ownIsValidReference(&graph->base) == vx_false_e)
         return VX_ERROR_INVALID_REFERENCE;
 
+#ifdef OPENVX_USE_PIPELINING
+    if (graph->pipeline_configured == vx_true_e &&
+        graph->schedule_mode != VX_GRAPH_SCHEDULE_MODE_NORMAL)
+    {
+        return ownPipelineSchedule(graph);
+    }
+#endif
+
     if (graph->verified == vx_false_e)
     {
         status = vxVerifyGraph((vx_graph)graph);
@@ -2602,6 +2687,18 @@ VX_API_ENTRY vx_status VX_API_CALL vxWaitGraph(vx_graph graph)
     vx_status status = VX_SUCCESS;
     if (ownIsValidReference(&graph->base) == vx_false_e)
         return VX_ERROR_INVALID_REFERENCE;
+
+#ifdef OPENVX_USE_PIPELINING
+    if (graph->pipeline_configured == vx_true_e &&
+        graph->schedule_mode != VX_GRAPH_SCHEDULE_MODE_NORMAL)
+    {
+        while (graph->in_flight > 0)
+        {
+            ownWaitEvent(&graph->idle_event, VX_INT_FOREVER);
+        }
+        return VX_SUCCESS;
+    }
+#endif
 
     if (ownSemTryWait(&graph->lock) == vx_false_e) // locked
     {
