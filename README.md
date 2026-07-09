@@ -46,7 +46,7 @@ The following is a summary of what this sample implementation IS and IS NOT:
 * Production ready
 * Actively maintained by Khronos publicly
 
-> **Note:** The Pipelining, Streaming, and Event Queue extension APIs are present as stubs (return `VX_ERROR_NOT_IMPLEMENTED`). They are included for API compatibility but do not have functional implementations.
+> **Note:** As of the current tip of tree (ToT), the Pipelining extension API has a functional implementation. The Streaming and Event Queue extension APIs are still present as stubs (return `VX_ERROR_NOT_IMPLEMENTED`); they are included for API compatibility but do not yet have functional implementations.
 
 ## Building and Executing
 
@@ -514,17 +514,29 @@ LD_LIBRARY_PATH=$OPENVX_DIR/bin:./lib ./bin/vx_test_conformance
 
 > **Note:** Build.py does not have a `--user_data_object` flag. To enable User Data Object support, use CMake directly with `-DOPENVX_USE_USER_DATA_OBJECT=ON`.
 
-### Mode 7 - Vision, Enhanced Vision, Pipelining, & Streaming
+### Mode 7 - Vision, Enhanced Vision, & Pipelining
+
+```shell
+python3 Build.py --os=Linux --arch=64 --conf=Debug --conf_vision --enh_vision --pipelining
+mkdir build-cts-mode-7 && cd build-cts-mode-7
+cmake -DOPENVX_INCLUDES=$OPENVX_DIR/include -DOPENVX_LIBRARIES=$OPENVX_DIR/bin/libopenvx.so\;$OPENVX_DIR/bin/libvxu.so\;pthread\;dl\;m\;rt -DOPENVX_CONFORMANCE_VISION=ON -DOPENVX_USE_ENHANCED_VISION=ON -DOPENVX_USE_PIPELINING=ON ../cts/
+cmake --build .
+LD_LIBRARY_PATH=$OPENVX_DIR/bin:./lib ./bin/vx_test_conformance '--filter=GraphPipeline.*'
+```
+
+> **Note:** As of the current tip of tree (ToT), Pipelining is implemented, so the `GraphPipeline.*` conformance tests are expected to pass.
+
+### Mode 8 - Vision, Enhanced Vision, Pipelining, & Streaming
 
 ```shell
 python3 Build.py --os=Linux --arch=64 --conf=Debug --conf_vision --enh_vision --pipelining --streaming
-mkdir build-cts-mode-7 && cd build-cts-mode-7
+mkdir build-cts-mode-8 && cd build-cts-mode-8
 cmake -DOPENVX_INCLUDES=$OPENVX_DIR/include -DOPENVX_LIBRARIES=$OPENVX_DIR/bin/libopenvx.so\;$OPENVX_DIR/bin/libvxu.so\;pthread\;dl\;m\;rt -DOPENVX_CONFORMANCE_VISION=ON -DOPENVX_USE_ENHANCED_VISION=ON -DOPENVX_USE_PIPELINING=ON -DOPENVX_USE_STREAMING=ON ../cts/
 cmake --build .
-LD_LIBRARY_PATH=$OPENVX_DIR/bin:./lib ./bin/vx_test_conformance
+LD_LIBRARY_PATH=$OPENVX_DIR/bin:./lib ./bin/vx_test_conformance '--filter=GraphStreaming.*'
 ```
 
-> **Note:** The Pipelining, Streaming, and Event Queue APIs are stub implementations that return `VX_ERROR_NOT_IMPLEMENTED`. Conformance tests for this mode are expected to fail.
+> **Note:** The Streaming and Event Queue APIs are still stub implementations that return `VX_ERROR_NOT_IMPLEMENTED`, so the `GraphStreaming.*` tests are expected to fail. In CI this job is marked `allow_failure`.
 
 ## Included Unit Tests
 
@@ -609,14 +621,15 @@ The project uses GitLab CI (`.gitlab-ci.yml`) with an `ubuntu:22.04` image. The 
 
 1. Installs prerequisites: `cmake`, `make`, `git`, `python3`, `gcc`, `g++`
 2. Builds OpenVX in both Release and Debug configurations
-3. Runs 7 conformance test modes:
+3. Runs 8 conformance test modes:
    - Mode 1: Vision
    - Mode 2: Vision & Enhanced Vision
    - Mode 3: Neural Networks
    - Mode 4: NNEF Import
    - Mode 5: Combined (Vision, Enhanced Vision, Neural Networks, Import/Export, U1)
    - Mode 6: User Data Object
-   - Mode 7: Pipelining & Streaming (`allow_failure` -- stub implementation)
+   - Mode 7: Pipelining (implemented on ToT; runs the `GraphPipeline.*` tests, expected to pass)
+   - Mode 8: Streaming (`allow_failure` -- Streaming remains a stub; runs the `GraphStreaming.*` tests)
 
 Git submodules are fetched automatically via `GIT_SUBMODULE_STRATEGY: recursive`.
 
