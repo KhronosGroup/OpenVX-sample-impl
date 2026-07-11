@@ -40,7 +40,7 @@ jobs:
   # Stage 1 — Build sample (Debug) + Conformance Test Suite
   # ================================================================
   build:
-    name: Build Sample (Debug) + CTS
+    name: Build · OpenVX (Debug) + CTS
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
@@ -87,7 +87,7 @@ jobs:
   # Stage 1 — Build sample (Release) — build gate only
   # ================================================================
   build-release:
-    name: Build Sample (Release)
+    name: Build · OpenVX (Release)
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
@@ -119,7 +119,7 @@ jobs:
   # Stage 2 — Conformance test slices (need both Stage 1 builds)
   # ================================================================
   baseline:
-    name: Baseline / smoke
+    name: Conformance · Framework · Baseline & smoke
     needs: [build, build-release]
     runs-on: ubuntu-22.04
     steps:
@@ -134,7 +134,7 @@ jobs:
             timeout 300 ./bin/vx_test_conformance --filter="GraphBase.*:Logging.*:SmokeTestBase.*:SmokeTest.*:TargetBase.*:Target.*"
 
   graph:
-    name: Graph (delay / ROI / callback / user node)
+    name: Conformance · Framework · Graph
     needs: [build, build-release]
     runs-on: ubuntu-22.04
     continue-on-error: true
@@ -147,10 +147,10 @@ jobs:
         run: |
           cd build-cts && chmod +x bin/vx_test_conformance
           LD_LIBRARY_PATH="$OPENVX_DIR/bin:./lib" \
-            timeout 600 ./bin/vx_test_conformance --filter="Graph.*:GraphCallback.*:GraphDelay.*:GraphROI.*:UserNode.*:-GraphPipeline.*:-GraphStreaming.*"
+            timeout 600 ./bin/vx_test_conformance --filter="Graph.*:GraphEnhanced.*:GraphCallback.*:GraphDelay.*:GraphDelayTensor.*:GraphROI.*:UserNode.*:-GraphPipeline.*:-GraphStreaming.*"
 
   data-objects:
-    name: Data objects
+    name: Conformance · Data objects
     needs: [build, build-release]
     runs-on: ubuntu-22.04
     continue-on-error: true
@@ -166,7 +166,7 @@ jobs:
             timeout 300 ./bin/vx_test_conformance --filter="Scalar.*:Array.*:ObjectArray.*:Matrix.*:Convolution.*:Distribution.*:LUT.*:Histogram.*"
 
   user-data-object:
-    name: "KHR extension: user-data-object"
+    name: "Conformance · Extension · User Data Object"
     needs: [build, build-release]
     runs-on: ubuntu-22.04
     steps:
@@ -181,7 +181,7 @@ jobs:
             timeout 120 ./bin/vx_test_conformance --filter="UserDataObject.*"
 
   user-kernels:
-    name: User kernels / nodes
+    name: Conformance · Framework · User kernels
     needs: [build, build-release]
     runs-on: ubuntu-22.04
     continue-on-error: true
@@ -197,7 +197,7 @@ jobs:
             timeout 300 ./bin/vx_test_conformance --filter="UserNode.*:UserKernel.*"
 
   import-export:
-    name: "KHR extension: import/export (IX)"
+    name: "Conformance · Extension · Import/Export (IX)"
     needs: [build, build-release]
     runs-on: ubuntu-22.04
     continue-on-error: true
@@ -210,13 +210,16 @@ jobs:
         run: |
           cd build-cts && chmod +x bin/vx_test_conformance
           LD_LIBRARY_PATH="$OPENVX_DIR/bin:./lib" \
-            timeout 600 ./bin/vx_test_conformance --filter="Graph/ExportImport*:*IX*"
+            timeout 600 ./bin/vx_test_conformance --filter="Graph/ExportImport*:*IX*:ExtensionObject.*"
 
   # ================================================================
-  # Pipelining (implemented on ToT)
+  # Pipelining (implemented on ToT) — split into fast + stress slices.
+  # Tests run against the unoptimized Debug C-model, which is much slower
+  # than an optimized build, so the heavy loop_count cases are isolated
+  # into their own job to run in parallel with the light ones.
   # ================================================================
-  pipelining:
-    name: "KHR extension: pipelining"
+  pipelining-fast:
+    name: "Conformance · Extension · Pipelining (fast)"
     needs: [build, build-release]
     runs-on: ubuntu-22.04
     steps:
@@ -224,18 +227,36 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: openvx-conformance
-      - name: Run pipelining tests
+      - name: Run pipelining fast tests (loop_count 0 / 1)
         run: |
           cd build-cts && chmod +x bin/vx_test_conformance
           LD_LIBRARY_PATH="$OPENVX_DIR/bin:./lib" \
-            timeout 1200 ./bin/vx_test_conformance --filter="GraphPipeline.*"
+            timeout 1800 ./bin/vx_test_conformance --filter="GraphPipeline.*:-*loop_count=100*:-*loop_count=1000*"
+
+  pipelining-stress:
+    name: "Conformance · Extension · Pipelining (stress)"
+    needs: [build, build-release]
+    runs-on: ubuntu-22.04
+    # Heavy loop_count=100/1000 cases (incl. a 2048x1024 image) on the Debug
+    # C-model need generous headroom.
+    timeout-minutes: 90
+    steps:
+      - name: Download conformance artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: openvx-conformance
+      - name: Run pipelining stress tests (loop_count 100 / 1000)
+        run: |
+          cd build-cts && chmod +x bin/vx_test_conformance
+          LD_LIBRARY_PATH="$OPENVX_DIR/bin:./lib" \
+            timeout 4800 ./bin/vx_test_conformance --filter="*loop_count=100*:*loop_count=1000*"
 
   # ================================================================
   # Streaming — still a stub in this repo (VX_ERROR_NOT_IMPLEMENTED),
   # so these are allowed to fail and surface as warnings.
   # ================================================================
   streaming:
-    name: "KHR extension: streaming (warning only)"
+    name: "Conformance · Extension · Streaming (warning only)"
     needs: [build, build-release]
     runs-on: ubuntu-22.04
     continue-on-error: true
@@ -257,7 +278,7 @@ jobs:
   # test_data, so this is allowed to fail.
   # ================================================================
   neural-networks:
-    name: Neural Networks
+    name: Conformance · Neural Networks · Core
     needs: [build, build-release]
     runs-on: ubuntu-22.04
     continue-on-error: true
@@ -273,7 +294,7 @@ jobs:
             timeout 600 ./bin/vx_test_conformance --filter="TensorNetworks.*:-TensorNetworks.AlexNetTestNetwork:*NN*:VxKernelOfNNAndNNEF.*:VxParameterOfNNAndNNEF.*:MetaFormatOfNNAndNNEF.*:UserKernelsOfNNAndNNEF.*"
 
   nnef-import:
-    name: "KHR extension: NNEF import"
+    name: "Conformance · Neural Networks · NNEF import"
     needs: [build, build-release]
     runs-on: ubuntu-22.04
     continue-on-error: true
@@ -292,7 +313,7 @@ jobs:
   # Vision — functional groups (mirrors rustVX)
   # ================================================================
   vision-color:
-    name: "Vision: color / channel"
+    name: "Conformance · Vision · Color & channel"
     needs: [build, build-release]
     runs-on: ubuntu-22.04
     continue-on-error: true
@@ -308,7 +329,7 @@ jobs:
             timeout 300 ./bin/vx_test_conformance --filter="ColorConvert.*:ChannelExtract.*:ChannelCombine.*:vxConvertDepth.*:vxuConvertDepth.*"
 
   vision-filters:
-    name: "Vision: filters / morphology"
+    name: "Conformance · Vision · Filters & morphology"
     needs: [build, build-release]
     runs-on: ubuntu-22.04
     continue-on-error: true
@@ -324,7 +345,7 @@ jobs:
             timeout 600 ./bin/vx_test_conformance --filter="Box3x3.*:Gaussian3x3.*:Median3x3.*:Dilate3x3.*:Erode3x3.*:Sobel3x3.*:Magnitude.*:Phase.*:NonLinearFilter.*:Convolve.*:EqualizeHistogram.*"
 
   vision-arithmetic:
-    name: "Vision: arithmetic / bitwise"
+    name: "Conformance · Vision · Arithmetic & bitwise"
     needs: [build, build-release]
     runs-on: ubuntu-22.04
     continue-on-error: true
@@ -337,10 +358,10 @@ jobs:
         run: |
           cd build-cts && chmod +x bin/vx_test_conformance
           LD_LIBRARY_PATH="$OPENVX_DIR/bin:./lib" \
-            timeout 600 ./bin/vx_test_conformance --filter="vxAddSub.*:vxuAddSub.*:vxMultiply.*:vxuMultiply.*:vxBinOp8u.*:vxuBinOp8u.*:vxBinOp16s.*:vxuBinOp16s.*:vxNot.*:vxuNot.*:WeightedAverage.*:Threshold.*"
+            timeout 600 ./bin/vx_test_conformance --filter="vxAddSub.*:vxuAddSub.*:vxMultiply.*:vxuMultiply.*:vxBinOp8u.*:vxuBinOp8u.*:vxBinOp16s.*:vxuBinOp16s.*:vxBinOp1u.*:vxuBinOp1u.*:vxNot.*:vxuNot.*:WeightedAverage.*:Threshold.*"
 
   vision-geometric:
-    name: "Vision: geometric transforms"
+    name: "Conformance · Vision · Geometric"
     needs: [build, build-release]
     runs-on: ubuntu-22.04
     continue-on-error: true
@@ -356,7 +377,7 @@ jobs:
             timeout 600 ./bin/vx_test_conformance --filter="Scale.*:WarpAffine.*:WarpPerspective.*:Remap.*:HalfScaleGaussian.*"
 
   vision-features:
-    name: "Vision: features / edges"
+    name: "Conformance · Vision · Features & edges"
     needs: [build, build-release]
     runs-on: ubuntu-22.04
     continue-on-error: true
@@ -372,7 +393,7 @@ jobs:
             timeout 600 ./bin/vx_test_conformance --filter="HarrisCorners.*:FastCorners.*:vxCanny.*:vxuCanny.*"
 
   vision-statistics:
-    name: "Vision: statistics"
+    name: "Conformance · Vision · Statistics"
     needs: [build, build-release]
     runs-on: ubuntu-22.04
     continue-on-error: true
@@ -388,7 +409,7 @@ jobs:
             timeout 300 ./bin/vx_test_conformance --filter="MeanStdDev.*:MinMaxLoc.*:Integral.*"
 
   vision-image-ops:
-    name: "Vision: image ops"
+    name: "Conformance · Vision · Image ops"
     needs: [build, build-release]
     runs-on: ubuntu-22.04
     continue-on-error: true
@@ -404,7 +425,7 @@ jobs:
             timeout 600 ./bin/vx_test_conformance --filter="Image.*:vxCopyImagePatch.*:vxMapImagePatch.*:vxCreateImageFromChannel.*:vxCopyRemapPatch.*:vxMapRemapPatch.*"
 
   vision-pyramid:
-    name: "Vision: pyramid / optical flow"
+    name: "Conformance · Vision · Pyramid & optical flow"
     needs: [build, build-release]
     runs-on: ubuntu-22.04
     continue-on-error: true
@@ -423,7 +444,7 @@ jobs:
   # Enhanced Vision — functional groups (mirrors rustVX)
   # ================================================================
   enhanced-vision-tensor-arithmetic:
-    name: "Enhanced-Vision: Tensor Arithmetic"
+    name: "Conformance · Enhanced Vision · Tensor arithmetic"
     needs: [build, build-release]
     runs-on: ubuntu-22.04
     steps:
@@ -438,7 +459,7 @@ jobs:
             timeout 600 ./bin/vx_test_conformance --filter="TensorOp.*:Min.*:Max.*"
 
   enhanced-vision-tensor-transforms:
-    name: "Enhanced-Vision: Tensor Transforms"
+    name: "Conformance · Enhanced Vision · Tensor transforms"
     needs: [build, build-release]
     runs-on: ubuntu-22.04
     steps:
@@ -453,7 +474,7 @@ jobs:
             timeout 300 ./bin/vx_test_conformance --filter="Tensor*.*:-TensorOp.*"
 
   enhanced-vision-feature-extraction:
-    name: "Enhanced-Vision: Feature Extraction"
+    name: "Conformance · Enhanced Vision · Feature extraction"
     needs: [build, build-release]
     runs-on: ubuntu-22.04
     steps:
@@ -468,7 +489,7 @@ jobs:
             timeout 300 ./bin/vx_test_conformance --filter="HogCells.*:HogFeatures.*:MatchTemplate.*:LBP.*"
 
   enhanced-vision-post-processing:
-    name: "Enhanced-Vision: Post-Processing"
+    name: "Conformance · Enhanced Vision · Post-processing"
     needs: [build, build-release]
     runs-on: ubuntu-22.04
     steps:
@@ -483,7 +504,7 @@ jobs:
             timeout 300 ./bin/vx_test_conformance --filter="Copy.*:Nonmaxsuppression.*:Houghlinesp.*"
 
   enhanced-vision-advanced-filtering:
-    name: "Enhanced-Vision: Advanced Filtering"
+    name: "Conformance · Enhanced Vision · Advanced filtering"
     needs: [build, build-release]
     runs-on: ubuntu-22.04
     steps:
@@ -498,7 +519,7 @@ jobs:
             timeout 300 ./bin/vx_test_conformance --filter="BilateralFilter.*"
 
   enhanced-vision-control-flow:
-    name: "Enhanced-Vision: Control Flow"
+    name: "Conformance · Enhanced Vision · Control flow"
     needs: [build, build-release]
     runs-on: ubuntu-22.04
     steps:
@@ -510,6 +531,4 @@ jobs:
         run: |
           cd build-cts && chmod +x bin/vx_test_conformance
           LD_LIBRARY_PATH="$OPENVX_DIR/bin:./lib" \
-            timeout 120 ./bin/vx_test_conformance --filter="ControlFlow.SelectNode*"
-          LD_LIBRARY_PATH="$OPENVX_DIR/bin:./lib" \
-            timeout 300 ./bin/vx_test_conformance --filter="ControlFlow.ScalarOperationNode*"
+            timeout 600 ./bin/vx_test_conformance --filter="ControlFlow.*"
