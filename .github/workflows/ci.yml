@@ -61,7 +61,7 @@ jobs:
       - name: Build sample impl
         run: |
           mkdir -p build/Linux/x64/Debug && cd build/Linux/x64/Debug
-          cmake "$GITHUB_WORKSPACE" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX="$OPENVX_DIR" -DBUILD_X64=1 -DOPENVX_CONFORMANCE_VISION=ON && make install -j$(nproc)
+          cmake "$GITHUB_WORKSPACE" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX="$OPENVX_DIR" -DCMAKE_INSTALL_BINDIR=bin -DCMAKE_INSTALL_LIBDIR=bin -DBUILD_X64=1 -DOPENVX_CONFORMANCE_VISION=ON && make install -j$(nproc)
       - name: Build & run CTS
         run: |
           rm -rf "$GITHUB_WORKSPACE/build-cts" && mkdir -p "$GITHUB_WORKSPACE/build-cts" && cd "$GITHUB_WORKSPACE/build-cts"
@@ -86,7 +86,7 @@ jobs:
       - name: Build sample impl
         run: |
           mkdir -p build/Linux/x64/Debug && cd build/Linux/x64/Debug
-          cmake "$GITHUB_WORKSPACE" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX="$OPENVX_DIR" -DBUILD_X64=1 -DOPENVX_CONFORMANCE_VISION=ON -DOPENVX_USE_ENHANCED_VISION=ON && make install -j$(nproc)
+          cmake "$GITHUB_WORKSPACE" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX="$OPENVX_DIR" -DCMAKE_INSTALL_BINDIR=bin -DCMAKE_INSTALL_LIBDIR=bin -DBUILD_X64=1 -DOPENVX_CONFORMANCE_VISION=ON -DOPENVX_USE_ENHANCED_VISION=ON && make install -j$(nproc)
       - name: Build & run CTS
         run: |
           rm -rf "$GITHUB_WORKSPACE/build-cts" && mkdir -p "$GITHUB_WORKSPACE/build-cts" && cd "$GITHUB_WORKSPACE/build-cts"
@@ -111,7 +111,7 @@ jobs:
       - name: Build sample impl
         run: |
           mkdir -p build/Linux/x64/Debug && cd build/Linux/x64/Debug
-          cmake "$GITHUB_WORKSPACE" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX="$OPENVX_DIR" -DBUILD_X64=1 -DOPENVX_CONFORMANCE_NEURAL_NETWORKS=ON && make install -j$(nproc)
+          cmake "$GITHUB_WORKSPACE" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX="$OPENVX_DIR" -DCMAKE_INSTALL_BINDIR=bin -DCMAKE_INSTALL_LIBDIR=bin -DBUILD_X64=1 -DOPENVX_CONFORMANCE_NEURAL_NETWORKS=ON && make install -j$(nproc)
       - name: Build & run CTS
         run: |
           rm -rf "$GITHUB_WORKSPACE/build-cts" && mkdir -p "$GITHUB_WORKSPACE/build-cts" && cd "$GITHUB_WORKSPACE/build-cts"
@@ -136,7 +136,7 @@ jobs:
       - name: Build sample impl
         run: |
           mkdir -p build/Linux/x64/Debug && cd build/Linux/x64/Debug
-          cmake "$GITHUB_WORKSPACE" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX="$OPENVX_DIR" -DBUILD_X64=1 -DOPENVX_CONFORMANCE_NNEF_IMPORT=ON && make install -j$(nproc)
+          cmake "$GITHUB_WORKSPACE" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX="$OPENVX_DIR" -DCMAKE_INSTALL_BINDIR=bin -DCMAKE_INSTALL_LIBDIR=bin -DBUILD_X64=1 -DOPENVX_CONFORMANCE_NNEF_IMPORT=ON && make install -j$(nproc)
       - name: Build & run CTS
         run: |
           rm -rf "$GITHUB_WORKSPACE/build-cts" && mkdir -p "$GITHUB_WORKSPACE/build-cts" && cd "$GITHUB_WORKSPACE/build-cts"
@@ -162,7 +162,7 @@ jobs:
       - name: Build sample impl
         run: |
           mkdir -p build/Linux/x64/Debug && cd build/Linux/x64/Debug
-          cmake "$GITHUB_WORKSPACE" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX="$OPENVX_DIR" -DBUILD_X64=1 -DOPENVX_CONFORMANCE_VISION=ON -DOPENVX_USE_ENHANCED_VISION=ON -DOPENVX_CONFORMANCE_NEURAL_NETWORKS=ON -DOPENVX_USE_NN=ON -DOPENVX_USE_IX=ON -DOPENVX_USE_U1=ON && make install -j$(nproc)
+          cmake "$GITHUB_WORKSPACE" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX="$OPENVX_DIR" -DCMAKE_INSTALL_BINDIR=bin -DCMAKE_INSTALL_LIBDIR=bin -DBUILD_X64=1 -DOPENVX_CONFORMANCE_VISION=ON -DOPENVX_USE_ENHANCED_VISION=ON -DOPENVX_CONFORMANCE_NEURAL_NETWORKS=ON -DOPENVX_USE_NN=ON -DOPENVX_USE_IX=ON -DOPENVX_USE_U1=ON && make install -j$(nproc)
       - name: Build & run CTS
         run: |
           rm -rf "$GITHUB_WORKSPACE/build-cts" && mkdir -p "$GITHUB_WORKSPACE/build-cts" && cd "$GITHUB_WORKSPACE/build-cts"
@@ -187,7 +187,7 @@ jobs:
       - name: Build sample impl
         run: |
           mkdir -p build/Linux/x64/Debug && cd build/Linux/x64/Debug
-          cmake "$GITHUB_WORKSPACE" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX="$OPENVX_DIR" -DBUILD_X64=1 -DOPENVX_USE_USER_DATA_OBJECT=ON && make install -j$(nproc)
+          cmake "$GITHUB_WORKSPACE" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX="$OPENVX_DIR" -DCMAKE_INSTALL_BINDIR=bin -DCMAKE_INSTALL_LIBDIR=bin -DBUILD_X64=1 -DOPENVX_USE_USER_DATA_OBJECT=ON && make install -j$(nproc)
       - name: Build & run CTS
         run: |
           rm -rf "$GITHUB_WORKSPACE/build-cts" && mkdir -p "$GITHUB_WORKSPACE/build-cts" && cd "$GITHUB_WORKSPACE/build-cts"
@@ -212,7 +212,7 @@ jobs:
       - name: Build sample impl
         run: |
           mkdir -p build/Linux/x64/Debug && cd build/Linux/x64/Debug
-          cmake "$GITHUB_WORKSPACE" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX="$OPENVX_DIR" -DBUILD_X64=1 -DOPENVX_CONFORMANCE_VISION=ON -DOPENVX_USE_ENHANCED_VISION=ON -DOPENVX_USE_PIPELINING=ON && make install -j$(nproc)
+          cmake "$GITHUB_WORKSPACE" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX="$OPENVX_DIR" -DCMAKE_INSTALL_BINDIR=bin -DCMAKE_INSTALL_LIBDIR=bin -DBUILD_X64=1 -DOPENVX_CONFORMANCE_VISION=ON -DOPENVX_USE_ENHANCED_VISION=ON -DOPENVX_USE_PIPELINING=ON && make install -j$(nproc)
       - name: Build & run CTS
         run: |
           rm -rf "$GITHUB_WORKSPACE/build-cts" && mkdir -p "$GITHUB_WORKSPACE/build-cts" && cd "$GITHUB_WORKSPACE/build-cts"
@@ -239,7 +239,7 @@ jobs:
       - name: Build sample impl
         run: |
           mkdir -p build/Linux/x64/Debug && cd build/Linux/x64/Debug
-          cmake "$GITHUB_WORKSPACE" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX="$OPENVX_DIR" -DBUILD_X64=1 -DOPENVX_CONFORMANCE_VISION=ON -DOPENVX_USE_ENHANCED_VISION=ON -DOPENVX_USE_PIPELINING=ON -DOPENVX_USE_STREAMING=ON && make install -j$(nproc)
+          cmake "$GITHUB_WORKSPACE" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX="$OPENVX_DIR" -DCMAKE_INSTALL_BINDIR=bin -DCMAKE_INSTALL_LIBDIR=bin -DBUILD_X64=1 -DOPENVX_CONFORMANCE_VISION=ON -DOPENVX_USE_ENHANCED_VISION=ON -DOPENVX_USE_PIPELINING=ON -DOPENVX_USE_STREAMING=ON && make install -j$(nproc)
       - name: Build & run CTS
         run: |
           rm -rf "$GITHUB_WORKSPACE/build-cts" && mkdir -p "$GITHUB_WORKSPACE/build-cts" && cd "$GITHUB_WORKSPACE/build-cts"
