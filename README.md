@@ -1,5 +1,4 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![codecov](https://codecov.io/gh/KhronosGroup/OpenVX-sample-impl/branch/openvx_1.3/graph/badge.svg)](https://codecov.io/gh/KhronosGroup/OpenVX-sample-impl)
 
 <p align="center"><img width="30%" src="https://raw.githubusercontent.com/GPUOpen-ProfessionalCompute-Libraries/MIVisionX/master/docs/data/OpenVX_logo.png" /></p>
 
@@ -617,11 +616,11 @@ dpkg-deb -i <path>/openvx-*.deb
 
 ## CI/CD
 
-The project uses GitLab CI (`.gitlab-ci.yml`) with an `ubuntu:22.04` image. The CI pipeline:
+The project runs continuous integration on both GitHub Actions and GitLab CI, using an Ubuntu 22.04 environment. Both pipelines share the same structure:
 
-1. Installs prerequisites: `cmake`, `make`, `git`, `python3`, `gcc`, `g++`
-2. Builds OpenVX in both Release and Debug configurations
-3. Runs 8 conformance test modes:
+1. Install prerequisites: `cmake`, `make`, `git`, `python3`, `gcc`, `g++`
+2. Build OpenVX in both Release and Debug configurations
+3. Run 8 conformance test modes:
    - Mode 1: Vision
    - Mode 2: Vision & Enhanced Vision
    - Mode 3: Neural Networks
@@ -629,9 +628,17 @@ The project uses GitLab CI (`.gitlab-ci.yml`) with an `ubuntu:22.04` image. The 
    - Mode 5: Combined (Vision, Enhanced Vision, Neural Networks, Import/Export, U1)
    - Mode 6: User Data Object
    - Mode 7: Pipelining (implemented on ToT; runs the `GraphPipeline.*` tests, expected to pass)
-   - Mode 8: Streaming (`allow_failure` -- Streaming remains a stub; runs the `GraphStreaming.*` tests)
+   - Mode 8: Streaming (allowed to fail -- Streaming remains a stub; runs the `GraphStreaming.*` tests)
 
-Git submodules are fetched automatically via `GIT_SUBMODULE_STRATEGY: recursive`.
+Git submodules are fetched recursively.
+
+### GitHub Actions
+
+The GitHub Actions workflow (`.github/workflows/ci.yml`) runs on every pull request and on pushes to all branches. It defines a `build` job (Release + Debug) plus one job per conformance test mode; each job checks out the repository with submodules, builds the sample implementation, then builds and runs the CTS. The Streaming job is marked `continue-on-error: true` so it surfaces as a warning rather than failing the pipeline.
+
+### GitLab CI
+
+The GitLab CI pipeline (`.gitlab-ci.yml`) uses the `ubuntu:22.04` image with a `build` stage and a `test` stage covering the same 8 conformance modes. Submodules are fetched via `GIT_SUBMODULE_STRATEGY: recursive`, and the Streaming job uses `allow_failure: true`.
 
 ## Bug Reporting
 
