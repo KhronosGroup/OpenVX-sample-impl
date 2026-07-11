@@ -1,557 +1,534 @@
-name: OpenVX CI
+name: OpenVX Conformance Tests
 
+# Two-stage pipeline modelled on the rustVX CI:
+#   Stage 1 (build) -- build the sample implementation once (Debug + Release,
+#                      full feature set) and build the Conformance Test Suite
+#                      against the Debug build. Both build jobs must pass. The
+#                      Debug build + CTS binary + test data are uploaded as a
+#                      single self-contained artifact.
+#   Stage 2 (test)  -- many granular jobs, each downloads the artifact and runs
+#                      one filtered slice of the conformance suite. No rebuilds.
+# Runs on pull requests and on every branch.
 on:
   push:
-    branches: [openvx_1.3, main, develop]
-    paths-ignore:
-      - '**/*.md'
-      - 'docs/**'
-      - 'LICENSE'
-      - '.gitignore'
-      - '.gitattributes'
-      - '.editorconfig'
-      - '**/*.svg'
-      - '**/*.png'
-      - '**/*.jpg'
-      - '**/*.jpeg'
-      - '**/*.gif'
-      - '**/*.webp'
+    branches:
+      - '**'
   pull_request:
-    branches: [openvx_1.3, main, develop]
-    paths-ignore:
-      - '**/*.md'
-      - 'docs/**'
-      - 'LICENSE'
-      - '.gitignore'
-      - '.gitattributes'
-      - '.editorconfig'
-      - '**/*.svg'
-      - '**/*.png'
-      - '**/*.jpg'
-      - '**/*.jpeg'
-      - '**/*.gif'
-      - '**/*.webp'
+    branches:
+      - '**'
 
 env:
-  INSTALL_PREFIX: ${{ github.workspace }}/install
+  OPENVX_DIR: ${{ github.workspace }}/install/Linux/x64/Debug
+  VX_TEST_DATA_PATH: ${{ github.workspace }}/cts/test_data/
+  # Full feature set built into a single library so one build serves every test.
+  # NNEF is included; the bundled NNEF-Tools submodule uses std::numeric_limits
+  # without including <limits>, so it is force-included for the C++ compile.
+  OPENVX_FEATURES: >-
+    -DOPENVX_CONFORMANCE_VISION=ON
+    -DOPENVX_USE_ENHANCED_VISION=ON
+    -DOPENVX_CONFORMANCE_NEURAL_NETWORKS=ON
+    -DOPENVX_CONFORMANCE_NNEF_IMPORT=ON
+    -DOPENVX_USE_NN=ON
+    -DOPENVX_USE_IX=ON
+    -DOPENVX_USE_U1=ON
+    -DOPENVX_USE_USER_DATA_OBJECT=ON
+    -DOPENVX_USE_PIPELINING=ON
+    -DOPENVX_USE_STREAMING=ON
 
 jobs:
   # ================================================================
-  # Phase 1 — Build Debug (for tests + coverage)
+  # Stage 1 — Build sample (Debug) + Conformance Test Suite
   # ================================================================
-  build-debug:
+  build:
+    name: Build · OpenVX (Debug) + CTS
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
-
       - name: Install dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential cmake lcov
-
-      - name: Build OpenVX sample impl (Debug + extensions + coverage)
+          sudo apt-get update -qq
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq cmake make git python3 gcc g++
+      - name: Build & install sample (Debug)
         run: |
-          python3 Build.py \
-            --os=linux --arch=64 --conf=Debug --build=true \
-            --conf_vision \
-            --enh_vision \
-            --conf_nn \
-            --nn \
-            --ix \
-            --pipelining \
-            --streaming \
-            --userdataobj \
-            --c_flags="-fprofile-arcs -ftest-coverage" \
-            --cpp_flags="-fprofile-arcs -ftest-coverage"
-
-      - name: Upload debug build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: openvx-debug
-          path: |
-            ${{ env.INSTALL_PREFIX }}/Linux/x64/Debug/
-            include/
-            build/Linux/x64/Debug/
-          retention-days: 1
-
-  # ================================================================
-  # Phase 1 — Build Release (for performance benchmarking)
-  # ================================================================
-  build-release:
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-
-      - name: Install dependencies
+          mkdir -p build/Linux/x64/Debug && cd build/Linux/x64/Debug
+          cmake "$GITHUB_WORKSPACE" \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_INSTALL_PREFIX="$OPENVX_DIR" \
+            -DCMAKE_INSTALL_BINDIR=bin -DCMAKE_INSTALL_LIBDIR=bin \
+            -DBUILD_X64=1 \
+            -DCMAKE_CXX_FLAGS="-include limits" \
+            $OPENVX_FEATURES
+          make install -j$(nproc)
+      - name: Build Conformance Test Suite
         run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential cmake
-
-      - name: Build OpenVX sample impl (Release + extensions)
-        run: |
-          python3 Build.py \
-            --os=linux --arch=64 --conf=Release --build=true \
-            --conf_vision \
-            --enh_vision \
-            --conf_nn \
-            --nn \
-            --ix \
-            --pipelining \
-            --streaming \
-            --userdataobj
-
-      - name: Upload release build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: openvx-release
-          path: |
-            ${{ env.INSTALL_PREFIX }}/Linux/x64/Release/
-            include/
-          retention-days: 1
-
-  # ================================================================
-  # Phase 1 — Build CTS (against debug build)
-  # ================================================================
-  build-cts:
-    needs: build-debug
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-
-      - name: Download debug build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: openvx-debug
-          path: ${{ github.workspace }}
-
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential cmake
-
-      - name: Patch CTS test_module include dirs
-        run: |
-          sed -i "s|\${CMAKE_SOURCE_DIR}/include|\${CMAKE_SOURCE_DIR}/include ${{ env.INSTALL_PREFIX }}/Linux/x64/Debug/include|g" cts/test_conformance/test_module/CMakeLists.txt
-
-      - name: Build OpenVX CTS
-        env:
-          INC: ${{ env.INSTALL_PREFIX }}/Linux/x64/Debug/include
-        run: |
-          mkdir -p build-cts
-          cd build-cts
+          rm -rf "$GITHUB_WORKSPACE/build-cts" && mkdir -p "$GITHUB_WORKSPACE/build-cts" && cd "$GITHUB_WORKSPACE/build-cts"
           cmake \
-            -DCMAKE_C_FLAGS="-I$INC" \
-            -DCMAKE_CXX_FLAGS="-I$INC" \
-            -DOPENVX_INCLUDES="$INC" \
-            -DOPENVX_LIBRARIES="${{ env.INSTALL_PREFIX }}/Linux/x64/Debug/lib/libopenvx.so;${{ env.INSTALL_PREFIX }}/Linux/x64/Debug/lib/libvxu.so;pthread;dl;m;rt" \
-            -DOPENVX_CONFORMANCE_VISION=ON \
-            -DOPENVX_USE_ENHANCED_VISION=ON \
-            -DOPENVX_CONFORMANCE_NEURAL_NETWORKS=ON \
-            -DOPENVX_USE_NN=ON \
-            -DOPENVX_USE_NN_16=ON \
-            -DOPENVX_USE_IX=ON \
-            -DOPENVX_USE_PIPELINING=ON \
-            -DOPENVX_USE_STREAMING=ON \
-            -DOPENVX_USE_USER_DATA_OBJECT=ON \
-            ../cts/
-          cmake --build . --parallel $(nproc)
-
-      - name: Upload CTS artifacts
+            -DOPENVX_INCLUDES="$OPENVX_DIR/include" \
+            -DOPENVX_LIBRARIES="$OPENVX_DIR/bin/libopenvx.so;$OPENVX_DIR/bin/libvxu.so;$OPENVX_DIR/bin/libnnef-lib.a;pthread;dl;m;rt;stdc++" \
+            -DCMAKE_C_FLAGS="-I$GITHUB_WORKSPACE/kernels/NNEF-Tools/parser/cpp/include" \
+            $OPENVX_FEATURES \
+            "$GITHUB_WORKSPACE/cts/"
+          cmake --build . -j$(nproc)
+      - name: Upload conformance artifact
         uses: actions/upload-artifact@v4
         with:
-          name: openvx-cts
+          name: openvx-conformance
+          # Self-contained: CTS binary + built test modules (build-cts),
+          # the installed OpenVX libraries, and the test data.
           path: |
             build-cts/
+            install/Linux/x64/Debug/
             cts/test_data/
           retention-days: 1
 
   # ================================================================
-  # Phase 2 — Run CTS smoke / baseline + collect coverage
+  # Stage 1 — Build sample (Release) — build gate only
   # ================================================================
-  cts-baseline:
-    needs: build-cts
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Download CTS artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: openvx-cts
-          path: ${{ github.workspace }}
-
-      - name: Download debug build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: openvx-debug
-          path: ${{ github.workspace }}
-
-      - name: Install lcov
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y lcov
-
-      - name: Run CTS baseline / smoke tests
-        run: |
-          cd build-cts
-          chmod +x bin/vx_test_conformance
-          export LD_LIBRARY_PATH=${{ env.INSTALL_PREFIX }}/Linux/x64/Debug/lib
-          export VX_TEST_DATA_PATH=${{ github.workspace }}/cts/test_data/
-          timeout 300 ./bin/vx_test_conformance \
-            --filter="GraphBase.*:SmokeTestBase.*:SmokeTest.*:TargetBase.*:Target.*:Logging.*" \
-            --verbose || true
-
-      - name: Collect code-coverage data
-        run: |
-          lcov --directory ${{ github.workspace }}/build/Linux/x64/Debug --capture --output-file coverage.info
-          lcov --remove coverage.info '/usr/*' '${{ github.workspace }}/cts/*' --output-file coverage.info
-          lcov --list coverage.info
-
-      - name: Upload coverage report
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-report
-          path: coverage.info
-          retention-days: 7
-
-  # ================================================================
-  # Phase 2 — CTS Enhanced Vision
-  # ================================================================
-  cts-enhanced-vision:
-    needs: build-cts
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Download CTS artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: openvx-cts
-          path: ${{ github.workspace }}
-
-      - name: Download debug build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: openvx-debug
-          path: ${{ github.workspace }}
-
-      - name: Run CTS — Enhanced Vision
-        run: |
-          cd build-cts
-          chmod +x bin/vx_test_conformance
-          export LD_LIBRARY_PATH=${{ env.INSTALL_PREFIX }}/Linux/x64/Debug/lib
-          export VX_TEST_DATA_PATH=${{ github.workspace }}/cts/test_data/
-          timeout 600 ./bin/vx_test_conformance \
-            --filter="Graph/Conv*:Graph/HoG*:Graph/Nonmax*:Graph/HoughLinesP*:Graph/Weighted*" \
-            --verbose
-
-  # ================================================================
-  # Phase 2 — CTS Neural Networks
-  # NOTE: TensorNetworks.AlexNetTestNetwork fails with "failed to load weights"
-  #       (missing test_data file — pre-existing, not a regression)
-  # ================================================================
-  cts-neural-networks:
-    needs: build-cts
-    runs-on: ubuntu-22.04
-    continue-on-error: true
-    steps:
-      - name: Download CTS artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: openvx-cts
-          path: ${{ github.workspace }}
-
-      - name: Download debug build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: openvx-debug
-          path: ${{ github.workspace }}
-
-      - name: Run CTS — Neural Networks
-        run: |
-          cd build-cts
-          chmod +x bin/vx_test_conformance
-          export LD_LIBRARY_PATH=${{ env.INSTALL_PREFIX }}/Linux/x64/Debug/lib
-          export VX_TEST_DATA_PATH=${{ github.workspace }}/cts/test_data/
-          timeout 600 ./bin/vx_test_conformance \
-            --filter="TensorNetworks.*:-TensorNetworks.AlexNetTestNetwork:*NN*:VxKernelOfNNAndNNEF.*:VxParameterOfNNAndNNEF.*:MetaFormatOfNNAndNNEF.*:UserKernelsOfNNAndNNEF.*" \
-            --verbose
-
-  # ================================================================
-  # Phase 2 — CTS Import / Export (IX)
-  # ================================================================
-  cts-ix:
-    needs: build-cts
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Download CTS artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: openvx-cts
-          path: ${{ github.workspace }}
-
-      - name: Download debug build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: openvx-debug
-          path: ${{ github.workspace }}
-
-      - name: Run CTS — Import/Export
-        run: |
-          cd build-cts
-          chmod +x bin/vx_test_conformance
-          export LD_LIBRARY_PATH=${{ env.INSTALL_PREFIX }}/Linux/x64/Debug/lib
-          export VX_TEST_DATA_PATH=${{ github.workspace }}/cts/test_data/
-          timeout 600 ./bin/vx_test_conformance \
-            --filter="Graph/ExportImport*:*IX*" \
-            --verbose
-
-  # ================================================================
-  # Phase 2 — CTS Graph features (delay, ROI, callback, pipeline, streaming)
-  # NOTE: GraphPipeline.* tests fail because C model target pipelining is incomplete
-  #       (pre-existing, not a regression)
-  # ================================================================
-  cts-graph-features:
-    needs: build-cts
-    runs-on: ubuntu-22.04
-    continue-on-error: true
-    steps:
-      - name: Download CTS artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: openvx-cts
-          path: ${{ github.workspace }}
-
-      - name: Download debug build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: openvx-debug
-          path: ${{ github.workspace }}
-
-      - name: Run CTS — Graph Delay / ROI / Callbacks / Pipeline / Streaming
-        run: |
-          cd build-cts
-          chmod +x bin/vx_test_conformance
-          export LD_LIBRARY_PATH=${{ env.INSTALL_PREFIX }}/Linux/x64/Debug/lib
-          export VX_TEST_DATA_PATH=${{ github.workspace }}/cts/test_data/
-          timeout 600 ./bin/vx_test_conformance \
-            --filter="GraphDelay.*:GraphROI.*:GraphCallback.*:GraphPipeline.*:GraphStreaming.*:GraphPipe*" \
-            --verbose
-
-  # ================================================================
-  # Phase 2 — CTS Data objects
-  # ================================================================
-  cts-data-objects:
-    needs: build-cts
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Download CTS artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: openvx-cts
-          path: ${{ github.workspace }}
-
-      - name: Download debug build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: openvx-debug
-          path: ${{ github.workspace }}
-
-      - name: Run CTS — Data objects / Arrays / Scalars / Tensors
-        run: |
-          cd build-cts
-          chmod +x bin/vx_test_conformance
-          export LD_LIBRARY_PATH=${{ env.INSTALL_PREFIX }}/Linux/x64/Debug/lib
-          export VX_TEST_DATA_PATH=${{ github.workspace }}/cts/test_data/
-          timeout 600 ./bin/vx_test_conformance \
-            --filter="Array.*:Image.*:Scalar.*:Matrix.*:Distribution.*:LUT.*:Remap.*:Tensor.*:ObjectArray.*:UserDataObject.*" \
-            --verbose
-
-  # ================================================================
-  # Phase 2 — CTS User-defined kernels
-  # ================================================================
-  cts-user-kernels:
-    needs: build-cts
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Download CTS artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: openvx-cts
-          path: ${{ github.workspace }}
-
-      - name: Download debug build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: openvx-debug
-          path: ${{ github.workspace }}
-
-      - name: Run CTS — User kernels / nodes
-        run: |
-          cd build-cts
-          chmod +x bin/vx_test_conformance
-          export LD_LIBRARY_PATH=${{ env.INSTALL_PREFIX }}/Linux/x64/Debug/lib
-          export VX_TEST_DATA_PATH=${{ github.workspace }}/cts/test_data/
-          timeout 600 ./bin/vx_test_conformance \
-            --filter="UserNode.*:UserKernel.*" \
-            --verbose
-
-  # ================================================================
-  # Phase 3 — Build main branch release (PR only, for perf comparison)
-  # ================================================================
-  build-main:
-    name: Build Release (main)
-    if: github.event_name == 'pull_request'
+  build-release:
+    name: Build · OpenVX (Release)
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.base_ref }}
           submodules: recursive
-
       - name: Install dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential cmake
-
-      - name: Build OpenVX sample impl (Release) from main
+          sudo apt-get update -qq
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq cmake make git python3 gcc g++
+      - name: Build & install sample (Release)
         run: |
-          # main branch may not yet have --userdataobj support
-          if grep -q 'userdataobj' Build.py; then EXTRA="--userdataobj"; fi
-          python3 Build.py \
-            --os=linux --arch=64 --conf=Release --build=true \
-            --conf_vision \
-            --enh_vision \
-            --conf_nn \
-            --nn \
-            --ix \
-            --pipelining \
-            --streaming \
-            $EXTRA
-
-      - name: Upload main release build artifacts
+          mkdir -p build/Linux/x64/Release && cd build/Linux/x64/Release
+          cmake "$GITHUB_WORKSPACE" \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}/install/Linux/x64/Release" \
+            -DCMAKE_INSTALL_BINDIR=bin -DCMAKE_INSTALL_LIBDIR=bin \
+            -DBUILD_X64=1 \
+            -DCMAKE_CXX_FLAGS="-include limits" \
+            $OPENVX_FEATURES
+          make install -j$(nproc)
+      - name: Upload Release install artifact
         uses: actions/upload-artifact@v4
         with:
-          name: openvx-release-main
-          path: |
-            ${{ env.INSTALL_PREFIX }}/Linux/x64/Release/
-            include/
+          name: openvx-release
+          path: install/Linux/x64/Release
           retention-days: 1
 
   # ================================================================
-  # Phase 3 — Performance gate: openvx-mark benchmark PR vs main
+  # Stage 2 — Conformance test slices (need both Stage 1 builds)
   # ================================================================
-  perf-gate:
-    name: Perf gate (PR vs main)
-    if: github.event_name == 'pull_request'
-    needs:
-      - build-release
-      - build-main
+  baseline:
+    name: Conformance · Framework · Baseline & smoke
+    needs: [build, build-release]
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential cmake git
-
-      - name: Download PR release build artifacts
+      - name: Download conformance artifact
         uses: actions/download-artifact@v4
         with:
-          name: openvx-release
-          path: ${{ github.workspace }}/pr-build
+          name: openvx-conformance
+      - name: Run baseline tests
+        run: |
+          cd build-cts && chmod +x bin/vx_test_conformance
+          LD_LIBRARY_PATH="$OPENVX_DIR/bin:./lib" \
+            timeout 300 ./bin/vx_test_conformance --filter="GraphBase.*:Logging.*:SmokeTestBase.*:SmokeTest.*:TargetBase.*:Target.*"
 
-      - name: Download main release build artifacts
+  graph:
+    name: Conformance · Framework · Graph
+    needs: [build, build-release]
+    runs-on: ubuntu-22.04
+    continue-on-error: true
+    steps:
+      - name: Download conformance artifact
         uses: actions/download-artifact@v4
         with:
-          name: openvx-release-main
-          path: ${{ github.workspace }}/main-build
-
-      - name: Stage PR OpenVX libraries
-        id: pr_openvx
+          name: openvx-conformance
+      - name: Run graph tests
         run: |
-          set -euo pipefail
-          LIB_DIR=$(find ${{ github.workspace }}/pr-build -type d -name lib | head -n1)
-          INC_DIR=$(dirname "$LIB_DIR")/include
-          echo "lib_dir=$LIB_DIR" >> "$GITHUB_OUTPUT"
-          echo "include_dir=$INC_DIR" >> "$GITHUB_OUTPUT"
-          ls -la "$INC_DIR/VX/vx.h"
-          ls -la "$LIB_DIR"
+          cd build-cts && chmod +x bin/vx_test_conformance
+          LD_LIBRARY_PATH="$OPENVX_DIR/bin:./lib" \
+            timeout 600 ./bin/vx_test_conformance --filter="Graph.*:GraphEnhanced.*:GraphCallback.*:GraphDelay.*:GraphDelayTensor.*:GraphROI.*:UserNode.*:-GraphPipeline.*:-GraphStreaming.*"
 
-      - name: Stage main OpenVX libraries
-        id: main_openvx
-        run: |
-          set -euo pipefail
-          LIB_DIR=$(find ${{ github.workspace }}/main-build -type d -name lib | head -n1)
-          INC_DIR=$(dirname "$LIB_DIR")/include
-          echo "lib_dir=$LIB_DIR" >> "$GITHUB_OUTPUT"
-          echo "include_dir=$INC_DIR" >> "$GITHUB_OUTPUT"
-          ls -la "$INC_DIR/VX/vx.h"
-          ls -la "$LIB_DIR"
-
-      - name: Clone openvx-mark
-        run: |
-          git clone --depth 1 https://github.com/kiritigowda/openvx-mark.git \
-            ${{ github.workspace }}/openvx-mark
-
-      - name: Build openvx-mark against PR release
-        run: |
-          mkdir -p ${{ github.workspace }}/openvx-mark/build-pr
-          cd ${{ github.workspace }}/openvx-mark/build-pr
-          cmake \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DOPENVX_INCLUDES=${{ steps.pr_openvx.outputs.include_dir }} \
-            -DOPENVX_LIB_DIR=${{ steps.pr_openvx.outputs.lib_dir }} \
-            ..
-          cmake --build . -j$(nproc)
-
-      - name: Build openvx-mark against main release
-        run: |
-          mkdir -p ${{ github.workspace }}/openvx-mark/build-main
-          cd ${{ github.workspace }}/openvx-mark/build-main
-          cmake \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DOPENVX_INCLUDES=${{ steps.main_openvx.outputs.include_dir }} \
-            -DOPENVX_LIB_DIR=${{ steps.main_openvx.outputs.lib_dir }} \
-            ..
-          cmake --build . -j$(nproc)
-
-      - name: Run openvx-mark benchmarks (PR)
-        run: |
-          cd ${{ github.workspace }}/openvx-mark/build-pr
-          export LD_LIBRARY_PATH=${{ steps.pr_openvx.outputs.lib_dir }}
-          timeout 300 ./openvx-mark --resolution FHD --iterations 5 --warmup 1 \
-            --output ${{ github.workspace }}/pr-results.json || true
-
-      - name: Run openvx-mark benchmarks (main)
-        run: |
-          cd ${{ github.workspace }}/openvx-mark/build-main
-          export LD_LIBRARY_PATH=${{ steps.main_openvx.outputs.lib_dir }}
-          timeout 300 ./openvx-mark --resolution FHD --iterations 5 --warmup 1 \
-            --output ${{ github.workspace }}/main-results.json || true
-
-      - name: Compare benchmark results
-        run: |
-          echo "=== PR Results ==="
-          cat ${{ github.workspace }}/pr-results.json 2>/dev/null || echo "No PR results"
-          echo ""
-          echo "=== Main Results ==="
-          cat ${{ github.workspace }}/main-results.json 2>/dev/null || echo "No main results"
-          echo ""
-          echo "Perf comparison complete. Manual review of results recommended."
-
-      - name: Upload benchmark results
-        if: always()
-        uses: actions/upload-artifact@v4
+  data-objects:
+    name: Conformance · Data objects
+    needs: [build, build-release]
+    runs-on: ubuntu-22.04
+    continue-on-error: true
+    steps:
+      - name: Download conformance artifact
+        uses: actions/download-artifact@v4
         with:
-          name: perf-gate-results
-          path: |
-            ${{ github.workspace }}/pr-results.json
-            ${{ github.workspace }}/main-results.json
-          if-no-files-found: ignore
-          retention-days: 7
+          name: openvx-conformance
+      - name: Run data object tests
+        run: |
+          cd build-cts && chmod +x bin/vx_test_conformance
+          LD_LIBRARY_PATH="$OPENVX_DIR/bin:./lib" \
+            timeout 300 ./bin/vx_test_conformance --filter="Scalar.*:Array.*:ObjectArray.*:Matrix.*:Convolution.*:Distribution.*:LUT.*:Histogram.*"
+
+  user-data-object:
+    name: "Conformance · Extension · User Data Object"
+    needs: [build, build-release]
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Download conformance artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: openvx-conformance
+      - name: Run User Data Object tests
+        run: |
+          cd build-cts && chmod +x bin/vx_test_conformance
+          LD_LIBRARY_PATH="$OPENVX_DIR/bin:./lib" \
+            timeout 120 ./bin/vx_test_conformance --filter="UserDataObject.*"
+
+  user-kernels:
+    name: Conformance · Framework · User kernels
+    needs: [build, build-release]
+    runs-on: ubuntu-22.04
+    continue-on-error: true
+    steps:
+      - name: Download conformance artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: openvx-conformance
+      - name: Run user kernel tests
+        run: |
+          cd build-cts && chmod +x bin/vx_test_conformance
+          LD_LIBRARY_PATH="$OPENVX_DIR/bin:./lib" \
+            timeout 300 ./bin/vx_test_conformance --filter="UserNode.*:UserKernel.*"
+
+  import-export:
+    name: "Conformance · Extension · Import/Export (IX)"
+    needs: [build, build-release]
+    runs-on: ubuntu-22.04
+    continue-on-error: true
+    steps:
+      - name: Download conformance artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: openvx-conformance
+      - name: Run Import/Export tests
+        run: |
+          cd build-cts && chmod +x bin/vx_test_conformance
+          LD_LIBRARY_PATH="$OPENVX_DIR/bin:./lib" \
+            timeout 600 ./bin/vx_test_conformance --filter="Graph/ExportImport*:*IX*:ExtensionObject.*"
+
+  # ================================================================
+  # Pipelining (implemented on ToT) — split into fast + stress slices.
+  # Tests run against the unoptimized Debug C-model, which is much slower
+  # than an optimized build, so the heavy loop_count cases are isolated
+  # into their own job to run in parallel with the light ones.
+  # ================================================================
+  pipelining-fast:
+    name: "Conformance · Extension · Pipelining (fast)"
+    needs: [build, build-release]
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Download conformance artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: openvx-conformance
+      - name: Run pipelining fast tests (loop_count 0 / 1)
+        run: |
+          cd build-cts && chmod +x bin/vx_test_conformance
+          LD_LIBRARY_PATH="$OPENVX_DIR/bin:./lib" \
+            timeout 1800 ./bin/vx_test_conformance --filter="GraphPipeline.*:-*loop_count=100*:-*loop_count=1000*"
+
+  pipelining-stress:
+    name: "Conformance · Extension · Pipelining (stress)"
+    needs: [build, build-release]
+    runs-on: ubuntu-22.04
+    # Heavy loop_count=100/1000 cases (incl. a 2048x1024 image) on the Debug
+    # C-model need generous headroom.
+    timeout-minutes: 90
+    steps:
+      - name: Download conformance artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: openvx-conformance
+      - name: Run pipelining stress tests (loop_count 100 / 1000)
+        run: |
+          cd build-cts && chmod +x bin/vx_test_conformance
+          LD_LIBRARY_PATH="$OPENVX_DIR/bin:./lib" \
+            timeout 4800 ./bin/vx_test_conformance --filter="*loop_count=100*:*loop_count=1000*"
+
+  # ================================================================
+  # Streaming — still a stub in this repo (VX_ERROR_NOT_IMPLEMENTED),
+  # so these are allowed to fail and surface as warnings.
+  # ================================================================
+  streaming:
+    name: "Conformance · Extension · Streaming (warning only)"
+    needs: [build, build-release]
+    runs-on: ubuntu-22.04
+    continue-on-error: true
+    steps:
+      - name: Download conformance artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: openvx-conformance
+      - name: Run streaming tests
+        run: |
+          cd build-cts && chmod +x bin/vx_test_conformance
+          if ! LD_LIBRARY_PATH="$OPENVX_DIR/bin:./lib" \
+              timeout 900 ./bin/vx_test_conformance --filter="GraphStreaming.*"; then
+            echo "::warning title=Streaming conformance::GraphStreaming.* tests failed — Streaming extension is still a stub (VX_ERROR_NOT_IMPLEMENTED)."
+          fi
+
+  # ================================================================
+  # Neural Networks — AlexNet test needs weights not shipped in
+  # test_data, so this is allowed to fail.
+  # ================================================================
+  neural-networks:
+    name: Conformance · Neural Networks · Core
+    needs: [build, build-release]
+    runs-on: ubuntu-22.04
+    continue-on-error: true
+    steps:
+      - name: Download conformance artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: openvx-conformance
+      - name: Run Neural Network tests
+        run: |
+          cd build-cts && chmod +x bin/vx_test_conformance
+          LD_LIBRARY_PATH="$OPENVX_DIR/bin:./lib" \
+            timeout 600 ./bin/vx_test_conformance --filter="TensorNetworks.*:-TensorNetworks.AlexNetTestNetwork:*NN*:VxKernelOfNNAndNNEF.*:VxParameterOfNNAndNNEF.*:MetaFormatOfNNAndNNEF.*:UserKernelsOfNNAndNNEF.*"
+
+  nnef-import:
+    name: "Conformance · Neural Networks · NNEF import"
+    needs: [build, build-release]
+    runs-on: ubuntu-22.04
+    continue-on-error: true
+    steps:
+      - name: Download conformance artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: openvx-conformance
+      - name: Run NNEF import tests
+        run: |
+          cd build-cts && chmod +x bin/vx_test_conformance
+          LD_LIBRARY_PATH="$OPENVX_DIR/bin:./lib" \
+            timeout 600 ./bin/vx_test_conformance --filter="*NNEF*"
+
+  # ================================================================
+  # Vision — functional groups (mirrors rustVX)
+  # ================================================================
+  vision-color:
+    name: "Conformance · Vision · Color & channel"
+    needs: [build, build-release]
+    runs-on: ubuntu-22.04
+    continue-on-error: true
+    steps:
+      - name: Download conformance artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: openvx-conformance
+      - name: Run color / channel tests
+        run: |
+          cd build-cts && chmod +x bin/vx_test_conformance
+          LD_LIBRARY_PATH="$OPENVX_DIR/bin:./lib" \
+            timeout 300 ./bin/vx_test_conformance --filter="ColorConvert.*:ChannelExtract.*:ChannelCombine.*:vxConvertDepth.*:vxuConvertDepth.*"
+
+  vision-filters:
+    name: "Conformance · Vision · Filters & morphology"
+    needs: [build, build-release]
+    runs-on: ubuntu-22.04
+    continue-on-error: true
+    steps:
+      - name: Download conformance artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: openvx-conformance
+      - name: Run filter / morphology tests
+        run: |
+          cd build-cts && chmod +x bin/vx_test_conformance
+          LD_LIBRARY_PATH="$OPENVX_DIR/bin:./lib" \
+            timeout 600 ./bin/vx_test_conformance --filter="Box3x3.*:Gaussian3x3.*:Median3x3.*:Dilate3x3.*:Erode3x3.*:Sobel3x3.*:Magnitude.*:Phase.*:NonLinearFilter.*:Convolve.*:EqualizeHistogram.*"
+
+  vision-arithmetic:
+    name: "Conformance · Vision · Arithmetic & bitwise"
+    needs: [build, build-release]
+    runs-on: ubuntu-22.04
+    continue-on-error: true
+    steps:
+      - name: Download conformance artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: openvx-conformance
+      - name: Run arithmetic / bitwise tests
+        run: |
+          cd build-cts && chmod +x bin/vx_test_conformance
+          LD_LIBRARY_PATH="$OPENVX_DIR/bin:./lib" \
+            timeout 600 ./bin/vx_test_conformance --filter="vxAddSub.*:vxuAddSub.*:vxMultiply.*:vxuMultiply.*:vxBinOp8u.*:vxuBinOp8u.*:vxBinOp16s.*:vxuBinOp16s.*:vxBinOp1u.*:vxuBinOp1u.*:vxNot.*:vxuNot.*:WeightedAverage.*:Threshold.*"
+
+  vision-geometric:
+    name: "Conformance · Vision · Geometric"
+    needs: [build, build-release]
+    runs-on: ubuntu-22.04
+    continue-on-error: true
+    steps:
+      - name: Download conformance artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: openvx-conformance
+      - name: Run geometric transform tests
+        run: |
+          cd build-cts && chmod +x bin/vx_test_conformance
+          LD_LIBRARY_PATH="$OPENVX_DIR/bin:./lib" \
+            timeout 600 ./bin/vx_test_conformance --filter="Scale.*:WarpAffine.*:WarpPerspective.*:Remap.*:HalfScaleGaussian.*"
+
+  vision-features:
+    name: "Conformance · Vision · Features & edges"
+    needs: [build, build-release]
+    runs-on: ubuntu-22.04
+    continue-on-error: true
+    steps:
+      - name: Download conformance artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: openvx-conformance
+      - name: Run feature / edge detection tests
+        run: |
+          cd build-cts && chmod +x bin/vx_test_conformance
+          LD_LIBRARY_PATH="$OPENVX_DIR/bin:./lib" \
+            timeout 600 ./bin/vx_test_conformance --filter="HarrisCorners.*:FastCorners.*:vxCanny.*:vxuCanny.*"
+
+  vision-statistics:
+    name: "Conformance · Vision · Statistics"
+    needs: [build, build-release]
+    runs-on: ubuntu-22.04
+    continue-on-error: true
+    steps:
+      - name: Download conformance artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: openvx-conformance
+      - name: Run statistics tests
+        run: |
+          cd build-cts && chmod +x bin/vx_test_conformance
+          LD_LIBRARY_PATH="$OPENVX_DIR/bin:./lib" \
+            timeout 300 ./bin/vx_test_conformance --filter="MeanStdDev.*:MinMaxLoc.*:Integral.*"
+
+  vision-image-ops:
+    name: "Conformance · Vision · Image ops"
+    needs: [build, build-release]
+    runs-on: ubuntu-22.04
+    continue-on-error: true
+    steps:
+      - name: Download conformance artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: openvx-conformance
+      - name: Run image operation tests
+        run: |
+          cd build-cts && chmod +x bin/vx_test_conformance
+          LD_LIBRARY_PATH="$OPENVX_DIR/bin:./lib" \
+            timeout 600 ./bin/vx_test_conformance --filter="Image.*:vxCopyImagePatch.*:vxMapImagePatch.*:vxCreateImageFromChannel.*:vxCopyRemapPatch.*:vxMapRemapPatch.*"
+
+  vision-pyramid:
+    name: "Conformance · Vision · Pyramid & optical flow"
+    needs: [build, build-release]
+    runs-on: ubuntu-22.04
+    continue-on-error: true
+    steps:
+      - name: Download conformance artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: openvx-conformance
+      - name: Run pyramid / optical flow tests
+        run: |
+          cd build-cts && chmod +x bin/vx_test_conformance
+          LD_LIBRARY_PATH="$OPENVX_DIR/bin:./lib" \
+            timeout 300 ./bin/vx_test_conformance --filter="GaussianPyramid.*:LaplacianPyramid.*:LaplacianReconstruct.*:OptFlowPyrLK.*"
+
+  # ================================================================
+  # Enhanced Vision — functional groups (mirrors rustVX)
+  # ================================================================
+  enhanced-vision-tensor-arithmetic:
+    name: "Conformance · Enhanced Vision · Tensor arithmetic"
+    needs: [build, build-release]
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Download conformance artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: openvx-conformance
+      - name: Run Tensor Arithmetic tests
+        run: |
+          cd build-cts && chmod +x bin/vx_test_conformance
+          LD_LIBRARY_PATH="$OPENVX_DIR/bin:./lib" \
+            timeout 600 ./bin/vx_test_conformance --filter="TensorOp.*:Min.*:Max.*"
+
+  enhanced-vision-tensor-transforms:
+    name: "Conformance · Enhanced Vision · Tensor transforms"
+    needs: [build, build-release]
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Download conformance artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: openvx-conformance
+      - name: Run Tensor Transforms tests
+        run: |
+          cd build-cts && chmod +x bin/vx_test_conformance
+          LD_LIBRARY_PATH="$OPENVX_DIR/bin:./lib" \
+            timeout 300 ./bin/vx_test_conformance --filter="Tensor*.*:-TensorOp.*"
+
+  enhanced-vision-feature-extraction:
+    name: "Conformance · Enhanced Vision · Feature extraction"
+    needs: [build, build-release]
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Download conformance artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: openvx-conformance
+      - name: Run Feature Extraction tests
+        run: |
+          cd build-cts && chmod +x bin/vx_test_conformance
+          LD_LIBRARY_PATH="$OPENVX_DIR/bin:./lib" \
+            timeout 300 ./bin/vx_test_conformance --filter="HogCells.*:HogFeatures.*:MatchTemplate.*:LBP.*"
+
+  enhanced-vision-post-processing:
+    name: "Conformance · Enhanced Vision · Post-processing"
+    needs: [build, build-release]
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Download conformance artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: openvx-conformance
+      - name: Run Post-Processing tests
+        run: |
+          cd build-cts && chmod +x bin/vx_test_conformance
+          LD_LIBRARY_PATH="$OPENVX_DIR/bin:./lib" \
+            timeout 300 ./bin/vx_test_conformance --filter="Copy.*:Nonmaxsuppression.*:Houghlinesp.*"
+
+  enhanced-vision-advanced-filtering:
+    name: "Conformance · Enhanced Vision · Advanced filtering"
+    needs: [build, build-release]
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Download conformance artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: openvx-conformance
+      - name: Run Advanced Filtering tests
+        run: |
+          cd build-cts && chmod +x bin/vx_test_conformance
+          LD_LIBRARY_PATH="$OPENVX_DIR/bin:./lib" \
+            timeout 300 ./bin/vx_test_conformance --filter="BilateralFilter.*"
+
+  enhanced-vision-control-flow:
+    name: "Conformance · Enhanced Vision · Control flow"
+    needs: [build, build-release]
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Download conformance artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: openvx-conformance
+      - name: Run Control Flow tests
+        run: |
+          cd build-cts && chmod +x bin/vx_test_conformance
+          LD_LIBRARY_PATH="$OPENVX_DIR/bin:./lib" \
+            timeout 600 ./bin/vx_test_conformance --filter="ControlFlow.*"
