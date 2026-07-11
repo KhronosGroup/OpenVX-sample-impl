@@ -61,16 +61,6 @@ jobs:
             -DCMAKE_CXX_FLAGS="-include limits" \
             $OPENVX_FEATURES
           make install -j$(nproc)
-      - name: Reduce pipeline stress loop counts for CI
-        run: |
-          # The GraphPipeline stress tests default to loop_count up to 1000000,
-          # which does not finish on CI runners. Reduce to 100 (longest strings
-          # first to avoid partial-match issues), matching the rustVX CI.
-          sed -i \
-            -e 's|loop_count=1000000|loop_count=100|g' \
-            -e 's|loop_count=100000|loop_count=100|g' \
-            -e 's|loop_count=1000|loop_count=100|g' \
-            cts/test_conformance/test_graph_pipeline.c || true
       - name: Build Conformance Test Suite
         run: |
           rm -rf "$GITHUB_WORKSPACE/build-cts" && mkdir -p "$GITHUB_WORKSPACE/build-cts" && cd "$GITHUB_WORKSPACE/build-cts"
@@ -223,10 +213,10 @@ jobs:
             timeout 600 ./bin/vx_test_conformance --filter="Graph/ExportImport*:*IX*"
 
   # ================================================================
-  # Pipelining (implemented on ToT) — fast + stress slices
+  # Pipelining (implemented on ToT)
   # ================================================================
-  pipelining-fast:
-    name: "KHR extension: pipelining fast"
+  pipelining:
+    name: "KHR extension: pipelining"
     needs: [build, build-release]
     runs-on: ubuntu-22.04
     steps:
@@ -234,27 +224,11 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: openvx-conformance
-      - name: Run pipelining fast tests
+      - name: Run pipelining tests
         run: |
           cd build-cts && chmod +x bin/vx_test_conformance
           LD_LIBRARY_PATH="$OPENVX_DIR/bin:./lib" \
-            timeout 900 ./bin/vx_test_conformance --filter="GraphPipeline.*:-*loop_count=100*"
-
-  pipelining-stress:
-    name: "KHR extension: pipelining stress"
-    needs: [build, build-release]
-    runs-on: ubuntu-22.04
-    continue-on-error: true
-    steps:
-      - name: Download conformance artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: openvx-conformance
-      - name: Run pipelining stress tests
-        run: |
-          cd build-cts && chmod +x bin/vx_test_conformance
-          LD_LIBRARY_PATH="$OPENVX_DIR/bin:./lib" \
-            timeout 1200 ./bin/vx_test_conformance --filter="GraphPipeline.*loop_count=100*"
+            timeout 1200 ./bin/vx_test_conformance --filter="GraphPipeline.*"
 
   # ================================================================
   # Streaming — still a stub in this repo (VX_ERROR_NOT_IMPLEMENTED),
