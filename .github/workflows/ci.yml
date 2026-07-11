@@ -143,7 +143,7 @@ jobs:
       - name: Build & run CTS
         run: |
           rm -rf "$GITHUB_WORKSPACE/build-cts" && mkdir -p "$GITHUB_WORKSPACE/build-cts" && cd "$GITHUB_WORKSPACE/build-cts"
-          cmake -DOPENVX_INCLUDES="$OPENVX_DIR/include" -DOPENVX_LIBRARIES="$OPENVX_DIR/bin/libopenvx.so;$OPENVX_DIR/bin/libvxu.so;$OPENVX_DIR/lib/libnnef-lib.a;pthread;dl;m;rt;stdc++" -DOPENVX_CONFORMANCE_NNEF_IMPORT=ON -DCMAKE_C_FLAGS="-I$GITHUB_WORKSPACE/kernels/NNEF-Tools/parser/cpp/include" "$GITHUB_WORKSPACE/cts/"
+          cmake -DOPENVX_INCLUDES="$OPENVX_DIR/include" -DOPENVX_LIBRARIES="$OPENVX_DIR/bin/libopenvx.so;$OPENVX_DIR/bin/libvxu.so;$OPENVX_DIR/bin/libnnef-lib.a;pthread;dl;m;rt;stdc++" -DOPENVX_CONFORMANCE_NNEF_IMPORT=ON -DCMAKE_C_FLAGS="-I$GITHUB_WORKSPACE/kernels/NNEF-Tools/parser/cpp/include" "$GITHUB_WORKSPACE/cts/"
           cmake --build .
           LD_LIBRARY_PATH="$OPENVX_DIR/bin:./lib" ./bin/vx_test_conformance
 
