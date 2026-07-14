@@ -447,6 +447,8 @@ export OPENVX_DIR=$(pwd)/install/Linux/x64/Debug
 export VX_TEST_DATA_PATH=$(pwd)/cts/test_data/
 ```
 
+> **Note:** The `cts/test_data/` directory contains large binary files managed with **Git LFS**. Make sure Git LFS is installed and files are pulled (`git lfs pull`) before running the conformance suite. The CI workflow enables LFS checkout automatically.
+
 > **Note:** When switching between modes, remove the previous install directory before rebuilding: `rm -rf install/Linux/x64/Debug`
 
 > **Note:** On macOS, use `.dylib` instead of `.so` for library paths in `OPENVX_LIBRARIES`, replace `LD_LIBRARY_PATH` with `DYLD_LIBRARY_PATH`, and omit `rt` from the library list (e.g., `"...libopenvx.dylib;...libvxu.dylib;pthread;dl;m"`).

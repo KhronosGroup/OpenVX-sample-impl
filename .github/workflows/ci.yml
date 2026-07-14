@@ -46,10 +46,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
+          lfs: true
       - name: Install dependencies
         run: |
           sudo apt-get update -qq
-          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq cmake make git python3 gcc g++
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq cmake make git git-lfs python3 gcc g++
+      - name: Verify LFS files
+        run: git lfs ls-files | head -5 || true
       - name: Build & install sample (Debug)
         run: |
           mkdir -p build/Linux/x64/Debug && cd build/Linux/x64/Debug
@@ -93,10 +96,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
+          lfs: true
       - name: Install dependencies
         run: |
           sudo apt-get update -qq
-          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq cmake make git python3 gcc g++
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq cmake make git git-lfs python3 gcc g++
       - name: Build & install sample (Release)
         run: |
           mkdir -p build/Linux/x64/Release && cd build/Linux/x64/Release
@@ -266,8 +270,8 @@ jobs:
             timeout 900 ./bin/vx_test_conformance --filter="GraphStreaming.*"
 
   # ================================================================
-  # Neural Networks — AlexNet test is excluded because weights are not
-  # shipped in test_data.
+  # Neural Networks — full feature set is expected to pass now that
+  # Git LFS brings in the missing test weights.
   # ================================================================
   neural-networks:
     name: Conformance · Neural Networks · Core
@@ -282,7 +286,7 @@ jobs:
         run: |
           cd build-cts && chmod +x bin/vx_test_conformance
           LD_LIBRARY_PATH="$OPENVX_DIR/bin:./lib" \
-            timeout 600 ./bin/vx_test_conformance --filter="TensorNetworks.*:-TensorNetworks.AlexNetTestNetwork:*NN*:VxKernelOfNNAndNNEF.*:VxParameterOfNNAndNNEF.*:MetaFormatOfNNAndNNEF.*:UserKernelsOfNNAndNNEF.*"
+            timeout 1200 ./bin/vx_test_conformance --filter="TensorNetworks.*:*NN*:VxKernelOfNNAndNNEF.*:VxParameterOfNNAndNNEF.*:MetaFormatOfNNAndNNEF.*:UserKernelsOfNNAndNNEF.*"
 
   nnef-import:
     name: "Conformance · Neural Networks · NNEF import"
