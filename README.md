@@ -37,7 +37,7 @@ The following is a summary of what this sample implementation IS and IS NOT:
 * Passing OpenVX 1.3.2 conformance tests
 * Implementing the full core API (context, image, graph, kernel, node, scalar, array, object array, pyramid, remap, distribution, threshold, LUT, matrix, convolution, delay, tensor, meta format)
 * Implementing all standard vision and neural network kernels
-* Supporting extensions: Import/Export (IX), Neural Networks (NN), User Data Object, NNEF Import Kernel, U1 (binary image)
+* Supporting extensions: Import/Export (IX), Neural Networks (NN), User Data Object, NNEF Import Kernel, U1 (binary image), Pipelining, Streaming
 
 **IS NOT:**
 * A reference implementation
@@ -45,7 +45,7 @@ The following is a summary of what this sample implementation IS and IS NOT:
 * Production ready
 * Actively maintained by Khronos publicly
 
-> **Note:** As of the current tip of tree (ToT), the Pipelining extension API has a functional implementation. The Streaming and Event Queue extension APIs are still present as stubs (return `VX_ERROR_NOT_IMPLEMENTED`); they are included for API compatibility but do not yet have functional implementations.
+> **Note:** As of the current tip of tree (ToT), the Pipelining and Streaming extension APIs have functional implementations and their conformance tests (`GraphPipeline.*` and `GraphStreaming.*`) are expected to pass. The Event Queue extension API is still present as a stub (returns `VX_ERROR_NOT_IMPLEMENTED`); it is included for API compatibility but does not yet have a functional implementation.
 
 ## Building and Executing
 
@@ -523,7 +523,7 @@ cmake --build .
 LD_LIBRARY_PATH=$OPENVX_DIR/bin:./lib ./bin/vx_test_conformance '--filter=GraphPipeline.*'
 ```
 
-> **Note:** As of the current tip of tree (ToT), Pipelining is implemented, so the `GraphPipeline.*` conformance tests are expected to pass.
+> **Note:** As of the current tip of tree (ToT), Pipelining and Streaming are implemented, so the `GraphPipeline.*` and `GraphStreaming.*` conformance tests are expected to pass.
 
 ### Mode 8 - Vision, Enhanced Vision, Pipelining, & Streaming
 
@@ -535,7 +535,7 @@ cmake --build .
 LD_LIBRARY_PATH=$OPENVX_DIR/bin:./lib ./bin/vx_test_conformance '--filter=GraphStreaming.*'
 ```
 
-> **Note:** The Streaming and Event Queue APIs are still stub implementations that return `VX_ERROR_NOT_IMPLEMENTED`, so the `GraphStreaming.*` tests are expected to fail. In CI this job is marked `allow_failure`.
+> **Note:** Streaming is now implemented on ToT, so the `GraphStreaming.*` tests are expected to pass. In CI this job is required to pass.
 
 ## Included Unit Tests
 
@@ -628,17 +628,17 @@ The project runs continuous integration on both GitHub Actions and GitLab CI, us
    - Mode 5: Combined (Vision, Enhanced Vision, Neural Networks, Import/Export, U1)
    - Mode 6: User Data Object
    - Mode 7: Pipelining (implemented on ToT; runs the `GraphPipeline.*` tests, expected to pass)
-   - Mode 8: Streaming (allowed to fail -- Streaming remains a stub; runs the `GraphStreaming.*` tests)
+   - Mode 8: Streaming (implemented on ToT; runs the `GraphStreaming.*` tests, expected to pass)
 
 Git submodules are fetched recursively.
 
 ### GitHub Actions
 
-The GitHub Actions workflow (`.github/workflows/ci.yml`) runs on every pull request and on pushes to all branches. It defines a `build` job (Release + Debug) plus one job per conformance test mode; each job checks out the repository with submodules, builds the sample implementation, then builds and runs the CTS. The Streaming job is marked `continue-on-error: true` so it surfaces as a warning rather than failing the pipeline.
+The GitHub Actions workflow (`.github/workflows/ci.yml`) runs on every pull request and on pushes to all branches. It defines a `build` job (Release + Debug) plus one job per conformance test mode; each job checks out the repository with submodules, builds the sample implementation, then builds and runs the CTS. The Streaming job is required to pass.
 
 ### GitLab CI
 
-The GitLab CI pipeline (`.gitlab-ci.yml`) uses the `ubuntu:22.04` image with a `build` stage and a `test` stage covering the same 8 conformance modes. Submodules are fetched via `GIT_SUBMODULE_STRATEGY: recursive`, and the Streaming job uses `allow_failure: true`.
+The GitLab CI pipeline (`.gitlab-ci.yml`) uses the `ubuntu:22.04` image with a `build` stage and a `test` stage covering the same 8 conformance modes. Submodules are fetched via `GIT_SUBMODULE_STRATEGY: recursive`, and the Streaming job is required to pass.
 
 ## Bug Reporting
 

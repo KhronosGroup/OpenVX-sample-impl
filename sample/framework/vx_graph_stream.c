@@ -51,7 +51,7 @@ static vx_bool ownNodeBelongsToGraph(vx_graph graph, vx_node node)
 static vx_value_t vxStreamingWorker(void *arg)
 {
     vx_graph graph = (vx_graph)arg;
-    while (graph->streaming_stop == vx_false_e && graph->streaming_thread_running == vx_true_e)
+    while (vx_true_e)
     {
         vx_status status = vxProcessGraph(graph);
         if (status != VX_SUCCESS)
@@ -59,8 +59,10 @@ static vx_value_t vxStreamingWorker(void *arg)
             VX_PRINT(VX_ZONE_ERROR, "Streaming graph execution failed with status %d, stopping\n", status);
             break;
         }
-        /* yield so a stop request can be observed promptly */
-        ownSleepThread(1);
+        /* Block waiting for a stop request.  A short timeout keeps the worker
+         * responsive if vxProcessGraph returns very quickly. */
+        if (ownWaitEvent(&graph->streaming_stop_event, 1) == vx_true_e)
+            break;
     }
     return 0;
 }
@@ -110,12 +112,15 @@ VX_API_ENTRY vx_status VX_API_CALL vxStartGraphStreaming(vx_graph graph)
      * depth observe the pipeup-to-steady transition during this session */
     ownStreamingResetNodeState(graph);
 
-    graph->streaming_stop = vx_false_e;
+    if (ownInitEvent(&graph->streaming_stop_event, vx_false_e) == vx_false_e)
+        return VX_FAILURE;
+
     graph->streaming_thread_running = vx_true_e;
     graph->streaming_thread = ownCreateThread(vxStreamingWorker, graph);
     if (graph->streaming_thread == 0)
     {
         graph->streaming_thread_running = vx_false_e;
+        ownDeinitEvent(&graph->streaming_stop_event);
         return VX_FAILURE;
     }
 
@@ -131,13 +136,15 @@ VX_API_ENTRY vx_status VX_API_CALL vxStopGraphStreaming(vx_graph graph)
     if (graph->streaming_thread_running == vx_false_e)
         return VX_ERROR_NOT_SUPPORTED;
 
-    graph->streaming_stop = vx_true_e;
+    ownSetEvent(&graph->streaming_stop_event);
 
     if (graph->streaming_thread)
     {
         ownJoinThread(graph->streaming_thread, NULL);
         graph->streaming_thread = 0;
     }
+
+    ownDeinitEvent(&graph->streaming_stop_event);
 
     graph->streaming_thread_running = vx_false_e;
     graph->streaming_enabled = vx_false_e;

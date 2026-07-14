@@ -563,7 +563,8 @@ static vx_kernel addkernel(vx_context c,
                            vx_kernel_output_validate_f output,
                            vx_kernel_initialize_f initialize,
                            vx_kernel_deinitialize_f deinitialize,
-                           vx_bool is_user_kernel)
+                           vx_bool is_user_kernel,
+                           vx_bool valid_rect_reset)
 {
     vx_context_t *context = (vx_context_t *)c;
     vx_kernel kernel = 0;
@@ -620,7 +621,7 @@ static vx_kernel addkernel(vx_context c,
                                          validate, input, output,
                                          initialize, deinitialize);
         kernel->user_kernel = is_user_kernel;
-        kernel->attributes.valid_rect_reset = is_user_kernel ? vx_true_e : vx_false_e;
+        kernel->attributes.valid_rect_reset = valid_rect_reset;
         VX_PRINT(VX_ZONE_KERNEL,"Added Kernel %s to Target %s ("VX_FMT_REF")\n", name, target->name, kernel);
         /* A reference is returned to the user */
         ownIncrementReference(&kernel->base, VX_EXTERNAL);
@@ -648,7 +649,7 @@ VX_API_ENTRY vx_kernel VX_API_CALL vxAddKernel(vx_context c,
 {
     return addkernel(c, name, enumeration, func_ptr, numParams,
                      NULL, input, output, initialize, deinitialize,
-                     vx_false_e);
+                     vx_false_e, vx_false_e);
 }
 
 /*
@@ -665,7 +666,7 @@ VX_API_ENTRY vx_kernel VX_API_CALL vxAddUserKernel(vx_context context,
 {
     return addkernel(context, name, enumeration, func_ptr, numParams,
                      validate, NULL, NULL, init, deinit,
-                     vx_true_e);
+                     vx_true_e, vx_true_e);
 }
 
 #ifdef OPENVX_KHR_TILING

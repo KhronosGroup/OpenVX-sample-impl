@@ -1216,6 +1216,8 @@ typedef struct _vx_graph {
     vx_node        streaming_trigger_node;
     /*! \brief Background thread running streaming executions. */
     vx_thread_t    streaming_thread;
+    /*! \brief Event used to signal the streaming worker to stop. */
+    vx_internal_event_t streaming_stop_event;
     /*! \brief Flag set when the streaming thread is running. */
     vx_bool        streaming_thread_running;
     /*! \brief Flag set to request the streaming thread to stop. */

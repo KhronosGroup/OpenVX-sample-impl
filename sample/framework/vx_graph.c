@@ -689,15 +689,16 @@ void ownDestructGraph(vx_reference ref)
     vx_graph graph = (vx_graph)ref;
 #ifdef OPENVX_USE_STREAMING
     /* stop any active streaming before destroying nodes */
-    graph->streaming_stop = vx_true_e;
     if (graph->streaming_thread_running == vx_true_e)
     {
-        graph->streaming_thread_running = vx_false_e;
+        ownSetEvent(&graph->streaming_stop_event);
         if (graph->streaming_thread)
         {
             ownJoinThread(graph->streaming_thread, NULL);
             graph->streaming_thread = 0;
         }
+        graph->streaming_thread_running = vx_false_e;
+        ownDeinitEvent(&graph->streaming_stop_event);
     }
 #endif
     while (graph->numNodes)
@@ -2461,6 +2462,8 @@ static vx_bool ownAnyNodeInPipeup(vx_graph graph)
     for (i = 0; i < graph->numNodes; i++)
     {
         vx_node node = graph->nodes[i];
+        if (node == NULL || node->kernel == NULL)
+            continue;
         if (node->kernel->pipeup_output_depth > 1 &&
             (node->execution_count + 1) < node->kernel->pipeup_output_depth)
         {
@@ -2473,6 +2476,8 @@ static vx_bool ownAnyNodeInPipeup(vx_graph graph)
 static vx_bool ownIsPredecessorInPipeup(vx_graph graph, vx_node node)
 {
     vx_uint32 p;
+    if (node == NULL || node->kernel == NULL)
+        return vx_false_e;
     for (p = 0; p < node->kernel->signature.num_parameters; p++)
     {
         if (node->kernel->signature.directions[p] != VX_INPUT)
@@ -2484,7 +2489,7 @@ static vx_bool ownIsPredecessorInPipeup(vx_graph graph, vx_node node)
         for (n = 0; n < graph->numNodes; n++)
         {
             vx_node pred = graph->nodes[n];
-            if (pred == node)
+            if (pred == NULL || pred == node || pred->kernel == NULL)
                 continue;
             vx_uint32 pp;
             for (pp = 0; pp < pred->kernel->signature.num_parameters; pp++)
@@ -2575,6 +2580,7 @@ static vx_status vxExecuteGraph(vx_graph graph, vx_uint32 depth)
         }
 
         /* execute the next nodes */
+        vx_uint32 numWork = 0;
         for (n = 0; n < numNext; n++)
         {
             if (graph->nodes[next_nodes[n]]->executed == vx_false_e)
@@ -2583,7 +2589,7 @@ static vx_status vxExecuteGraph(vx_graph graph, vx_uint32 depth)
 #if defined(OPENVX_USE_SMP)
                 if (depth == 1 && graph->should_serialize == vx_false_e)
                 {
-                    vx_value_set_t *work = &workitems[n];
+                    vx_value_set_t *work = &workitems[numWork];
                     vx_target target = &graph->base.context->targets[t];
                     vx_node node = graph->nodes[next_nodes[n]];
 #ifdef OPENVX_USE_STREAMING
@@ -2595,6 +2601,7 @@ static vx_status vxExecuteGraph(vx_graph graph, vx_uint32 depth)
                     work->v2 = (vx_value_t)node;
                     work->v3 = (vx_value_t)VX_ACTION_CONTINUE;
                     VX_PRINT(VX_ZONE_GRAPH, "Scheduling work on %s for %s\n", target->name, node->kernel->name);
+                    numWork++;
                 }
                 else
 #endif
@@ -2658,18 +2665,18 @@ static vx_status vxExecuteGraph(vx_graph graph, vx_uint32 depth)
         }
 
 #if defined(OPENVX_USE_SMP)
-        if (depth == 1 && graph->should_serialize == vx_false_e)
+        if (depth == 1 && graph->should_serialize == vx_false_e && numWork > 0)
         {
-            if (ownIssueThreadpool(graph->base.context->workers, workitems, numNext) == vx_true_e)
+            if (ownIssueThreadpool(graph->base.context->workers, workitems, numWork) == vx_true_e)
             {
                 /* do a blocking complete */
-                VX_PRINT(VX_ZONE_GRAPH, "Issued %u work items!\n", numNext);
+                VX_PRINT(VX_ZONE_GRAPH, "Issued %u work items!\n", numWork);
                 if (ownCompleteThreadpool(graph->base.context->workers, vx_true_e) == vx_true_e)
                 {
-                    VX_PRINT(VX_ZONE_GRAPH, "Processed %u items in threadpool!\n", numNext);
+                    VX_PRINT(VX_ZONE_GRAPH, "Processed %u items in threadpool!\n", numWork);
                 }
                 action = VX_ACTION_CONTINUE;
-                for (n = 0; n < numNext; n++)
+                for (n = 0; n < numWork; n++)
                 {
                     vx_action a = workitems[n].v3;
                     if (a != VX_ACTION_CONTINUE)
@@ -2682,9 +2689,9 @@ static vx_status vxExecuteGraph(vx_graph graph, vx_uint32 depth)
 #ifdef OPENVX_USE_STREAMING
                 if (action != VX_ACTION_ABANDON)
                 {
-                    for (n = 0; n < numNext; n++)
+                    for (n = 0; n < numWork; n++)
                     {
-                        vx_node node = graph->nodes[next_nodes[n]];
+                        vx_node node = (vx_node)workitems[n].v2;
                         if (node != NULL)
                             node->execution_count++;
                     }

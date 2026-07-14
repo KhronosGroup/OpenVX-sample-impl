@@ -137,7 +137,6 @@ jobs:
     name: Conformance · Framework · Graph
     needs: [build, build-release]
     runs-on: ubuntu-22.04
-    continue-on-error: true
     steps:
       - name: Download conformance artifact
         uses: actions/download-artifact@v4
@@ -153,7 +152,6 @@ jobs:
     name: Conformance · Data objects
     needs: [build, build-release]
     runs-on: ubuntu-22.04
-    continue-on-error: true
     steps:
       - name: Download conformance artifact
         uses: actions/download-artifact@v4
@@ -184,7 +182,6 @@ jobs:
     name: Conformance · Framework · User kernels
     needs: [build, build-release]
     runs-on: ubuntu-22.04
-    continue-on-error: true
     steps:
       - name: Download conformance artifact
         uses: actions/download-artifact@v4
@@ -200,7 +197,6 @@ jobs:
     name: "Conformance · Extension · Import/Export (IX)"
     needs: [build, build-release]
     runs-on: ubuntu-22.04
-    continue-on-error: true
     steps:
       - name: Download conformance artifact
         uses: actions/download-artifact@v4
@@ -252,14 +248,12 @@ jobs:
             timeout 4800 ./bin/vx_test_conformance --filter="*loop_count=100*:*loop_count=1000*"
 
   # ================================================================
-  # Streaming — still a stub in this repo (VX_ERROR_NOT_IMPLEMENTED),
-  # so these are allowed to fail and surface as warnings.
+  # Streaming — functional on ToT; expected to pass.
   # ================================================================
   streaming:
-    name: "Conformance · Extension · Streaming (warning only)"
+    name: "Conformance · Extension · Streaming"
     needs: [build, build-release]
     runs-on: ubuntu-22.04
-    continue-on-error: true
     steps:
       - name: Download conformance artifact
         uses: actions/download-artifact@v4
@@ -268,20 +262,17 @@ jobs:
       - name: Run streaming tests
         run: |
           cd build-cts && chmod +x bin/vx_test_conformance
-          if ! LD_LIBRARY_PATH="$OPENVX_DIR/bin:./lib" \
-              timeout 900 ./bin/vx_test_conformance --filter="GraphStreaming.*"; then
-            echo "::warning title=Streaming conformance::GraphStreaming.* tests failed — Streaming extension is still a stub (VX_ERROR_NOT_IMPLEMENTED)."
-          fi
+          LD_LIBRARY_PATH="$OPENVX_DIR/bin:./lib" \
+            timeout 900 ./bin/vx_test_conformance --filter="GraphStreaming.*"
 
   # ================================================================
-  # Neural Networks — AlexNet test needs weights not shipped in
-  # test_data, so this is allowed to fail.
+  # Neural Networks — AlexNet test is excluded because weights are not
+  # shipped in test_data.
   # ================================================================
   neural-networks:
     name: Conformance · Neural Networks · Core
     needs: [build, build-release]
     runs-on: ubuntu-22.04
-    continue-on-error: true
     steps:
       - name: Download conformance artifact
         uses: actions/download-artifact@v4
@@ -297,7 +288,6 @@ jobs:
     name: "Conformance · Neural Networks · NNEF import"
     needs: [build, build-release]
     runs-on: ubuntu-22.04
-    continue-on-error: true
     steps:
       - name: Download conformance artifact
         uses: actions/download-artifact@v4
@@ -316,7 +306,6 @@ jobs:
     name: "Conformance · Vision · Color & channel"
     needs: [build, build-release]
     runs-on: ubuntu-22.04
-    continue-on-error: true
     steps:
       - name: Download conformance artifact
         uses: actions/download-artifact@v4
@@ -332,7 +321,6 @@ jobs:
     name: "Conformance · Vision · Filters & morphology"
     needs: [build, build-release]
     runs-on: ubuntu-22.04
-    continue-on-error: true
     steps:
       - name: Download conformance artifact
         uses: actions/download-artifact@v4
@@ -348,7 +336,6 @@ jobs:
     name: "Conformance · Vision · Arithmetic & bitwise"
     needs: [build, build-release]
     runs-on: ubuntu-22.04
-    continue-on-error: true
     steps:
       - name: Download conformance artifact
         uses: actions/download-artifact@v4
@@ -364,7 +351,6 @@ jobs:
     name: "Conformance · Vision · Geometric"
     needs: [build, build-release]
     runs-on: ubuntu-22.04
-    continue-on-error: true
     steps:
       - name: Download conformance artifact
         uses: actions/download-artifact@v4
@@ -380,7 +366,6 @@ jobs:
     name: "Conformance · Vision · Features & edges"
     needs: [build, build-release]
     runs-on: ubuntu-22.04
-    continue-on-error: true
     steps:
       - name: Download conformance artifact
         uses: actions/download-artifact@v4
@@ -396,7 +381,6 @@ jobs:
     name: "Conformance · Vision · Statistics"
     needs: [build, build-release]
     runs-on: ubuntu-22.04
-    continue-on-error: true
     steps:
       - name: Download conformance artifact
         uses: actions/download-artifact@v4
@@ -412,7 +396,6 @@ jobs:
     name: "Conformance · Vision · Image ops"
     needs: [build, build-release]
     runs-on: ubuntu-22.04
-    continue-on-error: true
     steps:
       - name: Download conformance artifact
         uses: actions/download-artifact@v4
@@ -428,7 +411,6 @@ jobs:
     name: "Conformance · Vision · Pyramid & optical flow"
     needs: [build, build-release]
     runs-on: ubuntu-22.04
-    continue-on-error: true
     steps:
       - name: Download conformance artifact
         uses: actions/download-artifact@v4
