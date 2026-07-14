@@ -68,6 +68,12 @@ VX_API_ENTRY vx_node VX_API_CALL vxCreateGenericNode(vx_graph graph, vx_kernel k
                         /* copy the attributes over */
                         memcpy(&node->attributes, &kernel_ptr->attributes, sizeof(vx_kernel_attr_t));
 
+#ifdef OPENVX_USE_STREAMING
+                        /* streaming/pipelining node state defaults */
+                        node->execution_count = 0;
+                        node->node_state = VX_NODE_STATE_STEADY;
+#endif
+
                         /* setup our forward and back references to the node/graph */
                         graph_ptr->nodes[n] = node;
                         node->graph = graph_ptr;
@@ -277,6 +283,18 @@ VX_API_ENTRY vx_status VX_API_CALL vxQueryNode(vx_node node, vx_enum attribute, 
                     status = VX_ERROR_INVALID_PARAMETERS;
                 }
                 break;
+#ifdef OPENVX_USE_STREAMING
+            case VX_NODE_STATE:
+                if (VX_CHECK_PARAM(ptr, size, vx_enum, 0x3))
+                {
+                    *(vx_enum *)ptr = node_ptr->node_state;
+                }
+                else
+                {
+                    status = VX_ERROR_INVALID_PARAMETERS;
+                }
+                break;
+#endif
 #ifdef OPENVX_USE_OPENCL_INTEROP
             case VX_NODE_CL_COMMAND_QUEUE:
                 if (VX_CHECK_PARAM(ptr, size, cl_command_queue, 0x3))

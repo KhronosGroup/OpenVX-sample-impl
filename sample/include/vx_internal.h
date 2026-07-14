@@ -88,7 +88,7 @@
 #if defined(OPENVX_USE_USER_DATA_OBJECT)
 #include <VX/vx_khr_user_data_object.h>
 #endif
-#if defined(OPENVX_USE_PIPELINING)
+#if defined(OPENVX_USE_PIPELINING) || defined(OPENVX_USE_STREAMING)
 #include <VX/vx_khr_pipelining.h>
 #endif
 
@@ -737,6 +737,12 @@ typedef struct _vx_kernel {
 #endif
     /*! \brief The pointer to the kernel object deinitializer. */
     vx_kernel_object_deinitialize_f kernel_object_deinitialize;
+#ifdef OPENVX_USE_STREAMING
+    /*! \brief Pipeup output depth for streaming/pipelining node state. */
+    vx_uint32 pipeup_output_depth;
+    /*! \brief Pipeup input depth for streaming/pipelining node state. */
+    vx_uint32 pipeup_input_depth;
+#endif
 } vx_kernel_t;
 
 /*! \brief The function which initializes the target
@@ -1156,6 +1162,12 @@ typedef struct _vx_node {
     vx_bool             is_replicated;
     /*! \brief The replicated parameters flags */
     vx_bool             replicated_flags[VX_INT_MAX_PARAMS];
+#ifdef OPENVX_USE_STREAMING
+    /*! \brief Number of times this node has been executed in current streaming/pipelining session. */
+    vx_uint32           execution_count;
+    /*! \brief Current node state for streaming/pipelining (VX_NODE_STATE_PIPEUP/STEADY). */
+    vx_enum             node_state;
+#endif
 } vx_node_t;
 
 /*! \brief The internal representation of a graph.
@@ -1197,6 +1209,20 @@ typedef struct _vx_graph {
     vx_graph       parentGraph;
     /*! \brief The array of all delays in this graph */
     vx_delay       delays[VX_INT_MAX_REF];
+#ifdef OPENVX_USE_STREAMING
+    /*! \brief Streaming mode enabled via vxEnableGraphStreaming. */
+    vx_bool        streaming_enabled;
+    /*! \brief Trigger node supplied to vxEnableGraphStreaming (may be NULL). */
+    vx_node        streaming_trigger_node;
+    /*! \brief Background thread running streaming executions. */
+    vx_thread_t    streaming_thread;
+    /*! \brief Event used to signal the streaming worker to stop. */
+    vx_internal_event_t streaming_stop_event;
+    /*! \brief Flag set when the streaming thread is running. */
+    vx_bool        streaming_thread_running;
+    /*! \brief Flag set to request the streaming thread to stop. */
+    vx_bool        streaming_stop;
+#endif
 #ifdef OPENVX_USE_PIPELINING
     /*! \brief Pipelining schedule mode (vx_graph_schedule_mode_e) */
     vx_enum        schedule_mode;

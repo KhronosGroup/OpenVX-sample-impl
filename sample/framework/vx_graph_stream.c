@@ -23,20 +23,135 @@
 
 #include "vx_internal.h"
 
+static void ownStreamingResetNodeState(vx_graph graph)
+{
+    vx_uint32 i;
+    for (i = 0; i < graph->numNodes; i++)
+    {
+        vx_node node = graph->nodes[i];
+        if (node == NULL)
+            continue;
+        node->execution_count = 0;
+        /* next execution will determine correct pipeup/steady state */
+        node->node_state = VX_NODE_STATE_STEADY;
+    }
+}
+
+static vx_bool ownNodeBelongsToGraph(vx_graph graph, vx_node node)
+{
+    vx_uint32 i;
+    for (i = 0; i < graph->numNodes; i++)
+    {
+        if (graph->nodes[i] == node)
+            return vx_true_e;
+    }
+    return vx_false_e;
+}
+
+static vx_value_t vxStreamingWorker(void *arg)
+{
+    vx_graph graph = (vx_graph)arg;
+    while (vx_true_e)
+    {
+        vx_status status = vxProcessGraph(graph);
+        if (status != VX_SUCCESS)
+        {
+            VX_PRINT(VX_ZONE_ERROR, "Streaming graph execution failed with status %d, stopping\n", status);
+            break;
+        }
+        /* Block waiting for a stop request.  A short timeout keeps the worker
+         * responsive if vxProcessGraph returns very quickly. */
+        if (ownWaitEvent(&graph->streaming_stop_event, 1) == vx_true_e)
+            break;
+    }
+    return 0;
+}
+
 VX_API_ENTRY vx_status VX_API_CALL vxEnableGraphStreaming(vx_graph graph,
                 vx_node trigger_node)
 {
-    return VX_ERROR_NOT_IMPLEMENTED;
+    if (ownIsValidSpecificReference(&graph->base, VX_TYPE_GRAPH) == vx_false_e)
+        return VX_ERROR_INVALID_REFERENCE;
+
+    if (trigger_node != NULL)
+    {
+        if (ownIsValidSpecificReference(&trigger_node->base, VX_TYPE_NODE) == vx_false_e)
+            return VX_ERROR_INVALID_REFERENCE;
+        if (trigger_node->graph != graph || ownNodeBelongsToGraph(graph, trigger_node) == vx_false_e)
+            return VX_ERROR_INVALID_PARAMETERS;
+    }
+
+    graph->streaming_enabled = vx_true_e;
+    graph->streaming_trigger_node = trigger_node;
+
+    VX_PRINT(VX_ZONE_GRAPH, "Enabled streaming on graph %p trigger node %p\n", (void *)graph, (void *)trigger_node);
+    return VX_SUCCESS;
 }
 
 VX_API_ENTRY vx_status VX_API_CALL vxStartGraphStreaming(vx_graph graph)
 {
-    return VX_ERROR_NOT_IMPLEMENTED;
+    vx_status status = VX_SUCCESS;
+
+    if (ownIsValidSpecificReference(&graph->base, VX_TYPE_GRAPH) == vx_false_e)
+        return VX_ERROR_INVALID_REFERENCE;
+
+    if (graph->streaming_enabled == vx_false_e)
+        return VX_ERROR_NOT_SUPPORTED;
+
+    if (graph->streaming_thread_running == vx_true_e)
+        return VX_ERROR_NOT_SUPPORTED;
+
+    if (graph->verified == vx_false_e)
+    {
+        status = vxVerifyGraph(graph);
+        if (status != VX_SUCCESS)
+            return status;
+    }
+
+    /* reset per-node streaming execution counters so kernels with a pipeup
+     * depth observe the pipeup-to-steady transition during this session */
+    ownStreamingResetNodeState(graph);
+
+    if (ownInitEvent(&graph->streaming_stop_event, vx_false_e) == vx_false_e)
+        return VX_FAILURE;
+
+    graph->streaming_thread_running = vx_true_e;
+    graph->streaming_thread = ownCreateThread(vxStreamingWorker, graph);
+    if (graph->streaming_thread == 0)
+    {
+        graph->streaming_thread_running = vx_false_e;
+        ownDeinitEvent(&graph->streaming_stop_event);
+        return VX_FAILURE;
+    }
+
+    VX_PRINT(VX_ZONE_GRAPH, "Started streaming on graph %p\n", (void *)graph);
+    return VX_SUCCESS;
 }
 
 VX_API_ENTRY vx_status VX_API_CALL vxStopGraphStreaming(vx_graph graph)
 {
-    return VX_ERROR_NOT_IMPLEMENTED;
+    if (ownIsValidSpecificReference(&graph->base, VX_TYPE_GRAPH) == vx_false_e)
+        return VX_ERROR_INVALID_REFERENCE;
+
+    if (graph->streaming_thread_running == vx_false_e)
+        return VX_ERROR_NOT_SUPPORTED;
+
+    ownSetEvent(&graph->streaming_stop_event);
+
+    if (graph->streaming_thread)
+    {
+        ownJoinThread(graph->streaming_thread, NULL);
+        graph->streaming_thread = 0;
+    }
+
+    ownDeinitEvent(&graph->streaming_stop_event);
+
+    graph->streaming_thread_running = vx_false_e;
+    graph->streaming_enabled = vx_false_e;
+    graph->streaming_trigger_node = NULL;
+
+    VX_PRINT(VX_ZONE_GRAPH, "Stopped streaming on graph %p\n", (void *)graph);
+    return VX_SUCCESS;
 }
 
 #endif

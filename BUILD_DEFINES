@@ -36,10 +36,10 @@ OPENVX_USE_USER_DATA_OBJECT (ENABLED)
 - Enables the user data object extension
 
 OPENVX_USE_PIPELINING (DISABLED)
-- Enables the pipelining extension
+- Enables the pipelining extension (functional implementation)
 
 OPENVX_USE_STREAMING (DISABLED)
-- Enables the streaming extension
+- Enables the streaming extension (functional implementation; relies on pipelining state machinery)
 
 IMPLEMENTATION SPECIFIC OPTIONS:
 --------------------------------
