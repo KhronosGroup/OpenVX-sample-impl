@@ -97,7 +97,7 @@ vx_status vxMeanStdDev(vx_image input, vx_scalar mean, vx_scalar stddev)
 // nodeless version of the MinMaxLoc kernel
 static void analyzeMinMaxValue(vx_uint32 x, vx_uint32 y, vx_int64 v,
                                vx_int64 *pMinVal, vx_int64 *pMaxVal,
-                               vx_uint32 *pMinCount, vx_uint32 *pMaxCount,
+                               vx_size *pMinCount, vx_size *pMaxCount,
                                vx_array minLoc, vx_array maxLoc)
 {
     vx_coordinates2d_t loc;
@@ -157,8 +157,8 @@ vx_status vxMinMaxLoc(vx_image input, vx_scalar minVal, vx_scalar maxVal, vx_arr
     vx_df_image format;
     vx_int64 iMinVal = INT64_MAX;
     vx_int64 iMaxVal = INT64_MIN;
-    vx_uint32 iMinCount = 0;
-    vx_uint32 iMaxCount = 0;
+    vx_size iMinCount = 0;
+    vx_size iMaxCount = 0;
     vx_map_id map_id = 0;
     vx_status status = VX_SUCCESS;
 

@@ -136,7 +136,7 @@ static vx_status VX_CALLBACK vxMinMaxLocOutputValidator(vx_node node, vx_uint32 
     }
     if ((index == 5) || (index == 6))
     {
-        ptr->dim.scalar.type = VX_TYPE_UINT32;
+        ptr->dim.scalar.type = VX_TYPE_SIZE;
         status = VX_SUCCESS;
     }
     return status;
