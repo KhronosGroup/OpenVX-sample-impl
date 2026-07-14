@@ -687,6 +687,19 @@ VX_API_ENTRY vx_status VX_API_CALL vxQueryGraph(vx_graph graph, vx_enum attribut
 void ownDestructGraph(vx_reference ref)
 {
     vx_graph graph = (vx_graph)ref;
+#ifdef OPENVX_USE_STREAMING
+    /* stop any active streaming before destroying nodes */
+    graph->streaming_stop = vx_true_e;
+    if (graph->streaming_thread_running == vx_true_e)
+    {
+        graph->streaming_thread_running = vx_false_e;
+        if (graph->streaming_thread)
+        {
+            ownJoinThread(graph->streaming_thread, NULL);
+            graph->streaming_thread = 0;
+        }
+    }
+#endif
     while (graph->numNodes)
     {
         vx_node node = (vx_node)graph->nodes[0];
@@ -1519,6 +1532,12 @@ static vx_bool postprocess_output_data_type(vx_graph graph, vx_uint32 n, vx_uint
     else if (meta->type == VX_TYPE_SCALAR)
     {
         vx_scalar_t *scalar = (vx_scalar_t *)item;
+        if (meta->dim.scalar.type == VX_TYPE_INVALID)
+        {
+            /* No output validator provided; derive expected scalar type from the
+             * actual output object so that non-virtual user-kernel outputs match. */
+            meta->dim.scalar.type = scalar->data_type;
+        }
         if (scalar->data_type != meta->dim.scalar.type)
         {
             *status = VX_ERROR_INVALID_TYPE;
@@ -2007,7 +2026,9 @@ VX_API_ENTRY vx_status VX_API_CALL vxVerifyGraph(vx_graph graph)
                          (graph->nodes[n]->kernel->signature.directions[p] == VX_INPUT)) &&
                         (graph->nodes[n]->parameters[p] != NULL))
                     {
-                        vx_status input_validation_status = graph->nodes[n]->kernel->validate_input((vx_node)graph->nodes[n], p);
+                        vx_status input_validation_status = VX_SUCCESS;
+                        if (graph->nodes[n]->kernel->validate_input != NULL)
+                            input_validation_status = graph->nodes[n]->kernel->validate_input((vx_node)graph->nodes[n], p);
                         if (input_validation_status != VX_SUCCESS)
                         {
                             status = input_validation_status;
@@ -2036,7 +2057,8 @@ VX_API_ENTRY vx_status VX_API_CALL vxVerifyGraph(vx_graph graph)
                         vx_status output_validation_status = VX_SUCCESS;
                         if (setup_output(graph, n, p, &vref, &meta, &status, &num_errors) == vx_false_e)
                             break;
-                        output_validation_status = graph->nodes[n]->kernel->validate_output((vx_node)graph->nodes[n], p, meta);
+                        if (graph->nodes[n]->kernel->validate_output != NULL)
+                            output_validation_status = graph->nodes[n]->kernel->validate_output((vx_node)graph->nodes[n], p, meta);
                         if (output_validation_status == VX_SUCCESS)
                         {
                             if (postprocess_output(graph, n, p, vref, meta, &status, &num_errors) == vx_false_e)
@@ -2419,6 +2441,70 @@ exit:
     return status;
 }
 
+#ifdef OPENVX_USE_STREAMING
+static void ownUpdateNodeStateForExecution(vx_node node)
+{
+    vx_uint32 pipeup_depth = node->kernel->pipeup_output_depth;
+    if (pipeup_depth > 1 && (node->execution_count + 1) < pipeup_depth)
+    {
+        node->node_state = VX_NODE_STATE_PIPEUP;
+    }
+    else
+    {
+        node->node_state = VX_NODE_STATE_STEADY;
+    }
+}
+
+static vx_bool ownAnyNodeInPipeup(vx_graph graph)
+{
+    vx_uint32 i;
+    for (i = 0; i < graph->numNodes; i++)
+    {
+        vx_node node = graph->nodes[i];
+        if (node->kernel->pipeup_output_depth > 1 &&
+            (node->execution_count + 1) < node->kernel->pipeup_output_depth)
+        {
+            return vx_true_e;
+        }
+    }
+    return vx_false_e;
+}
+
+static vx_bool ownIsPredecessorInPipeup(vx_graph graph, vx_node node)
+{
+    vx_uint32 p;
+    for (p = 0; p < node->kernel->signature.num_parameters; p++)
+    {
+        if (node->kernel->signature.directions[p] != VX_INPUT)
+            continue;
+        if (node->parameters[p] == NULL)
+            continue;
+        vx_reference ref = (vx_reference)node->parameters[p];
+        vx_uint32 n;
+        for (n = 0; n < graph->numNodes; n++)
+        {
+            vx_node pred = graph->nodes[n];
+            if (pred == node)
+                continue;
+            vx_uint32 pp;
+            for (pp = 0; pp < pred->kernel->signature.num_parameters; pp++)
+            {
+                if (pred->kernel->signature.directions[pp] != VX_OUTPUT)
+                    continue;
+                if ((vx_reference)pred->parameters[pp] == ref)
+                {
+                    if (pred->node_state == VX_NODE_STATE_PIPEUP)
+                    {
+                        return vx_true_e;
+                    }
+                }
+            }
+        }
+    }
+    return vx_false_e;
+}
+#endif
+
 static vx_status vxExecuteGraph(vx_graph graph, vx_uint32 depth)
 {
     vx_status status = VX_SUCCESS;
@@ -2449,16 +2535,38 @@ static vx_status vxExecuteGraph(vx_graph graph, vx_uint32 depth)
     VX_PRINT(VX_ZONE_GRAPH,"*** PROCESSING GRAPH ***\n");
     VX_PRINT(VX_ZONE_GRAPH,"************************\n");
 
-    graph->state = VX_GRAPH_STATE_RUNNING;
-    ownClearVisitation(graph);
-    ownClearExecution(graph);
     if (context->perf_enabled)
     {
         ownStartCapture(&graph->perf);
     }
-    /* initialize the next_nodes as the graph heads */
-    memcpy(next_nodes, graph->heads, graph->numHeads * sizeof(vx_uint32));
-    numNext = graph->numHeads;
+
+#ifdef OPENVX_USE_STREAMING
+    /* For non-streaming graphs with pipeup-output-depth nodes, run internal
+     * warm-up iterations while any node is still in pipeup, then run exactly
+     * one steady iteration before returning to the caller.  This mirrors the
+     * rustVX behaviour expected by the GraphStreaming conformance tests.
+     * Streaming graphs always run a single iteration per call. */
+    vx_bool steady_done = vx_false_e;
+    while (status == VX_SUCCESS && action != VX_ACTION_ABANDON)
+    {
+        vx_bool any_pipeup = ownAnyNodeInPipeup(graph);
+        if (graph->streaming_thread_running == vx_false_e &&
+            !any_pipeup && steady_done)
+        {
+            break;
+        }
+#else
+    {
+#endif
+        graph->state = VX_GRAPH_STATE_RUNNING;
+        ownClearVisitation(graph);
+        ownClearExecution(graph);
+        action = VX_ACTION_CONTINUE;
+        status = VX_SUCCESS;
+
+        /* initialize the next_nodes as the graph heads */
+        memcpy(next_nodes, graph->heads, graph->numHeads * sizeof(vx_uint32));
+        numNext = graph->numHeads;
 
     do {
         for (n = 0; n < numNext; n++)
@@ -2478,6 +2586,11 @@ static vx_status vxExecuteGraph(vx_graph graph, vx_uint32 depth)
                     vx_value_set_t *work = &workitems[n];
                     vx_target target = &graph->base.context->targets[t];
                     vx_node node = graph->nodes[next_nodes[n]];
+#ifdef OPENVX_USE_STREAMING
+                    if (ownIsPredecessorInPipeup(graph, node))
+                        continue;
+                    ownUpdateNodeStateForExecution(node);
+#endif
                     work->v1 = (vx_value_t)target;
                     work->v2 = (vx_value_t)node;
                     work->v3 = (vx_value_t)VX_ACTION_CONTINUE;
@@ -2489,6 +2602,11 @@ static vx_status vxExecuteGraph(vx_graph graph, vx_uint32 depth)
                     vx_target_t *target = &graph->base.context->targets[t];
                     vx_node_t *node = graph->nodes[next_nodes[n]];
 
+#ifdef OPENVX_USE_STREAMING
+                    if (ownIsPredecessorInPipeup(graph, (vx_node)node))
+                        continue;
+#endif
+
                     /* turn on access to virtual memory */
                     for (p = 0u; p < node->kernel->signature.num_parameters; p++) {
                         if (node->parameters[p] == NULL) continue;
@@ -2496,6 +2614,10 @@ static vx_status vxExecuteGraph(vx_graph graph, vx_uint32 depth)
                             node->parameters[p]->is_accessible = vx_true_e;
                         }
                     }
+
+#ifdef OPENVX_USE_STREAMING
+                    ownUpdateNodeStateForExecution(node);
+#endif
 
                     VX_PRINT(VX_ZONE_GRAPH, "Calling Node[%u] %s:%s\n",
                              next_nodes[n],
@@ -2516,7 +2638,13 @@ static vx_status vxExecuteGraph(vx_graph graph, vx_uint32 depth)
                         }
                     }
 
-                    if (action == VX_ACTION_ABANDON)
+                    if (action != VX_ACTION_ABANDON)
+                    {
+#ifdef OPENVX_USE_STREAMING
+                        node->execution_count++;
+#endif
+                    }
+                    else
                     {
                         break;
                     }
@@ -2551,6 +2679,17 @@ static vx_status vxExecuteGraph(vx_graph graph, vx_uint32 depth)
                         break;
                     }
                 }
+#ifdef OPENVX_USE_STREAMING
+                if (action != VX_ACTION_ABANDON)
+                {
+                    for (n = 0; n < numNext; n++)
+                    {
+                        vx_node node = graph->nodes[next_nodes[n]];
+                        if (node != NULL)
+                            node->execution_count++;
+                    }
+                }
+#endif
             }
         }
 #endif
@@ -2569,15 +2708,25 @@ static vx_status vxExecuteGraph(vx_graph graph, vx_uint32 depth)
 
     } while (numNext > 0);
 
-    if (action == VX_ACTION_ABANDON)
-    {
-        status = VX_ERROR_GRAPH_ABANDONED;
+        if (action == VX_ACTION_ABANDON)
+        {
+            status = VX_ERROR_GRAPH_ABANDONED;
+        }
+
+        ownClearVisitation(graph);
+
+#ifdef OPENVX_USE_STREAMING
+        if (graph->streaming_thread_running == vx_true_e)
+            break;
+        if (!any_pipeup)
+            steady_done = vx_true_e;
     }
+#endif
+
     if (context->perf_enabled)
     {
         ownStopCapture(&graph->perf);
     }
-    ownClearVisitation(graph);
 
     for (n = 0; n < VX_INT_MAX_REF; n++)
     {

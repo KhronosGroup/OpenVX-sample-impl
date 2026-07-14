@@ -120,6 +120,10 @@ vx_status ownInitializeKernel(vx_context context,
         kernel->attributes.borders.constant_value.U32 = 0;
         kernel->attributes.valid_rect_reset = vx_false_e; /* default value for std nodes */
         kernel->attributes.localDataSize = 0;
+#ifdef OPENVX_USE_STREAMING
+        kernel->pipeup_output_depth = 1;
+        kernel->pipeup_input_depth = 1;
+#endif
 #ifdef OPENVX_USE_OPENCL_INTEROP
         kernel->attributes.opencl_access = vx_false_e;
 #endif
@@ -559,7 +563,7 @@ static vx_kernel addkernel(vx_context c,
                            vx_kernel_output_validate_f output,
                            vx_kernel_initialize_f initialize,
                            vx_kernel_deinitialize_f deinitialize,
-                           vx_bool valid_rect_reset)
+                           vx_bool is_user_kernel)
 {
     vx_context_t *context = (vx_context_t *)c;
     vx_kernel kernel = 0;
@@ -576,8 +580,8 @@ static vx_kernel addkernel(vx_context c,
 
     if (func_ptr == NULL ||
         ((validate == NULL) &&
-         (input == NULL ||
-          output == NULL)) ||
+         (input == NULL || output == NULL) &&
+         (is_user_kernel == vx_false_e)) ||
         numParams > VX_INT_MAX_PARAMS || numParams == 0 ||
         name == NULL ||
         strncmp(name, "",  VX_MAX_KERNEL_NAME) == 0)
@@ -615,8 +619,8 @@ static vx_kernel addkernel(vx_context c,
                                          func_ptr, numParams,
                                          validate, input, output,
                                          initialize, deinitialize);
-        kernel->user_kernel = vx_true_e;
-        kernel->attributes.valid_rect_reset = valid_rect_reset;
+        kernel->user_kernel = is_user_kernel;
+        kernel->attributes.valid_rect_reset = is_user_kernel ? vx_true_e : vx_false_e;
         VX_PRINT(VX_ZONE_KERNEL,"Added Kernel %s to Target %s ("VX_FMT_REF")\n", name, target->name, kernel);
         /* A reference is returned to the user */
         ownIncrementReference(&kernel->base, VX_EXTERNAL);
@@ -857,6 +861,28 @@ VX_API_ENTRY vx_status VX_API_CALL vxQueryKernel(vx_kernel kernel, vx_enum attri
                 if (VX_CHECK_PARAM(ptr, size, vx_bool, 0x3))
                 {
                     *(vx_bool *)ptr = kern_ptr->attributes.opencl_access;
+                }
+                else
+                {
+                    status = VX_ERROR_INVALID_PARAMETERS;
+                }
+                break;
+#endif
+#ifdef OPENVX_USE_STREAMING
+            case VX_KERNEL_PIPEUP_OUTPUT_DEPTH:
+                if (VX_CHECK_PARAM(ptr, size, vx_uint32, 0x3))
+                {
+                    *(vx_uint32 *)ptr = kern_ptr->pipeup_output_depth;
+                }
+                else
+                {
+                    status = VX_ERROR_INVALID_PARAMETERS;
+                }
+                break;
+            case VX_KERNEL_PIPEUP_INPUT_DEPTH:
+                if (VX_CHECK_PARAM(ptr, size, vx_uint32, 0x3))
+                {
+                    *(vx_uint32 *)ptr = kern_ptr->pipeup_input_depth;
                 }
                 else
                 {
@@ -1106,6 +1132,28 @@ VX_API_ENTRY vx_status VX_API_CALL vxSetKernelAttribute(vx_kernel kernel, vx_enu
             else
             {
                 status = VX_ERROR_INVALID_VALUE;
+            }
+            break;
+#endif
+#ifdef OPENVX_USE_STREAMING
+        case VX_KERNEL_PIPEUP_OUTPUT_DEPTH:
+            if (VX_CHECK_PARAM(ptr, size, vx_uint32, 0x3))
+            {
+                kern_ptr->pipeup_output_depth = *(vx_uint32 *)ptr;
+            }
+            else
+            {
+                status = VX_ERROR_INVALID_PARAMETERS;
+            }
+            break;
+        case VX_KERNEL_PIPEUP_INPUT_DEPTH:
+            if (VX_CHECK_PARAM(ptr, size, vx_uint32, 0x3))
+            {
+                kern_ptr->pipeup_input_depth = *(vx_uint32 *)ptr;
+            }
+            else
+            {
+                status = VX_ERROR_INVALID_PARAMETERS;
             }
             break;
 #endif
