@@ -47,10 +47,13 @@ add_library (${TARGET_NAME} STATIC ${OVX_SRC_NNEF_LIB} )
 # no longer pulls it in transitively, so force-include it for this target.
 target_compile_options(${TARGET_NAME} PRIVATE -include limits)
 
-install ( TARGETS ${TARGET_NAME} 
+install ( TARGETS ${TARGET_NAME}
           RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
           ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
           LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} )
+
+install ( DIRECTORY ${CMAKE_SOURCE_DIR}/kernels/NNEF-Tools/parser/cpp/include/
+          DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} )
 		  
 set_target_properties( ${TARGET_NAME} PROPERTIES FOLDER ${HELPER_FOLDER} )
 endif (OPENVX_CONFORMANCE_NNEF_IMPORT)
