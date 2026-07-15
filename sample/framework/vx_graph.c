@@ -2728,6 +2728,8 @@ static vx_status vxExecuteGraph(vx_graph graph, vx_uint32 depth)
         if (!any_pipeup)
             steady_done = vx_true_e;
     }
+#else
+    }
 #endif
 
     if (context->perf_enabled)
