@@ -43,6 +43,10 @@ FIND_SOURCES()
 file(GLOB OVX_SRC_NNEF_LIB "${CMAKE_SOURCE_DIR}/kernels/NNEF-Tools/parser/cpp/src/*.cpp")
 add_library (${TARGET_NAME} STATIC ${OVX_SRC_NNEF_LIB} )
 
+# NNEF-Tools uses std::numeric_limits without #include <limits>; modern GCC
+# no longer pulls it in transitively, so force-include it for this target.
+target_compile_options(${TARGET_NAME} PRIVATE -include limits)
+
 install ( TARGETS ${TARGET_NAME} 
           RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
           ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
