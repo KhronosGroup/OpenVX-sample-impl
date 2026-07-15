@@ -160,7 +160,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxSendUserEvent(vx_context context, vx_uint32
     event.type = VX_EVENT_USER;
     event.timestamp = ownCaptureTime();
     event.app_value = id;
-    event.event_info.user_event.user_event_parameter = parameter;
+    event.event_info.user_event.user_event_parameter = (void *)parameter;
 
     return ownPipelinePostEvent(context, &event);
 }
