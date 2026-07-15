@@ -53,7 +53,7 @@ install ( TARGETS ${TARGET_NAME}
           LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} )
 
 install ( DIRECTORY ${CMAKE_SOURCE_DIR}/kernels/NNEF-Tools/parser/cpp/include/
-          DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} )
+          DESTINATION include )
 		  
 set_target_properties( ${TARGET_NAME} PROPERTIES FOLDER ${HELPER_FOLDER} )
 endif (OPENVX_CONFORMANCE_NNEF_IMPORT)
