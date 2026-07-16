@@ -11,6 +11,7 @@ This document outlines the purpose of this sample implementation as well as prov
 ## Contents
 
 * [Purpose](#purpose)
+* [Conformance & Extension Support](#conformance--extension-support)
 * [Building and Executing](#building-and-executing)
   * [CMake](#cmake)
   * [Build.py Options](#buildpy-options)
@@ -45,7 +46,48 @@ The following is a summary of what this sample implementation IS and IS NOT:
 * Production ready
 * Actively maintained by Khronos publicly
 
-> **Note:** As of the current tip of tree (ToT), the Pipelining and Streaming extension APIs have functional implementations and their conformance tests (`GraphPipeline.*` and `GraphStreaming.*`) are expected to pass. The Event Queue extension API is still present as a stub (returns `VX_ERROR_NOT_IMPLEMENTED`); it is included for API compatibility but does not yet have a functional implementation.
+> **Note:** As of the current tip of tree (ToT), the Pipelining and Streaming extension APIs have functional implementations and their conformance tests (`GraphPipeline.*` and `GraphStreaming.*`) are expected to pass. The associated Event Queue API (`vxEnableEvents`, `vxDisableEvents`, `vxSendUserEvent`, `vxWaitEvent`, `vxRegisterEvent`) is also functionally implemented (see `sample/framework/vx_event_queue.c`), not a stub.
+
+## Conformance & Extension Support
+
+The tables below summarize which OpenVX 1.3.2 conformance feature sets and extensions are implemented in this sample and whether they are exercised by the bundled Conformance Test Suite (`cts/`). "Conformance status" reflects the CI pipeline (`.github/workflows/ci.yml`), where each listed suite runs as a required gate against the Debug build.
+
+### Conformance Feature Sets (Profiles)
+
+| Feature set | Build flag / CMake define | Implemented | CTS suite(s) | Conformance status |
+|---|---|---|---|---|
+| Vision (base) | `--conf_vision` / `OPENVX_CONFORMANCE_VISION` | Yes | Color, filters, arithmetic, geometric, features, statistics, image ops, pyramid & optical flow | Passing |
+| Enhanced Vision | `--enh_vision` / `OPENVX_USE_ENHANCED_VISION` | Yes | Tensor ops/transforms, HOG, `MatchTemplate`, `LBP`, `BilateralFilter`, `Copy`, `Nonmaxsuppression`, `Houghlinesp`, `ControlFlow` | Passing |
+| Neural Networks | `--conf_nn` / `OPENVX_CONFORMANCE_NEURAL_NETWORKS` | Yes | `TensorNetworks.*`, `*NN*` | Passing |
+| NNEF Import | `--conf_nnef` / `OPENVX_CONFORMANCE_NNEF_IMPORT` | Yes | `*NNEF*` | Passing |
+
+### Official / KHR Extensions
+
+| Extension | Build flag / CMake define | Implemented | CTS suite(s) | Conformance status |
+|---|---|---|---|---|
+| Import/Export (`vx_khr_ix`) | `--ix` / `OPENVX_USE_IX` | Yes | `ExtensionObject.*`, `Graph/ExportImport*`, `*IX*` | Passing |
+| Neural Network (`vx_khr_nn`) | `--nn` / `OPENVX_USE_NN` | Yes | `*NN*`, `TensorNetworks.*` | Passing |
+| User Data Object | `--userdataobj` / `OPENVX_USE_USER_DATA_OBJECT` | Yes | `UserDataObject.*` | Passing |
+| Binary image / U1 | `--u1` / `OPENVX_USE_U1` | Yes | `vxBinOp1u.*`, `vxuBinOp1u.*` | Passing |
+| Pipelining | `--pipelining` / `OPENVX_USE_PIPELINING` | Yes | `GraphPipeline.*` | Passing |
+| Streaming | `--streaming` / `OPENVX_USE_STREAMING` | Yes | `GraphStreaming.*` | Passing (required gate) |
+| Event Queue | (built with Pipelining/Streaming) | Yes | Exercised via `GraphPipeline.*` / `GraphStreaming.*` | Passing |
+
+### Provisional & Experimental (no dedicated CTS coverage)
+
+These options are available as build toggles but have **no dedicated conformance suite** in the bundled CTS, so they are not validated by the conformance pipeline.
+
+| Option | Build flag / CMake define | Implemented | Conformance status |
+|---|---|---|---|
+| Tiling (provisional) | `--tiling` / `OPENVX_USE_TILING` | Yes | Not covered by CTS |
+| Extended S16 (provisional) | `--s16` / `OPENVX_USE_S16` | Yes | Not covered by CTS |
+| OpenCL Interop | `--opencl_interop` / `OPENVX_USE_OPENCL_INTEROP` | Yes | Not covered by CTS |
+| XML import/export | `OPENVX_USE_XML` | Yes | Not covered by CTS |
+| FLOAT16 support (experimental) | `--f16` / `EXPERIMENTAL_PLATFORM_SUPPORTS_16_FLOAT` | Yes | Not covered by CTS |
+| VENUM / Raspberry Pi NEON target (experimental) | `--venum` / `EXPERIMENTAL_USE_VENUM` | Yes | Not covered by CTS |
+| OpenCL target (experimental) | `--opencl` / `EXPERIMENTAL_USE_OPENCL` | Yes | Not covered by CTS |
+
+> **Note:** Neural Networks and NNEF Import conformance rely on test data shipped in `cts/test_data/`. All suites above run as required (non-`continue-on-error`) jobs in the current CI; a failure indicates a real regression rather than an expected/unsupported case.
 
 ## Building and Executing
 
@@ -91,6 +133,8 @@ The sample implementation contains two different build system options: cmake and
 * libxml2 development package (e.g. `libxml2-dev` on Ubuntu).
 
 #### Building
+
+> **Note:** By default the sample implementation enables only the base **Vision** conformance feature set (`OPENVX_CONFORMANCE_VISION=ON`); every other feature set (Enhanced Vision, Neural Networks, NNEF Import) and extension (IX, NN, U1, Pipelining, Streaming, User Data Object, etc.) is off unless you enable it explicitly, either with the corresponding `Build.py` flag or `-DOPENVX_*=ON` on the CMake line. This mirrors the Conformance Test Suite defaults.
 
 **Windows** -- from VS / Cygwin command prompt:
 
@@ -219,6 +263,7 @@ The `Build.py` script wraps CMake and provides command-line options for configur
 | `--nn` | `OPENVX_USE_NN=ON` | Neural Network extension |
 | `--pipelining` | `OPENVX_USE_PIPELINING=ON` | Pipelining extension |
 | `--streaming` | `OPENVX_USE_STREAMING=ON` | Streaming extension |
+| `--userdataobj` | `OPENVX_USE_USER_DATA_OBJECT=ON` | User Data Object extension |
 | `--opencl_interop` | `OPENVX_USE_OPENCL_INTEROP=ON` | OpenCL Interop extension |
 | `--u1` | `OPENVX_USE_U1=ON` | Binary (1-bit) image support |
 
@@ -440,14 +485,16 @@ LD_LIBRARY_PATH=$OPENVX_DIR/bin:./lib ./bin/vx_test_conformance
 
 ## Conformance Test Modes
 
-The sample implementation supports several conformance test configurations. Below are the supported modes matching the CI pipeline. For all modes, first set up the environment:
+The sample implementation supports several conformance test configurations. The per-feature modes below are provided for **local, reproducible runs**; the CI pipeline itself uses a single all-features build fanned out into filtered slices (see [CI/CD](#cicd)). For all modes, first set up the environment:
 
 ```shell
 export OPENVX_DIR=$(pwd)/install/Linux/x64/Debug
 export VX_TEST_DATA_PATH=$(pwd)/cts/test_data/
 ```
 
-> **Note:** The `cts/test_data/` directory contains large binary files managed with **Git LFS**. Make sure Git LFS is installed and files are pulled (`git lfs pull`) before running the conformance suite. The CI workflow enables LFS checkout automatically.
+> **Note:** As of the pinned `cts` submodule, the CTS enables only the base **Vision** feature set by default; every other conformance feature set (Enhanced Vision, Neural Networks, NNEF Import) and extension (IX, NN, U1, Pipelining, Streaming, User Data Object) is opt-in and must be turned on explicitly with the corresponding `-DOPENVX_*=ON` flag on the CTS `cmake` line, as shown in each mode below.
+
+> **Note:** The current `cts` submodule stores its test data (`cts/test_data/`) as regular git files, so **Git LFS is not required** — a recursive clone/submodule checkout fetches the real images directly.
 
 > **Note:** When switching between modes, remove the previous install directory before rebuilding: `rm -rf install/Linux/x64/Debug`
 
@@ -488,10 +535,12 @@ LD_LIBRARY_PATH=$OPENVX_DIR/bin:./lib ./bin/vx_test_conformance
 ```shell
 python3 Build.py --os=Linux --arch=64 --conf=Debug --conf_nnef
 mkdir build-cts-mode-4 && cd build-cts-mode-4
-cmake -DOPENVX_INCLUDES=$OPENVX_DIR/include -DOPENVX_LIBRARIES=$OPENVX_DIR/bin/libopenvx.so\;$OPENVX_DIR/bin/libvxu.so\;$OPENVX_DIR/bin/libnnef-lib.a\;pthread\;dl\;m\;rt -DOPENVX_CONFORMANCE_NNEF_IMPORT=ON ../cts/
+cmake -DOPENVX_INCLUDES=$OPENVX_DIR/include -DOPENVX_LIBRARIES=$OPENVX_DIR/bin/libopenvx.so\;$OPENVX_DIR/bin/libvxu.so\;$OPENVX_DIR/bin/libnnef-lib.a\;pthread\;dl\;m\;rt\;stdc++ -DCMAKE_C_FLAGS="-I$(pwd)/../kernels/NNEF-Tools/parser/cpp/include" -DOPENVX_CONFORMANCE_NNEF_IMPORT=ON ../cts/
 cmake --build .
-LD_LIBRARY_PATH=$OPENVX_DIR/bin:./lib ./bin/vx_test_conformance
+LD_LIBRARY_PATH=$OPENVX_DIR/bin:./lib ./bin/vx_test_conformance '--filter=*NNEF*'
 ```
+
+> **Note:** The NNEF static library `libnnef-lib.a` is installed under `bin/` (not `lib/`) because the sample-impl install directories are set to `bin`. The CTS link line must also add `stdc++` and the NNEF parser include path (`kernels/NNEF-Tools/parser/cpp/include`), as shown above and in the CI workflow. If the sample-impl build fails with `'numeric_limits' is not a member of 'std'` on a modern GCC, add `--cpp_flags="-include limits"` to the `Build.py` command.
 
 ### Mode 5 - Vision, Enhanced Vision, Neural Net, Import/Export, & U1
 
@@ -506,14 +555,14 @@ LD_LIBRARY_PATH=$OPENVX_DIR/bin:./lib ./bin/vx_test_conformance
 ### Mode 6 - User Data Object
 
 ```shell
-python3 Build.py --os=Linux --arch=64 --conf=Debug
+python3 Build.py --os=Linux --arch=64 --conf=Debug --userdataobj
 mkdir build-cts-mode-6 && cd build-cts-mode-6
 cmake -DOPENVX_INCLUDES=$OPENVX_DIR/include -DOPENVX_LIBRARIES=$OPENVX_DIR/bin/libopenvx.so\;$OPENVX_DIR/bin/libvxu.so\;pthread\;dl\;m\;rt -DOPENVX_USE_USER_DATA_OBJECT=ON ../cts/
 cmake --build .
-LD_LIBRARY_PATH=$OPENVX_DIR/bin:./lib ./bin/vx_test_conformance
+LD_LIBRARY_PATH=$OPENVX_DIR/bin:./lib ./bin/vx_test_conformance '--filter=UserDataObject.*'
 ```
 
-> **Note:** Build.py does not have a `--user_data_object` flag. To enable User Data Object support, use CMake directly with `-DOPENVX_USE_USER_DATA_OBJECT=ON`.
+> **Note:** The `Build.py` flag for this extension is `--userdataobj` (it maps to `-DOPENVX_USE_USER_DATA_OBJECT=ON`). The matching `-DOPENVX_USE_USER_DATA_OBJECT=ON` flag must also be passed on the CTS `cmake` line so the `UserDataObject.*` tests are compiled.
 
 ### Mode 7 - Vision, Enhanced Vision, & Pipelining
 
@@ -618,29 +667,28 @@ dpkg-deb -i <path>/openvx-*.deb
 
 ## CI/CD
 
-The project runs continuous integration on both GitHub Actions and GitLab CI, using an Ubuntu 22.04 environment. Both pipelines share the same structure:
+Continuous integration runs on **GitHub Actions** (`.github/workflows/ci.yml`) using an Ubuntu 22.04 environment. It runs on every pull request and on pushes to all branches, and is organized as a **two-stage, build-once/fan-out pipeline** rather than one rebuild per feature mode:
+
+**Stage 1 — Build (both jobs gate Stage 2):**
 
 1. Install prerequisites: `cmake`, `make`, `git`, `python3`, `gcc`, `g++`
-2. Build OpenVX in both Release and Debug configurations
-3. Run 8 conformance test modes:
-   - Mode 1: Vision
-   - Mode 2: Vision & Enhanced Vision
-   - Mode 3: Neural Networks
-   - Mode 4: NNEF Import
-   - Mode 5: Combined (Vision, Enhanced Vision, Neural Networks, Import/Export, U1)
-   - Mode 6: User Data Object
-   - Mode 7: Pipelining (implemented on ToT; runs the `GraphPipeline.*` tests, expected to pass)
-   - Mode 8: Streaming (implemented on ToT; runs the `GraphStreaming.*` tests, expected to pass)
+2. `build` — compiles the sample implementation once in **Debug** with the full feature set enabled (`OPENVX_FEATURES`: Vision, Enhanced Vision, Neural Networks, NNEF Import, NN, IX, U1, User Data Object, Pipelining, Streaming), then builds the CTS against it and uploads a single self-contained artifact (`build-cts/` + `install/` + `cts/test_data/`).
+3. `build-release` — a parallel **Release** build of the sample implementation that acts as a build gate.
 
-Git submodules are fetched recursively.
+**Stage 2 — Conformance test slices:**
 
-### GitHub Actions
+Many granular jobs (each `needs: [build, build-release]`) download the Stage 1 artifact and run one `--filter` slice of the suite; no job rebuilds. Slices are grouped by area, for example:
 
-The GitHub Actions workflow (`.github/workflows/ci.yml`) runs on every pull request and on pushes to all branches. It defines a `build` job (Release + Debug) plus one job per conformance test mode; each job checks out the repository with submodules, builds the sample implementation, then builds and runs the CTS. The Streaming job is required to pass.
+- Framework: baseline/smoke, graph, user kernels
+- Data objects and User Data Object
+- Import/Export (IX)
+- Pipelining (split into `fast` and `stress` slices because the tests run against the slower unoptimized Debug C-model) and Streaming
+- Neural Networks and NNEF import
+- Vision and Enhanced Vision functional groups (color/channel, filters, arithmetic, geometric, features, statistics, image ops, pyramid, tensor ops, control flow, etc.)
 
-### GitLab CI
+Git submodules are fetched recursively. Pipelining and Streaming are implemented on ToT and their jobs (`GraphPipeline.*` / `GraphStreaming.*`) are expected to pass.
 
-The GitLab CI pipeline (`.gitlab-ci.yml`) uses the `ubuntu:22.04` image with a `build` stage and a `test` stage covering the same 8 conformance modes. Submodules are fetched via `GIT_SUBMODULE_STRATEGY: recursive`, and the Streaming job is required to pass.
+> **Note:** A single all-features build serves every test slice, which is cheaper than rebuilding per feature; the trade-off is that features are exercised together rather than in isolation. The manually reproducible per-feature "Conformance Test Modes" below are provided for local runs and do **not** correspond one-to-one to CI jobs.
 
 ## Bug Reporting
 
