@@ -46,8 +46,6 @@ The following is a summary of what this sample implementation IS and IS NOT:
 * Production ready
 * Actively maintained by Khronos publicly
 
-> **Note:** As of the current tip of tree (ToT), the Pipelining and Streaming extension APIs have functional implementations and their conformance tests (`GraphPipeline.*` and `GraphStreaming.*`) are expected to pass. The associated Event Queue API (`vxEnableEvents`, `vxDisableEvents`, `vxSendUserEvent`, `vxWaitEvent`, `vxRegisterEvent`) is also functionally implemented (see `sample/framework/vx_event_queue.c`), not a stub.
-
 ## Conformance & Extension Support
 
 The tables below summarize which OpenVX 1.3.2 conformance feature sets and extensions are implemented in this sample and whether they are exercised by the bundled Conformance Test Suite (`cts/`). "Conformance status" reflects the CI pipeline (`.github/workflows/ci.yml`), where each listed suite runs as a required gate against the Debug build.
@@ -70,7 +68,7 @@ The tables below summarize which OpenVX 1.3.2 conformance feature sets and exten
 | User Data Object | `--userdataobj` / `OPENVX_USE_USER_DATA_OBJECT` | Yes | `UserDataObject.*` | Passing |
 | Binary image / U1 | `--u1` / `OPENVX_USE_U1` | Yes | `vxBinOp1u.*`, `vxuBinOp1u.*` | Passing |
 | Pipelining | `--pipelining` / `OPENVX_USE_PIPELINING` | Yes | `GraphPipeline.*` | Passing |
-| Streaming | `--streaming` / `OPENVX_USE_STREAMING` | Yes | `GraphStreaming.*` | Passing (required gate) |
+| Streaming | `--streaming` / `OPENVX_USE_STREAMING` | Yes | `GraphStreaming.*` | Passing |
 | Event Queue | built with Pipelining / Streaming | Yes | `GraphPipeline.*`, `GraphStreaming.*` (indirect) | Passing |
 
 ### Compute Targets
