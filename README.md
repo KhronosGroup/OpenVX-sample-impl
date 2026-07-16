@@ -67,9 +67,10 @@ The tables below summarize which OpenVX 1.3.2 conformance feature sets and exten
 | Neural Network (`vx_khr_nn`) | `--nn` / `OPENVX_USE_NN` | Yes | `*NN*`, `TensorNetworks.*` | Passing |
 | User Data Object | `--userdataobj` / `OPENVX_USE_USER_DATA_OBJECT` | Yes | `UserDataObject.*` | Passing |
 | Binary image / U1 | `--u1` / `OPENVX_USE_U1` | Yes | `vxBinOp1u.*`, `vxuBinOp1u.*` | Passing |
-| Pipelining | `--pipelining` / `OPENVX_USE_PIPELINING` | Yes | `GraphPipeline.*` | Passing |
-| Streaming | `--streaming` / `OPENVX_USE_STREAMING` | Yes | `GraphStreaming.*` | Passing |
-| Event Queue | built with Pipelining / Streaming | Yes | `GraphPipeline.*`, `GraphStreaming.*` (indirect) | Passing |
+| Pipelining (`vx_khr_pipelining`) | `--pipelining` / `OPENVX_USE_PIPELINING` | Yes | `GraphPipeline.*` | Passing |
+| Streaming (`vx_khr_pipelining`) | `--streaming` / `OPENVX_USE_STREAMING` | Yes | `GraphStreaming.*` | Passing |
+
+> **Note:** Pipelining and Streaming are both part of the single `vx_khr_pipelining` extension ("Graph Pipelining, Streaming and Batch Processing"). This extension also defines the **event-queue API** (`vxEnableEvents`, `vxDisableEvents`, `vxRegisterEvent`, `vxWaitEvent`, `vxSendUserEvent`) for asynchronous graph/node/user event notifications — it is not a separate extension. The event queue is implemented in `sample/framework/vx_event_queue.c` and is exercised by the `GraphPipeline.*` and `GraphStreaming.*` suites.
 
 ### Compute Targets
 
@@ -582,8 +583,6 @@ cmake --build .
 LD_LIBRARY_PATH=$OPENVX_DIR/bin:./lib ./bin/vx_test_conformance '--filter=GraphPipeline.*'
 ```
 
-> **Note:** As of the current tip of tree (ToT), Pipelining and Streaming are implemented, so the `GraphPipeline.*` and `GraphStreaming.*` conformance tests are expected to pass.
-
 ### Mode 8 - Vision, Enhanced Vision, Pipelining, & Streaming
 
 ```shell
@@ -593,8 +592,6 @@ cmake -DOPENVX_INCLUDES=$OPENVX_DIR/include -DOPENVX_LIBRARIES=$OPENVX_DIR/bin/l
 cmake --build .
 LD_LIBRARY_PATH=$OPENVX_DIR/bin:./lib ./bin/vx_test_conformance '--filter=GraphStreaming.*'
 ```
-
-> **Note:** Streaming is now implemented on ToT, so the `GraphStreaming.*` tests are expected to pass. In CI this job is required to pass.
 
 ## Included Unit Tests
 
