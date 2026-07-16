@@ -54,16 +54,16 @@ The tables below summarize which OpenVX 1.3.2 conformance feature sets and exten
 
 ### Conformance Feature Sets (Profiles)
 
-| Feature set | Build flag / CMake define | Implemented | CTS suite(s) | Conformance status |
+| Feature set | Build flag / CMake define | Implemented | Representative CTS suites | Conformance status |
 |---|---|---|---|---|
-| Vision (base) | `--conf_vision` / `OPENVX_CONFORMANCE_VISION` | Yes | Color, filters, arithmetic, geometric, features, statistics, image ops, pyramid & optical flow | Passing |
-| Enhanced Vision | `--enh_vision` / `OPENVX_USE_ENHANCED_VISION` | Yes | Tensor ops/transforms, HOG, `MatchTemplate`, `LBP`, `BilateralFilter`, `Copy`, `Nonmaxsuppression`, `Houghlinesp`, `ControlFlow` | Passing |
+| Vision (base) | `--conf_vision` / `OPENVX_CONFORMANCE_VISION` | Yes | `ColorConvert.*`, `Box3x3.*`, `vxAddSub.*`, `Scale.*`, `HarrisCorners.*`, `MinMaxLoc.*`, `GaussianPyramid.*`, … (full core-vision suite) | Passing |
+| Enhanced Vision | `--enh_vision` / `OPENVX_USE_ENHANCED_VISION` | Yes | `TensorOp.*`, `HogFeatures.*`, `MatchTemplate.*`, `LBP.*`, `BilateralFilter.*`, `Nonmaxsuppression.*`, `Houghlinesp.*`, `ControlFlow.*` | Passing |
 | Neural Networks | `--conf_nn` / `OPENVX_CONFORMANCE_NEURAL_NETWORKS` | Yes | `TensorNetworks.*`, `*NN*` | Passing |
 | NNEF Import | `--conf_nnef` / `OPENVX_CONFORMANCE_NNEF_IMPORT` | Yes | `*NNEF*` | Passing |
 
 ### Official / KHR Extensions
 
-| Extension | Build flag / CMake define | Implemented | CTS suite(s) | Conformance status |
+| Extension | Build flag / CMake define | Implemented | Representative CTS suites | Conformance status |
 |---|---|---|---|---|
 | Import/Export (`vx_khr_ix`) | `--ix` / `OPENVX_USE_IX` | Yes | `ExtensionObject.*`, `Graph/ExportImport*`, `*IX*` | Passing |
 | Neural Network (`vx_khr_nn`) | `--nn` / `OPENVX_USE_NN` | Yes | `*NN*`, `TensorNetworks.*` | Passing |
@@ -71,9 +71,21 @@ The tables below summarize which OpenVX 1.3.2 conformance feature sets and exten
 | Binary image / U1 | `--u1` / `OPENVX_USE_U1` | Yes | `vxBinOp1u.*`, `vxuBinOp1u.*` | Passing |
 | Pipelining | `--pipelining` / `OPENVX_USE_PIPELINING` | Yes | `GraphPipeline.*` | Passing |
 | Streaming | `--streaming` / `OPENVX_USE_STREAMING` | Yes | `GraphStreaming.*` | Passing (required gate) |
-| Event Queue | (built with Pipelining/Streaming) | Yes | Exercised via `GraphPipeline.*` / `GraphStreaming.*` | Passing |
+| Event Queue | built with Pipelining / Streaming | Yes | `GraphPipeline.*`, `GraphStreaming.*` (indirect) | Passing |
 
-### Provisional & Experimental (no dedicated CTS coverage)
+### Compute Targets
+
+The kernels can be executed by different back-end *targets*. The portable C reference model is always built; the others are optional and selected at build time. When an optional target is enabled it registers its kernels with the framework, and the **same** conformance suites run against it.
+
+| Target | Build flag / CMake define | Implemented | Conformance status |
+|---|---|---|---|
+| C reference model (`c_model`) | *(default, always built)* | Yes | Passing — validated by the full CI pipeline |
+| VENUM — ARM NEON (Raspberry Pi) | `--venum` / `EXPERIMENTAL_USE_VENUM` | Yes | Passing on Raspberry Pi for the Vision & Enhanced Vision suites (see [Sample 3](#sample-3---build-openvx-132-on-raspberry-pi)) |
+| OpenCL | `--opencl` / `EXPERIMENTAL_USE_OPENCL` | Yes (experimental) | Not validated in CI |
+
+> **Raspberry Pi / VENUM:** The VENUM target provides NEON-accelerated implementations of the Vision and Enhanced Vision kernels for ARM (tuned for the Raspberry Pi 3B+). It is made up of ~40 NEON kernels in `kernels/venum/` plus their OpenVX target wrappers in `sample/targets/venum/`, covering color conversion, channel ops, filters/morphology, arithmetic/bitwise, geometric transforms (scale/warp/remap), features (FAST9, Harris, HOG, LBP, `MatchTemplate`), statistics (min/max/loc, mean-stddev, histogram, integral), pyramids/optical flow, and tensor ops. Enabling `--venum` forces a 32-bit build. It builds and passes the Vision and Enhanced Vision conformance suites on Raspberry Pi hardware.
+
+### Provisional & Experimental Feature Toggles (no dedicated CTS coverage)
 
 These options are available as build toggles but have **no dedicated conformance suite** in the bundled CTS, so they are not validated by the conformance pipeline.
 
@@ -83,11 +95,9 @@ These options are available as build toggles but have **no dedicated conformance
 | Extended S16 (provisional) | `--s16` / `OPENVX_USE_S16` | Yes | Not covered by CTS |
 | OpenCL Interop | `--opencl_interop` / `OPENVX_USE_OPENCL_INTEROP` | Yes | Not covered by CTS |
 | XML import/export | `OPENVX_USE_XML` | Yes | Not covered by CTS |
-| FLOAT16 support (experimental) | `--f16` / `EXPERIMENTAL_PLATFORM_SUPPORTS_16_FLOAT` | Yes | Not covered by CTS |
-| VENUM / Raspberry Pi NEON target (experimental) | `--venum` / `EXPERIMENTAL_USE_VENUM` | Yes | Not covered by CTS |
-| OpenCL target (experimental) | `--opencl` / `EXPERIMENTAL_USE_OPENCL` | Yes | Not covered by CTS |
+| FLOAT16 support | `--f16` / `EXPERIMENTAL_PLATFORM_SUPPORTS_16_FLOAT` | Yes | Not covered by CTS |
 
-> **Note:** Neural Networks and NNEF Import conformance rely on test data shipped in `cts/test_data/`. All suites above run as required (non-`continue-on-error`) jobs in the current CI; a failure indicates a real regression rather than an expected/unsupported case.
+> **Note:** Neural Networks and NNEF Import conformance rely on test data shipped in `cts/test_data/`. Every conformance suite listed in the tables above runs as a required (non-`continue-on-error`) job in the current CI, so a failure indicates a real regression rather than an expected/unsupported case.
 
 ## Building and Executing
 
