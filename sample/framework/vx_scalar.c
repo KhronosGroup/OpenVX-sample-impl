@@ -386,7 +386,8 @@ VX_API_ENTRY vx_status VX_API_CALL vxCopyScalarWithSize(vx_scalar scalar, vx_siz
         }
         else
         {
-            status = VX_ERROR_NO_RESOURCES;
+            /* scalar created via vxCreateScalar stores data in union; delegate to type-aware copy */
+            status = own_scalar_to_host_mem(scalar, user_ptr);
         }
         break;
     case VX_WRITE_ONLY:

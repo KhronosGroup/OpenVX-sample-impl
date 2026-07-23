@@ -260,7 +260,8 @@ static vx_status vxGetCoordValue(vx_remap remap, vx_uint32 dst_x, vx_uint32 dst_
                                  vx_float32 *src_x, vx_float32 *src_y)
 {
     vx_status status = VX_FAILURE;
-    if (ownIsValidSpecificReference(&remap->base, VX_TYPE_REMAP) == vx_true_e)
+    if ((ownIsValidSpecificReference(&remap->base, VX_TYPE_REMAP) == vx_true_e) &&
+         (ownAllocateMemory(remap->base.context, &remap->memory) == vx_true_e))
     {
         if ((dst_x < remap->dst_width) &&
             (dst_y < remap->dst_height))
@@ -314,7 +315,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxCopyRemapPatch(vx_remap remap,
     }
 
     /* more bad parameters */
-    if( (user_stride_y < sizeof(vx_coordinates2df_t)*(rect->end_x - rect->start_x)) ||
+    if( (user_stride_y < sizeof(vx_coordinates2df_t)) ||
         (user_coordinate_type != VX_TYPE_COORDINATES2DF))
     {
         status = VX_ERROR_INVALID_PARAMETERS;
@@ -503,6 +504,15 @@ VX_API_ENTRY vx_status VX_API_CALL vxMapRemapPatch(vx_remap remap,
         (start_y >= end_y)))
     {
         status = VX_ERROR_INVALID_PARAMETERS;
+        goto exit;
+    }
+
+    /* ensure the backing memory (and its per-plane semaphore) exists before we
+     * take the lock; a remap that was never written has no allocated memory yet,
+     * and ownSemWait on an uninitialized semaphore would block forever. */
+    if (ownAllocateMemory(remap->base.context, &remap->memory) == vx_false_e)
+    {
+        status = VX_ERROR_NO_MEMORY;
         goto exit;
     }
 

@@ -887,23 +887,21 @@ VX_API_ENTRY vx_status VX_API_CALL vxQueryContext(vx_context context, vx_enum at
                 break;
             case VX_CONTEXT_NONLINEAR_MAX_DIMENSION:
                 if (VX_CHECK_PARAM(ptr, size, vx_size, 0x3))
-                {
                     *(vx_size *)ptr = VX_INT_MAX_NONLINEAR_DIM;
-                }
+                else if (VX_CHECK_PARAM(ptr, size, vx_uint32, 0x3))
+                    *(vx_uint32 *)ptr = (vx_uint32)VX_INT_MAX_NONLINEAR_DIM;
                 else
-                {
                     status = VX_ERROR_INVALID_PARAMETERS;
-                }
                 break;
             case VX_CONTEXT_OPTICAL_FLOW_MAX_WINDOW_DIMENSION:
                 if (VX_CHECK_PARAM(ptr, size, vx_size, 0x3))
-                {
                     *(vx_size *)ptr = VX_OPTICALFLOWPYRLK_MAX_DIM;
-                }
+                else if (VX_CHECK_PARAM(ptr, size, vx_uint32, 0x3))
+                    *(vx_uint32 *)ptr = (vx_uint32)VX_OPTICALFLOWPYRLK_MAX_DIM;
+                else if (VX_CHECK_PARAM(ptr, size, vx_uint16, 0x1))
+                    *(vx_uint16 *)ptr = (vx_uint16)VX_OPTICALFLOWPYRLK_MAX_DIM;
                 else
-                {
                     status = VX_ERROR_INVALID_PARAMETERS;
-                }
                 break;
             case VX_CONTEXT_IMMEDIATE_BORDER:
                 if (VX_CHECK_PARAM(ptr, size, vx_border_t, 0x3))

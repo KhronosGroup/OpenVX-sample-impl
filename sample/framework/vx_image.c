@@ -1113,13 +1113,11 @@ VX_API_ENTRY vx_status VX_API_CALL vxQueryImage(vx_image image, vx_enum attribut
                 break;
             case VX_IMAGE_PLANES:
                 if (VX_CHECK_PARAM(ptr, size, vx_size, 0x3))
-                {
                     *(vx_size *)ptr = image->planes;
-                }
+                else if (VX_CHECK_PARAM(ptr, size, vx_uint32, 0x3))
+                    *(vx_uint32 *)ptr = (vx_uint32)image->planes;
                 else
-                {
                     status = VX_ERROR_INVALID_PARAMETERS;
-                }
                 break;
             case VX_IMAGE_SPACE:
                 if (VX_CHECK_PARAM(ptr, size, vx_enum, 0x3))
@@ -1146,6 +1144,8 @@ VX_API_ENTRY vx_status VX_API_CALL vxQueryImage(vx_image image, vx_enum attribut
                 {
                     vx_size size = 0ul;
                     vx_uint32 p;
+                    /* Ensure strides are populated; ownAllocateMemory is idempotent */
+                    ownAllocateMemory(image->base.context, &image->memory);
                     for (p = 0; p < image->planes; p++)
                     {
                         size += (abs(image->memory.strides[p][VX_DIM_Y]) * image->memory.dims[p][VX_DIM_Y]);

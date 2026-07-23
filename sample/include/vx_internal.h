@@ -610,6 +610,9 @@ typedef struct _vx_tensor {
     vx_reference_t base;
     /*! \brief The memory layout definition */
     void *addr;
+    /*! \brief The memory type; VX_MEMORY_TYPE_NONE when framework-owned, otherwise
+     * the buffer came from the user via vxCreateTensorFromHandle and must not be freed. */
+    vx_enum memory_type;
     /*! \brief Number of dimensions */
     vx_uint32 number_of_dimensions;
     /*! \brief Size of all dimensions */

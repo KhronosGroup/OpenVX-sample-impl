@@ -212,6 +212,55 @@ VX_API_ENTRY vx_status VX_API_CALL vxSetThresholdAttribute(vx_threshold thresh, 
                     status = VX_ERROR_INVALID_PARAMETERS;
                 }
                 break;
+            case VX_THRESHOLD_TYPE:
+                if (VX_CHECK_PARAM(ptr, size, vx_enum, 0x3))
+                {
+                    thresh->thresh_type = *(vx_enum *)ptr;
+                    ownWroteToReference(&thresh->base);
+                }
+                else if (size >= sizeof(vx_enum) && ptr != NULL)
+                {
+                    /* accept larger buffers (e.g. vx_pixel_value_t) — read enum from first bytes */
+                    thresh->thresh_type = *(vx_enum *)ptr;
+                    ownWroteToReference(&thresh->base);
+                }
+                else
+                {
+                    status = VX_ERROR_INVALID_PARAMETERS;
+                }
+                break;
+            case VX_THRESHOLD_INPUT_FORMAT:
+                if (VX_CHECK_PARAM(ptr, size, vx_df_image, 0x3))
+                {
+                    thresh->input_format = *(vx_df_image *)ptr;
+                    ownWroteToReference(&thresh->base);
+                }
+                else if (size >= sizeof(vx_df_image) && ptr != NULL)
+                {
+                    thresh->input_format = *(vx_df_image *)ptr;
+                    ownWroteToReference(&thresh->base);
+                }
+                else
+                {
+                    status = VX_ERROR_INVALID_PARAMETERS;
+                }
+                break;
+            case VX_THRESHOLD_OUTPUT_FORMAT:
+                if (VX_CHECK_PARAM(ptr, size, vx_df_image, 0x3))
+                {
+                    thresh->output_format = *(vx_df_image *)ptr;
+                    ownWroteToReference(&thresh->base);
+                }
+                else if (size >= sizeof(vx_df_image) && ptr != NULL)
+                {
+                    thresh->output_format = *(vx_df_image *)ptr;
+                    ownWroteToReference(&thresh->base);
+                }
+                else
+                {
+                    status = VX_ERROR_INVALID_PARAMETERS;
+                }
+                break;
             default:
                 status = VX_ERROR_NOT_SUPPORTED;
                 break;

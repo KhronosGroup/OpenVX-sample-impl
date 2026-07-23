@@ -224,13 +224,11 @@ VX_API_ENTRY vx_status VX_API_CALL vxQueryPyramid(vx_pyramid pyr, vx_enum attrib
         {
             case VX_PYRAMID_LEVELS:
                 if (VX_CHECK_PARAM(ptr, size, vx_size, 0x3))
-                {
                     *(vx_size *)ptr = pyr->numLevels;
-                }
+                else if (VX_CHECK_PARAM(ptr, size, vx_uint32, 0x3))
+                    *(vx_uint32 *)ptr = (vx_uint32)pyr->numLevels;
                 else
-                {
                     status = VX_ERROR_INVALID_PARAMETERS;
-                }
                 break;
             case VX_PYRAMID_SCALE:
                 if (VX_CHECK_PARAM(ptr, size, vx_float32, 0x3))

@@ -497,7 +497,14 @@ VX_API_ENTRY vx_status VX_API_CALL vxQueryReference(vx_reference ref, vx_enum at
         case VX_REFERENCE_NAME:
             if (VX_CHECK_PARAM(ptr, size, vx_char*, 0x3))
             {
+                /* Legacy: caller passes char** to receive a pointer to the internal name buffer */
                 *(vx_char**)ptr = &ref->name[0];
+            }
+            else if (size > sizeof(vx_char*) && ptr != NULL)
+            {
+                /* Extended: caller passes a char[] buffer larger than a pointer; copy into it */
+                strncpy((vx_char *)ptr, ref->name, size - 1);
+                ((vx_char *)ptr)[size - 1] = '\0';
             }
             else
             {

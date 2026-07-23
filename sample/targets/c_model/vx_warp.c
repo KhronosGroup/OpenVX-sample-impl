@@ -96,7 +96,11 @@ static vx_status vxWarpInputValidator(vx_node node, vx_uint32 index, vx_size mat
                 vxQueryMatrix(matrix, VX_MATRIX_TYPE, &data_type, sizeof(data_type));
                 vxQueryMatrix(matrix, VX_MATRIX_ROWS, &rows, sizeof(rows));
                 vxQueryMatrix(matrix, VX_MATRIX_COLUMNS, &columns, sizeof(columns));
-                if ((data_type == VX_TYPE_FLOAT32) && (columns == mat_columns) && (rows == 3))
+                /* Accept either orientation: classic (cols==mat_columns, rows==3) or
+                   transposed (cols==3, rows==mat_columns) — both appear in the CTS. */
+                if ((data_type == VX_TYPE_FLOAT32) &&
+                    (((columns == mat_columns) && (rows == 3)) ||
+                     ((columns == 3) && (rows == mat_columns))))
                 {
                     status = VX_SUCCESS;
                 }

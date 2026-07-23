@@ -129,6 +129,7 @@ VX_API_ENTRY vx_tensor VX_API_CALL vxCreateTensor(
     }
     ownInitTensor(tensor, dims, number_of_dims, data_type, fixed_point_position);
                   tensor->parent = NULL;
+                  tensor->memory_type = VX_MEMORY_TYPE_NONE;
                   tensor->base.scope = (vx_reference)context;
 
     return tensor;
@@ -194,6 +195,7 @@ VX_API_ENTRY vx_tensor VX_API_CALL vxCreateTensorFromHandle(vx_context context, 
 
     tensor->addr = ptr;
     tensor->parent = NULL;
+    tensor->memory_type = memory_type;
     tensor->base.scope = (vx_reference)context;
 
     return tensor;
@@ -386,6 +388,7 @@ VX_API_ENTRY vx_tensor VX_API_CALL vxCreateTensorFromView(vx_tensor tensor, vx_s
 				vx_uint32 p = 0;
                 /* refer to our parent md data and internally refcount it */
                 subtensor->parent = tensor;
+                subtensor->memory_type = VX_MEMORY_TYPE_NONE;
                 subtensor->base.scope = (vx_reference_t*)tensor;
 				for (p = 0; p < VX_INT_MAX_REF; p++)
 				{
@@ -445,6 +448,7 @@ VX_API_ENTRY vx_tensor VX_API_CALL vxCreateVirtualTensor(
             {
                 ownInitTensor(tensor, dims, number_of_dims, data_type, fixed_point_position);
 					tensor->parent = NULL;
+					tensor->memory_type = VX_MEMORY_TYPE_NONE;
 					//tensor->base.scope = (vx_reference)context;
                 tensor->base.is_virtual = vx_true_e;
 				tensor->base.scope = (vx_reference_t *)graph;
@@ -580,10 +584,11 @@ VX_API_ENTRY vx_status VX_API_CALL vxMapTensorPatch(vx_tensor tensor, vx_size nu
     vx_uint8 *buf = NULL;
     vx_size size;
     vx_memory_map_extra extra;
+    vx_size full_start[VX_MAX_TENSOR_DIMENSIONS];
+    vx_size full_end[VX_MAX_TENSOR_DIMENSIONS];
 
     /* bad parameters */
-    if ((view_start == NULL) || (view_end == NULL) || (map_id == NULL) || (ptr == NULL) ||
-        (stride == NULL))
+    if ((map_id == NULL) || (ptr == NULL) || (stride == NULL))
     {
         status = VX_ERROR_INVALID_PARAMETERS;
         goto exit;
@@ -594,6 +599,23 @@ VX_API_ENTRY vx_status VX_API_CALL vxMapTensorPatch(vx_tensor tensor, vx_size nu
     {
         status = VX_ERROR_INVALID_REFERENCE;
         goto exit;
+    }
+
+    /* NULL view_start/view_end means the whole tensor */
+    if ((view_start == NULL) != (view_end == NULL))
+    {
+        status = VX_ERROR_INVALID_PARAMETERS;
+        goto exit;
+    }
+    if ((view_start == NULL) && (view_end == NULL) && (number_of_dims <= tensor->number_of_dimensions))
+    {
+        for (vx_uint32 i = 0; i < (vx_uint32)number_of_dims; i++)
+        {
+            full_start[i] = 0;
+            full_end[i] = tensor->dimensions[i];
+        }
+        view_start = full_start;
+        view_end = full_end;
     }
 
     /* determine if virtual before checking for memory */
@@ -609,7 +631,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxMapTensorPatch(vx_tensor tensor, vx_size nu
     }
     if (tensor->addr == NULL)
     {
-        if (usage != VX_WRITE_ONLY || ownAllocateTensorMemory(tensor) == NULL)
+        if (ownAllocateTensorMemory(tensor) == NULL)
         {
             VX_PRINT(VX_ZONE_ERROR, "Tensor memory was allocated failed!\n");
             status = VX_ERROR_NO_MEMORY;
@@ -881,13 +903,18 @@ void ownDestructTensor(vx_reference ref)
 {
     vx_tensor tensor = (vx_tensor)ref;
     /* if it's not imported and does not have a parent, free it */
-    if (tensor->parent == NULL)
+    if ((tensor->memory_type == VX_MEMORY_TYPE_NONE) && (tensor->parent == NULL))
     {
         ownFreeTensor(tensor);
     }
     else if (tensor->parent)
     {
         ownReleaseReferenceInt((vx_reference *)&tensor->parent, VX_TYPE_TENSOR, VX_INTERNAL, NULL);
+    }
+    else
+    {
+        /* buffer was supplied by the user via vxCreateTensorFromHandle; don't free it */
+        tensor->addr = NULL;
     }
 }
 

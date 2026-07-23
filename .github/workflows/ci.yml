@@ -68,6 +68,7 @@ jobs:
             -DOPENVX_INCLUDES="$OPENVX_DIR/include" \
             -DOPENVX_LIBRARIES="$OPENVX_DIR/bin/libopenvx.so;$OPENVX_DIR/bin/libvxu.so;$OPENVX_DIR/bin/libnnef-lib.a;pthread;dl;m;rt;stdc++" \
             -DCMAKE_C_FLAGS="-I$GITHUB_WORKSPACE/kernels/NNEF-Tools/parser/cpp/include" \
+            -DCMAKE_C_FLAGS_RELEASE="-O2 -DNDEBUG" -DCMAKE_CXX_FLAGS_RELEASE="-O2 -DNDEBUG" \
             $OPENVX_FEATURES \
             "$GITHUB_WORKSPACE/cts/"
           cmake --build . -j$(nproc)

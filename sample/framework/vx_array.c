@@ -804,6 +804,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxAddArrayItems(vx_array arr, vx_size count, 
         {
             status = VX_ERROR_INVALID_PARAMETERS;
 
+            if (stride == 0) stride = arr->item_size; /* stride=0 means compact (item_size) */
             if ((count > 0) && (ptr != NULL) && (stride >= arr->item_size))
             {
                 status = VX_FAILURE;
