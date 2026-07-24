@@ -197,6 +197,11 @@ void ownInitImage(vx_image image, vx_uint32 width, vx_uint32 height, vx_df_image
         case VX_DF_IMAGE_S16:
         case VX_DF_IMAGE_S32:
         case VX_DF_IMAGE_F32:
+            /* Grayscale/numeric formats use NONE; color formats default to BT.709.
+             * The existing CTS Image.QueryImage test asserts NONE for U8, which
+             * conflicts with the spec "all images default to BT.709" — left as-is
+             * to avoid breaking the existing conformance suite. REQ-0847/0936 are
+             * filed as spec clarification issues. */
             image->space = VX_COLOR_SPACE_NONE;
             break;
         default:

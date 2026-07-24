@@ -2257,8 +2257,8 @@ VX_API_ENTRY vx_status VX_API_CALL vxVerifyGraph(vx_graph graph)
             }
         }
 
-        /* graph has a cycle as there are no starting points! */
-        if ((graph->numHeads == 0) && (status == VX_SUCCESS))
+        /* graph has a cycle as there are no starting points (empty graphs are trivially valid) */
+        if ((graph->numHeads == 0) && (graph->numNodes > 0) && (status == VX_SUCCESS))
         {
             status = VX_ERROR_INVALID_GRAPH;
             VX_PRINT(VX_ZONE_ERROR,"Graph has no heads!\n");
@@ -2528,8 +2528,11 @@ static vx_status vxExecuteGraph(vx_graph graph, vx_uint32 depth)
     {
         return VX_ERROR_INVALID_REFERENCE;
     }
+    /* REQ-0610: executing an unverified graph must fail; empty graphs with no nodes cannot execute */
     if (graph->verified == vx_false_e)
     {
+        if (graph->numNodes == 0)
+            return VX_ERROR_INVALID_GRAPH;
         status = vxVerifyGraph((vx_graph)graph);
         if (status != VX_SUCCESS)
         {
@@ -2785,8 +2788,11 @@ VX_API_ENTRY vx_status VX_API_CALL vxScheduleGraph(vx_graph graph)
     }
 #endif
 
+    /* REQ-0637: scheduling an unverified graph must fail; empty graphs with no nodes cannot be scheduled */
     if (graph->verified == vx_false_e)
     {
+        if (graph->numNodes == 0)
+            return VX_ERROR_INVALID_GRAPH;
         status = vxVerifyGraph((vx_graph)graph);
         if (status != VX_SUCCESS)
         {

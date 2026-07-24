@@ -478,7 +478,7 @@ VX_API_ENTRY vx_context VX_API_CALL vxCreateContext(void)
             context->imm_border_policy = VX_BORDER_POLICY_DEFAULT_TO_UNDEFINED;
             context->next_dynamic_user_kernel_id = 0;
             context->next_dynamic_user_library_id = 1;
-            context->perf_enabled = vx_false_e;
+            context->perf_enabled = vx_true_e; /* REQ-0676: VX_NODE_PERFORMANCE.num must be populated after execution */
             ownInitReference(&context->base, NULL, VX_TYPE_CONTEXT, NULL);
 #if !DISABLE_ICD_COMPATIBILITY
             context->base.platform = platform;
