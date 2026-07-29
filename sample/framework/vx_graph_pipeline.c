@@ -186,13 +186,36 @@ static vx_value_t vxPipelineWorker(void *arg)
             {
                 graph->in_flight++;
                 if (graph->in_flight == 1)
+                {
+                    graph->worker_is_processing = vx_true_e;
                     ownResetEvent(&graph->idle_event);
+                }
                 status = vxPipelineSwapRefs(graph);
+            }
+            else if (graph->worker_is_processing == vx_true_e)
+            {
+                /* Batch is complete and the worker is about to go idle. */
+                if (graph->in_flight > 0)
+                    graph->in_flight--;
+                graph->worker_is_processing = vx_false_e;
+                ownSetEvent(&graph->idle_event);
             }
             ownSemPost(&graph->pipe_lock);
 
-            if (can_run == vx_false_e || status != VX_SUCCESS)
+            if (can_run == vx_false_e)
                 break;
+
+            if (status != VX_SUCCESS)
+            {
+                /* Swap failed after we already claimed an in-flight slot. */
+                ownSemWait(&graph->pipe_lock);
+                if (graph->in_flight > 0)
+                    graph->in_flight--;
+                graph->worker_is_processing = vx_false_e;
+                ownSetEvent(&graph->idle_event);
+                ownSemPost(&graph->pipe_lock);
+                break;
+            }
 
             status = vxProcessGraph(graph);
 
@@ -200,8 +223,6 @@ static vx_value_t vxPipelineWorker(void *arg)
             vxPipelineEnqueueDone(graph);
             vxPipelineRestoreRefs(graph);
             graph->in_flight--;
-            if (graph->in_flight == 0)
-                ownSetEvent(&graph->idle_event);
             ownSemPost(&graph->pipe_lock);
 
             if (graph->base.context->events_enabled == vx_true_e)
@@ -245,6 +266,18 @@ static vx_value_t vxPipelineWorker(void *arg)
                 event.event_info.graph_completed.graph = graph;
                 ownPipelinePostEvent(graph->base.context, &event);
             }
+        }
+
+        /* If the worker was asked to stop while it still had an active batch,
+         * clean up the in-flight state so vxWaitGraph does not hang forever. */
+        if (graph->worker_is_processing == vx_true_e)
+        {
+            ownSemWait(&graph->pipe_lock);
+            if (graph->in_flight > 0)
+                graph->in_flight--;
+            graph->worker_is_processing = vx_false_e;
+            ownSetEvent(&graph->idle_event);
+            ownSemPost(&graph->pipe_lock);
         }
     }
     return 0;

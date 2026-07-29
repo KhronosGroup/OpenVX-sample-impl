@@ -1258,6 +1258,8 @@ typedef struct _vx_graph {
     vx_bool        worker_stop;
     /*! \brief Counter of outstanding pipeline executions */
     vx_int32       in_flight;
+    /*! \brief True while the pipeline worker is actively processing a batch */
+    vx_bool        worker_is_processing;
     /*! \brief Event signaled when worker becomes idle */
     vx_internal_event_t idle_event;
 #endif

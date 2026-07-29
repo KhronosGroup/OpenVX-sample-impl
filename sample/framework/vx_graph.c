@@ -585,6 +585,7 @@ VX_API_ENTRY vx_graph VX_API_CALL vxCreateGraph(vx_context context)
             graph->worker_running = vx_false_e;
             graph->worker_stop = vx_false_e;
             graph->worker = 0;
+            graph->worker_is_processing = vx_false_e;
             graph->in_flight = 0;
             for (vx_uint32 i = 0; i < VX_INT_MAX_PARAMS; i++)
             {
@@ -2473,6 +2474,20 @@ static vx_bool ownAnyNodeInPipeup(vx_graph graph)
     return vx_false_e;
 }
 
+static vx_bool ownGraphHasPipeup(vx_graph graph)
+{
+    vx_uint32 i;
+    for (i = 0; i < graph->numNodes; i++)
+    {
+        vx_node node = graph->nodes[i];
+        if (node == NULL || node->kernel == NULL)
+            continue;
+        if (node->kernel->pipeup_output_depth > 1)
+            return vx_true_e;
+    }
+    return vx_false_e;
+}
+
 static vx_bool ownIsPredecessorInPipeup(vx_graph graph, vx_node node)
 {
     vx_uint32 p;
@@ -2546,12 +2561,13 @@ static vx_status vxExecuteGraph(vx_graph graph, vx_uint32 depth)
     }
 
 #ifdef OPENVX_USE_STREAMING
-    /* For non-streaming graphs with pipeup-output-depth nodes, run internal
-     * warm-up iterations while any node is still in pipeup, then run exactly
-     * one steady iteration before returning to the caller.  This mirrors the
-     * rustVX behaviour expected by the GraphStreaming conformance tests.
-     * Streaming graphs always run a single iteration per call. */
+    /* For non-streaming graphs that contain pipeup-output-depth nodes, run
+     * internal warm-up iterations while any node is still in pipeup, then run
+     * exactly one steady iteration before returning.  Graphs without pipeup
+     * nodes, and streaming graphs, run exactly one iteration per call. */
     vx_bool steady_done = vx_false_e;
+    vx_bool needs_steady = (graph->streaming_thread_running == vx_false_e &&
+                            ownGraphHasPipeup(graph) == vx_true_e);
     while (status == VX_SUCCESS && action != VX_ACTION_ABANDON)
     {
         vx_bool any_pipeup = ownAnyNodeInPipeup(graph);
@@ -2726,7 +2742,12 @@ static vx_status vxExecuteGraph(vx_graph graph, vx_uint32 depth)
         if (graph->streaming_thread_running == vx_true_e)
             break;
         if (!any_pipeup)
-            steady_done = vx_true_e;
+        {
+            if (needs_steady)
+                steady_done = vx_true_e;
+            else
+                break;
+        }
     }
 #else
     }
@@ -2850,10 +2871,14 @@ VX_API_ENTRY vx_status VX_API_CALL vxWaitGraph(vx_graph graph)
     if (graph->pipeline_configured == vx_true_e &&
         graph->schedule_mode != VX_GRAPH_SCHEDULE_MODE_NORMAL)
     {
-        while (graph->in_flight > 0)
+        ownSemWait(&graph->pipe_lock);
+        while (graph->worker_is_processing || graph->in_flight > 0)
         {
+            ownSemPost(&graph->pipe_lock);
             ownWaitEvent(&graph->idle_event, VX_INT_FOREVER);
+            ownSemWait(&graph->pipe_lock);
         }
+        ownSemPost(&graph->pipe_lock);
         return VX_SUCCESS;
     }
 #endif
