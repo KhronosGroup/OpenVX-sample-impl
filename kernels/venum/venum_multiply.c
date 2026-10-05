@@ -149,7 +149,11 @@ vx_status vxMultiply(vx_image in0, vx_image in1, vx_scalar scale_param, vx_scala
                   tmp_int32 = tmp7;
                 vx_float64 unscaled_result = (vx_float64)tmp_int32;
                 vx_float64 scaled_result = scale * unscaled_result;
-                vx_int32 int_typed_result = (vx_int32)scaled_result;
+                /* VX_ROUND_POLICY_TO_NEAREST_EVEN: rint() rounds to nearest,
+                 * ties to even, under the default floating-point environment;
+                 * VX_ROUND_POLICY_TO_ZERO truncates, which a direct cast does. */
+                vx_int32 int_typed_result = (rounding_policy == VX_ROUND_POLICY_TO_NEAREST_EVEN) ?
+                    (vx_int32)rint(scaled_result) : (vx_int32)scaled_result;
                 vx_int32 final_result_value;
                 if (overflow_policy == VX_CONVERT_POLICY_SATURATE)
                 {
@@ -203,7 +207,11 @@ vx_status vxMultiply(vx_image in0, vx_image in1, vx_scalar scale_param, vx_scala
             vx_float64 unscaled_result = (vx_float64)unscaled_unconverted_result;
             vx_float64 scaled_result = scale * unscaled_result;
 
-            vx_int32 int_typed_result = (vx_int32)scaled_result;
+            /* VX_ROUND_POLICY_TO_NEAREST_EVEN: rint() rounds to nearest, ties
+             * to even, under the default floating-point environment;
+             * VX_ROUND_POLICY_TO_ZERO truncates, which a direct cast does. */
+            vx_int32 int_typed_result = (rounding_policy == VX_ROUND_POLICY_TO_NEAREST_EVEN) ?
+                (vx_int32)rint(scaled_result) : (vx_int32)scaled_result;
             vx_int32 final_result_value;
             if (overflow_policy == VX_CONVERT_POLICY_SATURATE)
             {

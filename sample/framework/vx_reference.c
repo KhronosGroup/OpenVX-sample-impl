@@ -556,6 +556,10 @@ VX_API_ENTRY vx_status VX_API_CALL vxReleaseReference(vx_reference* ref_ptr)
         case VX_TYPE_KERNEL:       status = vxReleaseKernel((vx_kernel*)ref_ptr); break;
         case VX_TYPE_PARAMETER:    status = vxReleaseParameter((vx_parameter*)ref_ptr); break;
         case VX_TYPE_TENSOR:       status = vxReleaseTensor((vx_tensor*)ref_ptr); break;
+        /* there is no dedicated vxReleaseMetaFormat(); per vx_khr_pipelining.h,
+         * a meta format object handed out by a query (REQ-1982) is released
+         * through this generic entry point instead */
+        case VX_TYPE_META_FORMAT:  status = ownReleaseReferenceInt(ref_ptr, VX_TYPE_META_FORMAT, VX_EXTERNAL, NULL); break;
 #if defined(OPENVX_USE_IX) || defined(OPENVX_USE_XML)
         case VX_TYPE_IMPORT:       status = vxReleaseImport((vx_import*)ref_ptr); break;
 #endif

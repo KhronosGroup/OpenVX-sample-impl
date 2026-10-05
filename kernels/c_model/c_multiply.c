@@ -72,8 +72,14 @@ vx_status vxMultiply(vx_image in0, vx_image in1, vx_scalar scale_param, vx_scala
              * avoid further floating-point operations and rely on that a
              * floating-point value overflowing a vx_int32 would similarly
              * overflow a vx_int16 and vx_uint8.
+             *
+             * VX_ROUND_POLICY_TO_NEAREST_EVEN rounds to the nearest integer,
+             * ties toward even, which is exactly what rint() does under the
+             * default (round-to-nearest-even) floating-point environment.
+             * VX_ROUND_POLICY_TO_ZERO truncates, which a direct cast does.
              */
-            vx_int32 int_typed_result = (vx_int32)scaled_result;
+            vx_int32 int_typed_result = (rounding_policy == VX_ROUND_POLICY_TO_NEAREST_EVEN) ?
+                (vx_int32)rint(scaled_result) : (vx_int32)scaled_result;
 
             vx_int32 final_result_value;
 

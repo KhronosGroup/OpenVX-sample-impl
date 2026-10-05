@@ -330,7 +330,10 @@ VX_INT_API vx_bool ownMemoryMap(
                 context->memory_maps[id].flags      = flags;
 
                 vx_memory_map_extra* extra = (vx_memory_map_extra*)extra_data;
-                if (VX_TYPE_IMAGE == ref->type)
+                /* vxMapRemapPatch stores its patch rectangle in image_data.rect, and
+                 * vxUnmapRemapPatch reads it back to decide what to commit; without
+                 * this the rectangle stays zero and the commit loop writes nothing. */
+                if (VX_TYPE_IMAGE == ref->type || VX_TYPE_REMAP == ref->type)
                 {
                     context->memory_maps[id].extra.image_data.plane_index = extra->image_data.plane_index;
                     context->memory_maps[id].extra.image_data.rect        = extra->image_data.rect;

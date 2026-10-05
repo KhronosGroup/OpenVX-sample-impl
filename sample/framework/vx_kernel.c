@@ -63,6 +63,11 @@ vx_kernel_t *ownAllocateKernel(vx_context context,
         if (kernel->signature.num_parameters <= VX_INT_MAX_PARAMS)
         {
             vx_uint32 p = 0;
+            /* each parameter gets its meta format when the kernel is initialized */
+            for (p = 0; p < VX_INT_MAX_PARAMS; p++)
+            {
+                kernel->signature.meta_formats[p] = NULL;
+            }
             if (parameters != NULL)
             {
                 for (p = 0; p < numParams; p++)
@@ -130,6 +135,17 @@ vx_status ownInitializeKernel(vx_context context,
         if (kernel->signature.num_parameters <= VX_INT_MAX_PARAMS)
         {
             vx_uint32 p = 0;
+            /* Every parameter carries a meta format, which VX_PARAMETER_META_FORMAT
+             * reports. A user kernel declares its parameter types afterwards through
+             * vxAddParameterToKernel, which fills the type in there. */
+            for (p = 0; p < VX_INT_MAX_PARAMS; p++)
+            {
+                kernel->signature.meta_formats[p] = NULL;
+            }
+            for (p = 0; p < numParams; p++)
+            {
+                kernel->signature.meta_formats[p] = ownCreateMetaFormat(context);
+            }
             if (parameters != NULL)
             {
                 for (p = 0; p < numParams; p++)
@@ -137,8 +153,10 @@ vx_status ownInitializeKernel(vx_context context,
                     kernel->signature.directions[p] = parameters[p].direction;
                     kernel->signature.types[p] = parameters[p].data_type;
                     kernel->signature.states[p] = parameters[p].state;
-                    /* Initialize to NULL, kernel import function can create meta format for each param if it is called */
-                    kernel->signature.meta_formats[p] = NULL;
+                    if (kernel->signature.meta_formats[p] != NULL)
+                    {
+                        kernel->signature.meta_formats[p]->type = parameters[p].data_type;
+                    }
                 }
                 return VX_SUCCESS;
             } else {
@@ -940,6 +958,10 @@ VX_API_ENTRY vx_status VX_API_CALL vxAddParameterToKernel(vx_kernel kernel,
                     kern->signature.directions[index] = dir;
                     kern->signature.types[index] = data_type;
                     kern->signature.states[index] = state;
+                    if (kern->signature.meta_formats[index] != NULL)
+                    {
+                        kern->signature.meta_formats[index]->type = data_type;
+                    }
                     status = VX_SUCCESS;
                 }
             }
@@ -958,6 +980,10 @@ VX_API_ENTRY vx_status VX_API_CALL vxAddParameterToKernel(vx_kernel kernel,
                     kern->signature.directions[index] = dir;
                     kern->signature.types[index] = data_type;
                     kern->signature.states[index] = state;
+                    if (kern->signature.meta_formats[index] != NULL)
+                    {
+                        kern->signature.meta_formats[index]->type = data_type;
+                    }
                     status = VX_SUCCESS;
                 }
             }
@@ -1038,12 +1064,24 @@ VX_API_ENTRY vx_status VX_API_CALL vxRemoveKernel(vx_kernel kernel)
 
             status = ownDeinitializeKernel(&kernel);
 
-            if (status == VX_SUCCESS)
+            /* Retire the slot. The object itself may outlive this call when the
+             * application still holds a reference, so the slot cannot be handed out
+             * again, but it must stop answering lookups by name or by enum. */
+            target->kernels[kernelIdx].enumeration = VX_KERNEL_INVALID;
+            target->kernels[kernelIdx].user_kernel = vx_false_e;
+            memset(target->kernels[kernelIdx].name, 0, sizeof(target->kernels[kernelIdx].name));
+
+            /* the meta formats belong to the kernel's signature and go with it */
+            for (vx_uint32 p = 0u; p < VX_INT_MAX_PARAMS; p++)
             {
-                target->kernels[kernelIdx].enumeration = VX_KERNEL_INVALID;
-                target->kernels[kernelIdx].user_kernel = vx_false_e;
+                if (target->kernels[kernelIdx].signature.meta_formats[p] != NULL)
+                {
+                    ownReleaseMetaFormat(&target->kernels[kernelIdx].signature.meta_formats[p]);
+                    target->kernels[kernelIdx].signature.meta_formats[p] = NULL;
+                }
             }
-            else
+
+            if (status != VX_SUCCESS)
             {
                 VX_PRINT(VX_ZONE_ERROR, "Can't deinitialize kernel properly\n");
             }

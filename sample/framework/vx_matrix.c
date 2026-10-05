@@ -325,6 +325,18 @@ VX_API_ENTRY vx_status VX_API_CALL vxCopyMatrix(vx_matrix matrix, void *user_ptr
 
     if (ownIsValidSpecificReference(&matrix->base, VX_TYPE_MATRIX) == vx_true_e)
     {
+        /* determine if virtual before checking for memory */
+        if (matrix->base.is_virtual == vx_true_e)
+        {
+            if (matrix->base.is_accessible == vx_false_e)
+            {
+                /* User tried to access a "virtual" matrix. */
+                VX_PRINT(VX_ZONE_ERROR, "Can not access a virtual matrix\n");
+                return VX_ERROR_OPTIMIZED_AWAY;
+            }
+            /* framework trying to access a virtual matrix, this is ok. */
+        }
+
         if (ownAllocateMemory(matrix->base.context, &matrix->memory) == vx_true_e)
         {
 #ifdef OPENVX_USE_OPENCL_INTEROP

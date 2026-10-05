@@ -27,7 +27,13 @@ vx_bool ownAddAssociationToDelay(vx_reference value, vx_node n, vx_uint32 i)
     vx_delay delay = value->delay;
     vx_int32 delay_index = value->delay_slot_index;
 
-    vx_int32 index = (delay->index + delay->count - abs(delay_index)) % (vx_int32)delay->count;
+    /* delay_slot_index is the fixed position of this reference in refs[], so the
+     * slot it currently occupies is its offset from the rotating base. vxAgeDelay
+     * hands set[i] the reference refs[(delay->index + i) % count], so that offset
+     * is the bucket this node belongs in. Taking delay->index - position instead
+     * mirrors the bucket, which is invisible only because the mirror is the
+     * identity when count is 2. */
+    vx_int32 index = (delay_index - (vx_int32)delay->index + (vx_int32)delay->count) % (vx_int32)delay->count;
 
     if (delay->set[index].node == 0) // head is empty
     {
@@ -68,7 +74,12 @@ vx_bool ownRemoveAssociationToDelay(vx_reference value, vx_node n, vx_uint32 i)
     vx_delay delay = value->delay;
     vx_int32 delay_index = value->delay_slot_index;
 
-    vx_int32 index = (delay->index + delay->count - abs(delay_index)) % (vx_int32)delay->count;
+    /* Same bucket arithmetic as ownAddAssociationToDelay. It has to be computed
+     * from the reference the node currently holds rather than the one it was
+     * bound to, which is what aging left in the parameter; with the offset taken
+     * this way the two agree however many times the delay has aged, so the
+     * association is found and the internal reference on the delay is given back. */
+    vx_int32 index = (delay_index - (vx_int32)delay->index + (vx_int32)delay->count) % (vx_int32)delay->count;
 
     if (index >= (vx_int32)delay->count) {
         return vx_false_e;

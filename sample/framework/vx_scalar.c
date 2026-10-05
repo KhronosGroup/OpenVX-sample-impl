@@ -311,6 +311,18 @@ VX_API_ENTRY vx_status VX_API_CALL vxCopyScalar(vx_scalar scalar, void *user_ptr
     if (vx_false_e == ownIsValidSpecificReference(&scalar->base, VX_TYPE_SCALAR))
         return VX_ERROR_INVALID_REFERENCE;
 
+    /* determine if virtual before checking parameters */
+    if (scalar->base.is_virtual == vx_true_e)
+    {
+        if (scalar->base.is_accessible == vx_false_e)
+        {
+            /* User tried to access a "virtual" scalar. */
+            VX_PRINT(VX_ZONE_ERROR, "Can not access a virtual scalar\n");
+            return VX_ERROR_OPTIMIZED_AWAY;
+        }
+        /* framework trying to access a virtual scalar, this is ok. */
+    }
+
     if (NULL == user_ptr || VX_MEMORY_TYPE_HOST != user_mem_type)
         return VX_ERROR_INVALID_PARAMETERS;
 
@@ -371,6 +383,18 @@ VX_API_ENTRY vx_status VX_API_CALL vxCopyScalarWithSize(vx_scalar scalar, vx_siz
 
     if (vx_false_e == ownIsValidSpecificReference(&scalar->base, VX_TYPE_SCALAR))
         return VX_ERROR_INVALID_REFERENCE;
+
+    /* determine if virtual before checking parameters */
+    if (scalar->base.is_virtual == vx_true_e)
+    {
+        if (scalar->base.is_accessible == vx_false_e)
+        {
+            /* User tried to access a "virtual" scalar. */
+            VX_PRINT(VX_ZONE_ERROR, "Can not access a virtual scalar\n");
+            return VX_ERROR_OPTIMIZED_AWAY;
+        }
+        /* framework trying to access a virtual scalar, this is ok. */
+    }
 
     if (NULL == user_ptr || VX_MEMORY_TYPE_HOST != user_mem_type)
         return VX_ERROR_INVALID_PARAMETERS;

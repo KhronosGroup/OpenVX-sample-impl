@@ -359,6 +359,8 @@ VX_API_ENTRY vx_status VX_API_CALL vxCopyRemapPatch(vx_remap remap,
         goto exit;
     }
 
+    /* user_ptr addresses the top-left element of the patch, not of the remap, so the
+     * user buffer is indexed relative to the patch origin. */
     vx_size stride = user_stride_y / sizeof(vx_coordinates2df_t);
 
 #ifdef OPENVX_USE_OPENCL_INTEROP
@@ -399,7 +401,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxCopyRemapPatch(vx_remap remap,
         {
             for (j = start_x; j < end_x; j++)
             {
-                vx_coordinates2df_t *coord_ptr = &(ptr[i * stride + j]);
+                vx_coordinates2df_t *coord_ptr = &(ptr[(i - start_y) * stride + (j - start_x)]);
                 status = vxGetCoordValue(remap, j, i, &coord_ptr->x, &coord_ptr->y);
                 if(status != VX_SUCCESS)
                 {
@@ -419,7 +421,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxCopyRemapPatch(vx_remap remap,
         {
             for (j = start_x; j < end_x; j++)
             {
-                vx_coordinates2df_t *coord_ptr = &(ptr[i * stride + j]);
+                vx_coordinates2df_t *coord_ptr = &(ptr[(i - start_y) * stride + (j - start_x)]);
                 status = vxSetCoordValue(remap, j, i, coord_ptr->x, coord_ptr->y);
                 if(status != VX_SUCCESS)
                 {
@@ -551,7 +553,9 @@ VX_API_ENTRY vx_status VX_API_CALL vxMapRemapPatch(vx_remap remap,
                 {
                     for (j = start_x; j < end_x; j++)
                     {
-                        vx_coordinates2df_t *coord_ptr = &(buf_ptr[i * stride + j]);
+                        /* (*ptr) is the top-left element of the patch, so the
+                         * buffer is indexed from the rectangle origin */
+                        vx_coordinates2df_t *coord_ptr = &(buf_ptr[(i - start_y) * stride + (j - start_x)]);
                         status = vxGetCoordValue(remap, j, i, &coord_ptr->x, &coord_ptr->y);
                         if(status != VX_SUCCESS)
                         {
@@ -667,7 +671,7 @@ VX_API_ENTRY vx_status VX_API_CALL vxUnmapRemapPatch(vx_remap remap, const vx_ma
             {
                 for (j = rect.start_x; j < rect.end_x; j++)
                 {
-                    vx_coordinates2df_t *coord_ptr = &(ptr[i * stride + j]);
+                    vx_coordinates2df_t *coord_ptr = &(ptr[(i - rect.start_y) * stride + (j - rect.start_x)]);
                     status = vxSetCoordValue(remap, j, i, coord_ptr->x, coord_ptr->y);
                     if(status != VX_SUCCESS)
                     {

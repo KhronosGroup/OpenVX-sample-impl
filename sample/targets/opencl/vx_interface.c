@@ -470,7 +470,12 @@ vx_kernel vxTargetAddKernel(vx_target_t *target,
     for (k = 0; k < VX_INT_MAX_KERNELS; k++)
     {
         kernel = &(target->kernels[k]);
-        if (kernel->enabled == vx_false_e)
+        /* A slot is free only when nothing lives in it. Testing 'enabled' alone
+         * treats a kernel that has been added but not yet finalized as free, so a
+         * second vxAddUserKernel would be handed the same slot and overwrite the
+         * first one. */
+        if (kernel->enabled == vx_false_e &&
+            ownIsValidSpecificReference(&kernel->base, VX_TYPE_KERNEL) == vx_false_e)
         {
             ownInitializeKernel(target->base.context,
                                kernel,

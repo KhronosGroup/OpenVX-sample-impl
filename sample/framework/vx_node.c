@@ -333,26 +333,11 @@ VX_API_ENTRY vx_status VX_API_CALL vxSetNodeAttribute(vx_node node, vx_enum attr
         switch (attribute)
         {
             case VX_NODE_LOCAL_DATA_SIZE:
-                /* Writable: during user-kernel init/deinit when kernel localDataSize==0
-                 * (local_data_change_is_enabled), or pre-verify for REQ-0701. */
+                /* Read-only to the application: writable only from a user kernel's
+                 * initialize or deinitialize callback, and only when the kernel left
+                 * VX_KERNEL_LOCAL_DATA_SIZE at zero. */
                 if (node_ptr->local_data_change_is_enabled)
                 {
-                    if (VX_CHECK_PARAM(ptr, size, vx_size, 0x3))
-                    {
-                        node_ptr->attributes.localDataSize = *(vx_size *)ptr;
-                        node_ptr->local_data_set_by_implementation = vx_false_e;
-                    }
-                    else
-                    {
-                        status = VX_ERROR_INVALID_PARAMETERS;
-                    }
-                }
-                else if (node_ptr->graph->verified == vx_false_e &&
-                         node_ptr->kernel->attributes.localDataSize == 0)
-                {
-                    /* REQ-0701: allow pre-verify writes only when kernel hasn't
-                     * claimed localDataSize. If kernel set it (localDataSize != 0),
-                     * writes must fail (tested by UserNode ALLOC=AUTO path). */
                     if (VX_CHECK_PARAM(ptr, size, vx_size, 0x3))
                     {
                         node_ptr->attributes.localDataSize = *(vx_size *)ptr;

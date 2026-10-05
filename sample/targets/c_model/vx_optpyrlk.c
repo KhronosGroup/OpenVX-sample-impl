@@ -498,11 +498,13 @@ static vx_status VX_CALLBACK vxOpticalFlowPyrLKKernel(vx_node node, const vx_ref
                         keypoint.y = (prevPt)->y;
                     }
 
+                    /* the spec requires every member other than x, y and
+                       tracking_status to be carried over from the old keypoint */
                     keypoint.strength        = (initialPt)->strength;
                     keypoint.tracking_status = (initialPt)->tracking_status;
                     keypoint.error           = (initialPt)->error;
-                    keypoint.scale           = 0.0f; // init unused field
-                    keypoint.orientation     = 0.0f; // init unused field
+                    keypoint.scale           = (initialPt)->scale;
+                    keypoint.orientation     = (initialPt)->orientation;
 
                     status |= vxAddArrayItems(nextPts, 1, &keypoint, sizeof(keypoint));
                 }
@@ -647,10 +649,47 @@ static vx_status VX_CALLBACK vxOpticalFlowPyrLKInputValidator(vx_node node, vx_u
             if (input)
             {
                 vx_size level = 0;
+                vx_df_image format = VX_DF_IMAGE_VIRT;
                 vxQueryPyramid(input, VX_PYRAMID_LEVELS, &level, sizeof(level));
-                if (level !=0)
+                vxQueryPyramid(input, VX_PYRAMID_FORMAT, &format, sizeof(format));
+                if (level == 0)
+                {
+                    status = VX_ERROR_INVALID_VALUE;
+                }
+                else if (format != VX_DF_IMAGE_U8)
+                {
+                    /* both image pyramids are specified as VX_DF_IMAGE_U8 */
+                    status = VX_ERROR_INVALID_FORMAT;
+                }
+                else
                 {
                     status = VX_SUCCESS;
+                }
+                /* the old and new pyramids must have the same dimensionality */
+                if ((status == VX_SUCCESS) && (index == 1))
+                {
+                    vx_parameter param0 = vxGetParameterByIndex(node, 0);
+                    if (vxGetStatus((vx_reference)param0) == VX_SUCCESS)
+                    {
+                        vx_pyramid old_pyr = 0;
+                        vxQueryParameter(param0, VX_PARAMETER_REF, &old_pyr, sizeof(old_pyr));
+                        if (old_pyr)
+                        {
+                            vx_size old_level = 0;
+                            vx_uint32 w = 0, h = 0, old_w = 0, old_h = 0;
+                            vxQueryPyramid(old_pyr, VX_PYRAMID_LEVELS, &old_level, sizeof(old_level));
+                            vxQueryPyramid(old_pyr, VX_PYRAMID_WIDTH, &old_w, sizeof(old_w));
+                            vxQueryPyramid(old_pyr, VX_PYRAMID_HEIGHT, &old_h, sizeof(old_h));
+                            vxQueryPyramid(input, VX_PYRAMID_WIDTH, &w, sizeof(w));
+                            vxQueryPyramid(input, VX_PYRAMID_HEIGHT, &h, sizeof(h));
+                            if ((old_level != level) || (old_w != w) || (old_h != h))
+                            {
+                                status = VX_ERROR_INVALID_DIMENSION;
+                            }
+                            vxReleasePyramid(&old_pyr);
+                        }
+                        vxReleaseParameter(&param0);
+                    }
                 }
                 vxReleasePyramid(&input);
             }

@@ -212,23 +212,9 @@ VX_API_ENTRY vx_status VX_API_CALL vxSetThresholdAttribute(vx_threshold thresh, 
                     status = VX_ERROR_INVALID_PARAMETERS;
                 }
                 break;
-            case VX_THRESHOLD_TYPE:
-                if (VX_CHECK_PARAM(ptr, size, vx_enum, 0x3))
-                {
-                    thresh->thresh_type = *(vx_enum *)ptr;
-                    ownWroteToReference(&thresh->base);
-                }
-                else if (size >= sizeof(vx_enum) && ptr != NULL)
-                {
-                    /* accept larger buffers (e.g. vx_pixel_value_t) — read enum from first bytes */
-                    thresh->thresh_type = *(vx_enum *)ptr;
-                    ownWroteToReference(&thresh->base);
-                }
-                else
-                {
-                    status = VX_ERROR_INVALID_PARAMETERS;
-                }
-                break;
+            /* VX_THRESHOLD_TYPE is fixed at creation time (vxCreateThreshold* picks
+             * BINARY vs RANGE) and is read-only thereafter (REQ-1378); fall through
+             * to the default case below, which reports VX_ERROR_NOT_SUPPORTED. */
             case VX_THRESHOLD_INPUT_FORMAT:
                 if (VX_CHECK_PARAM(ptr, size, vx_df_image, 0x3))
                 {
@@ -767,6 +753,15 @@ VX_API_ENTRY vx_status VX_API_CALL vxCopyThresholdRange(vx_threshold thresh,
     {
         VX_PRINT(VX_ZONE_ERROR, "Invalid reference for threshold\n");
         status = VX_ERROR_INVALID_REFERENCE;
+        return status;
+    }
+
+    /* the lower/upper range only exists on a VX_THRESHOLD_TYPE_RANGE threshold
+       (REQ-1406); the reference page names VX_ERROR_NOT_COMPATIBLE for this */
+    if (thresh->thresh_type != VX_THRESHOLD_TYPE_RANGE)
+    {
+        VX_PRINT(VX_ZONE_ERROR, "Threshold is not of type VX_THRESHOLD_TYPE_RANGE\n");
+        status = VX_ERROR_NOT_COMPATIBLE;
         return status;
     }
 

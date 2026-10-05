@@ -219,6 +219,18 @@ VX_API_ENTRY vx_status VX_API_CALL vxCopyConvolutionCoefficients(vx_convolution 
 
     if (ownIsValidSpecificReference(&conv->base.base, VX_TYPE_CONVOLUTION) == vx_true_e)
     {
+        /* determine if virtual before checking for memory */
+        if (conv->base.base.is_virtual == vx_true_e)
+        {
+            if (conv->base.base.is_accessible == vx_false_e)
+            {
+                /* User tried to access a "virtual" convolution. */
+                VX_PRINT(VX_ZONE_ERROR, "Can not access a virtual convolution\n");
+                return VX_ERROR_OPTIMIZED_AWAY;
+            }
+            /* framework trying to access a virtual convolution, this is ok. */
+        }
+
         if (ownAllocateMemory(conv->base.base.context, &conv->base.memory) == vx_true_e)
         {
 #ifdef OPENVX_USE_OPENCL_INTEROP

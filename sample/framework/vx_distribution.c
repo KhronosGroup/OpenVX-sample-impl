@@ -248,6 +248,18 @@ VX_API_ENTRY vx_status VX_API_CALL vxCopyDistribution(vx_distribution distributi
         return status;
     }
 
+    /* determine if virtual before checking parameters */
+    if (distribution->base.is_virtual == vx_true_e)
+    {
+        if (distribution->base.is_accessible == vx_false_e)
+        {
+            /* User tried to access a "virtual" distribution. */
+            VX_PRINT(VX_ZONE_ERROR, "Can not access a virtual distribution\n");
+            return VX_ERROR_OPTIMIZED_AWAY;
+        }
+        /* framework trying to access a virtual distribution, this is ok. */
+    }
+
     /* bad parameters */
     if (((usage != VX_READ_ONLY) && (usage != VX_WRITE_ONLY)) ||
         (user_ptr == NULL) || (user_mem_type != VX_MEMORY_TYPE_HOST))
@@ -336,6 +348,18 @@ VX_API_ENTRY vx_status VX_API_CALL vxMapDistribution(vx_distribution distributio
         status = VX_ERROR_INVALID_REFERENCE;
         VX_PRINT(VX_ZONE_ERROR, "Not a valid distribution object!\n");
         return status;
+    }
+
+    /* determine if virtual before checking parameters */
+    if (distribution->base.is_virtual == vx_true_e)
+    {
+        if (distribution->base.is_accessible == vx_false_e)
+        {
+            /* User tried to access a "virtual" distribution. */
+            VX_PRINT(VX_ZONE_ERROR, "Can not access a virtual distribution\n");
+            return VX_ERROR_OPTIMIZED_AWAY;
+        }
+        /* framework trying to access a virtual distribution, this is ok. */
     }
 
 #ifdef OPENVX_USE_OPENCL_INTEROP

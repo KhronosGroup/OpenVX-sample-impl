@@ -226,9 +226,11 @@
 #define VX_TYPE_IS_OBJECT(type) ((type) >= VX_TYPE_REFERENCE && (type) < VX_TYPE_VENDOR_OBJECT_END)
 
 /*! A parameter checker for size and alignment.
+ * A NULL ptr is an incorrect parameter, not an aligned one: every caller
+ * dereferences ptr once this passes, so the check has to reject it.
  * \ingroup group_int_macros
  */
-#define VX_CHECK_PARAM(ptr, size, type, align) (size == sizeof(type) && ((vx_size)ptr & align) == 0)
+#define VX_CHECK_PARAM(ptr, size, type, align) (ptr != NULL && size == sizeof(type) && ((vx_size)ptr & align) == 0)
 
 /*! Convenience wrapper around calloc to cast it correctly
  * \ingroup group_int_macros

@@ -358,9 +358,18 @@ VX_API_ENTRY vx_status VX_API_CALL vxQueryParameter(vx_parameter parameter, vx_e
             case VX_PARAMETER_META_FORMAT:
                 if (VX_CHECK_PARAM(ptr, size, vx_meta_format, 0x3))
                 {
-                    if(NULL != parameter->kernel->signature.meta_formats[parameter->index])
+                    /* The meta format object is owned by the kernel signature (it
+                     * is the same object on every query, and is released when the
+                     * kernel is removed), but each query still hands the caller an
+                     * independent reference that must be released via
+                     * vxReleaseReference(), as there is no vxReleaseMetaFormat()
+                     * (REQ-1982; see also vx_khr_pipelining.h's
+                     * vxGetKernelParameterConfig documentation). */
+                    vx_meta_format meta = parameter->kernel->signature.meta_formats[parameter->index];
+                    if (NULL != meta)
                     {
-                        *(vx_meta_format *)ptr = parameter->kernel->signature.meta_formats[parameter->index];
+                        ownIncrementReference(&meta->base, VX_EXTERNAL);
+                        *(vx_meta_format *)ptr = meta;
                     }
                     else
                     {

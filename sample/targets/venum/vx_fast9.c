@@ -62,9 +62,9 @@ static vx_status VX_CALLBACK vxFast9InputValidator(vx_node node, vx_uint32 index
             {
                 vx_df_image format = 0;
                 status = vxQueryImage(input, VX_IMAGE_FORMAT, &format, sizeof(format));
-                if ((status == VX_SUCCESS) && (format == VX_DF_IMAGE_U8))
+                if ((status == VX_SUCCESS) && (format != VX_DF_IMAGE_U8))
                 {
-                    status = VX_SUCCESS;
+                    status = VX_ERROR_INVALID_FORMAT;
                 }
                 vxReleaseImage(&input);
             }

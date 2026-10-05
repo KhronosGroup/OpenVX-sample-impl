@@ -140,7 +140,10 @@ static vx_param_description_t filter_kernel_params[] = {
 
 vx_kernel_description_t box3x3_kernel = {
     VX_KERNEL_BOX_3x3,
-    "org.khronos.openvx.box_3x3:default",
+    /* this is the canonical name reported by VX_CONTEXT_UNIQUE_KERNEL_TABLE for
+     * VX_KERNEL_BOX_3x3 (REQ-0563); box3x3_kernel_2 below intentionally shares the
+     * same enumeration under a distinct name to exercise duplicate-enum handling */
+    "org.khronos.openvx.box_3x3",
     vxBox3x3Kernel,
     filter_kernel_params, dimof(filter_kernel_params),
     NULL,

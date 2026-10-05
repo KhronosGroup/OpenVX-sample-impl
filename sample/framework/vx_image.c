@@ -672,6 +672,19 @@ VX_API_ENTRY vx_image VX_API_CALL vxCreateImageFromROI(vx_image img, const vx_re
 
                         /* keep offset to allow vxSwapImageHandle update ROI pointers */
                         subimage->memory.offset[p] = offset;
+
+                        /* vxCopyImagePatch()/vxMapImagePatch() validate the requested
+                         * rectangle against bounds[plane][...][BOUND_END], expressed in
+                         * the same (plane-local) coordinate space as memory.dims[] above;
+                         * this was left at its memcpy()'d parent value (or zero, for a
+                         * freshly created reference) and must be reset to match this
+                         * subimage's own plane-local dimensions (REQ-0965/0966/0967). */
+                        subimage->bounds[p][VX_DIM_C][VX_BOUND_START] = img->bounds[p][VX_DIM_C][VX_BOUND_START];
+                        subimage->bounds[p][VX_DIM_C][VX_BOUND_END]   = img->bounds[p][VX_DIM_C][VX_BOUND_END];
+                        subimage->bounds[p][VX_DIM_X][VX_BOUND_START] = 0;
+                        subimage->bounds[p][VX_DIM_X][VX_BOUND_END]   = subimage->memory.dims[p][VX_DIM_X];
+                        subimage->bounds[p][VX_DIM_Y][VX_BOUND_START] = 0;
+                        subimage->bounds[p][VX_DIM_Y][VX_BOUND_END]   = subimage->memory.dims[p][VX_DIM_Y];
                     }
 
                     ownPrintImage(subimage);
@@ -2122,6 +2135,16 @@ VX_API_ENTRY vx_status VX_API_CALL vxCopyImagePatch(
          (image_plane_index >= image->planes) ||
          (start_x >= end_x) ||
          (start_y >= end_y)))
+    {
+        status = VX_ERROR_INVALID_PARAMETERS;
+        goto exit;
+    }
+
+    /* the rectangle must stay within the plane's valid region; end_x/end_y are
+       given in full-image pixel coordinates, which is exactly what bounds[][END]
+       tracks (it is pre-scaled back up for sub-sampled planes), so compare directly */
+    if ( (end_x > image->bounds[image_plane_index][VX_DIM_X][VX_BOUND_END]) ||
+         (end_y > image->bounds[image_plane_index][VX_DIM_Y][VX_BOUND_END]) )
     {
         status = VX_ERROR_INVALID_PARAMETERS;
         goto exit;

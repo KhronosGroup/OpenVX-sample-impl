@@ -358,9 +358,18 @@ VX_API_ENTRY vx_kernel VX_API_CALL vxImportKernelFromURL(vx_context context, con
 
     meta = kernel->signature.meta_formats;
 
+    /* ownInitializeKernel() (called via vxAddUserKernel() -> CreateNNEFKernel()
+     * above) already allocated a meta format object for every one of this
+     * kernel's parameters. Reuse those instead of overwriting the pointers
+     * with freshly allocated ones, which would leak the originals (each
+     * meta format is itself a reference the kernel's signature must later
+     * release in vxRemoveKernel()). */
     for (i = 0; i < num; i++)
     {
-        meta[i] = ownCreateMetaFormat(context);
+        if (meta[i] == NULL)
+        {
+            meta[i] = ownCreateMetaFormat(context);
+        }
         meta[i]->type = VX_TYPE_TENSOR;
     }
 
